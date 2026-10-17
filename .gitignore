@@ -26,3 +26,6 @@ test-results/
 # Vite metadata (written by the dev server next to vite.config.*)
 vite.config.js.timestamp-*
 vite.config.ts.timestamp-*
+
+# Local tooling state (code indexes and similar; machine-specific, never committed)
+.codegraph/
