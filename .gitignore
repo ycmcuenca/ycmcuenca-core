@@ -22,3 +22,7 @@ test-results/
 # Editor and OS noise
 .DS_Store
 *.log
+
+# Vite metadata (written by the dev server next to vite.config.*)
+vite.config.js.timestamp-*
+vite.config.ts.timestamp-*
