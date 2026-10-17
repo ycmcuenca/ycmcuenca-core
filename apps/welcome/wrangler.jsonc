@@ -1,0 +1,24 @@
+// Cloudflare Workers configuration for `welcome` (design D4).
+// The worker name is what will serve welcome.ycmcuenca.workers.dev once
+// `edge-infrastructure` deploys; nothing is deployed in this change, and there
+// are deliberately no bindings, routes or workers_dev settings yet.
+{
+  "$schema": "./node_modules/wrangler/config-schema.json",
+
+  // Becomes welcome.ycmcuenca.workers.dev at deploy time.
+  "name": "welcome",
+
+  // SvelteKit's Workers build: the entry script and the static assets
+  // directory it serves (the ASSETS binding is created by the adapter).
+  "main": ".svelte-kit/cloudflare/_worker.js",
+  "assets": {
+    "binding": "ASSETS",
+    "directory": ".svelte-kit/cloudflare",
+  },
+
+  // The date pins the runtime's behavior so it never changes under the app.
+  "compatibility_date": "2026-10-17",
+  // nodejs_als provides AsyncLocalStorage, which this ecosystem expects;
+  // `nodejs_compat` waits until a library actually needs it (A5).
+  "compatibility_flags": ["nodejs_als"],
+}

@@ -1,0 +1,8 @@
+{
+  // Workspace strictness first, then SvelteKit's app-specific base. The
+  // `$app/tsconfig` entry is written by `svelte-kit sync` into node_modules
+  // and supplies module/target/moduleResolution, $lib paths and route types.
+  // See packages/tsconfig/README.md for the full explanation.
+  "extends": ["@ycmcuenca/tsconfig/svelte-app.json", "$app/tsconfig"],
+  "include": ["src", "vite.config.ts", "playwright.config.ts", "e2e"]
+}
