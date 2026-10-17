@@ -160,16 +160,16 @@ jobs:
       # TEMPORARY (task 2.9 probe): template injection zizmor must catch.
       - name: Template injection probe
         run: echo "${{ github.event.pull_request.title }}"
-      # Official image pinned by digest: the documented `curl | bash` install
-      # is an unpinned supply-chain hop this change removes (D7).
-      - name: Lint workflows (actionlint)
-        uses: docker://rhysd/actionlint@sha256:b1934ee5f1c509618f2508e6eb47ee0d3520686341fec936f3b79331f9315667 # 1.7.12
-      # SARIF upload is disabled: in SARIF mode zizmor always exits 0, which
-      # would let findings pass; the action propagates the real exit code (D7).
+      # TEMPORARY reorder: zizmor runs before actionlint here so its findings
+      # (unpinned-uses, template-injection) appear in this job's log.
       - name: Audit workflows (zizmor)
         uses: zizmorcore/zizmor-action@85b2b9fb8e3325e7a23d7d0a9d7ba5ae0f999e3e # v0.7.1
         with:
           advanced-security: "false"
+      # Official image pinned by digest: the documented `curl | bash` install
+      # is an unpinned supply-chain hop this change removes (D7).
+      - name: Lint workflows (actionlint)
+        uses: docker://rhysd/actionlint@sha256:b1934ee5f1c509618f2508e6eb47ee0d3520686341fec936f3b79331f9315667 # 1.7.12
 
   # The single required check the ruleset pins, so jobs can be added or
   # renamed without touching branch protection (D1, D9). It fails on
