@@ -1,5 +1,5 @@
 // Turborepo task graph for this workspace (design D7 in
-// openspec/changes/bootstrap-monorepo/design.md).
+// openspec/changes/archive/2026-10-17-bootstrap-monorepo/design.md).
 {
   "$schema": "https://turborepo.com/schema.json",
 
@@ -21,10 +21,12 @@
     },
 
     // Unit tests run against built workspace dependencies, so they exercise
-    // the artifacts other members actually consume.
+    // the artifacts other members actually consume. No outputs: coverage is
+    // not collected yet, and an empty list keeps Turborepo from warning that
+    // declared coverage files are missing.
     "test": {
       "dependsOn": ["^build"],
-      "outputs": ["coverage/**"],
+      "outputs": [],
     },
 
     // End-to-end tests start a real server, so they are never cached.
@@ -40,13 +42,11 @@
       "persistent": true,
     },
 
-    // Root task: formatting is repository-wide, so it runs only at the root.
-    "//#format": {
-      "cache": true,
-    },
+    // Repository-wide `lint` and `format` run directly from the root scripts
+    // rather than through this task graph.
   },
 
   // Anything that changes these files invalidates every task's cache
   // (the Prettier config is not part of any member's package).
-  "globalDependencies": [".prettierrc", ".prettierignore"],
+  "globalDependencies": [".prettierrc.yaml", ".prettierignore"],
 }
