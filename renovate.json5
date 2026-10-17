@@ -1,0 +1,134 @@
+// Renovate configuration for the Mend hosted app (design D11 in
+// openspec/changes/ci-release-pipeline/design.md). JSON5 is used so every
+// rule can carry a comment next to it.
+{
+  $schema: "https://docs.renovatebot.com/renovate-schema.json",
+
+  // Best practices bundle: action digest pinning, dev-dependency pinning,
+  // npm minimum release age (3 days), weekly lockfile maintenance, and so on.
+  // Semantic commits are forced on because the repository requires
+  // Conventional Commits, rather than relying on auto-detection.
+  extends: ["config:best-practices", ":semanticCommits"],
+
+  // A2 (owner's choice): one weekly window, Mondays 00:00-05:59 Asia/Manila.
+  // Security fixes ignore this schedule (vulnerabilityAlerts below).
+  schedule: ["* 0-5 * * 1"],
+  timezone: "Asia/Manila",
+
+  // The dashboard is the owner's control surface: major updates wait there
+  // for approval, and the app reports configuration errors there.
+  dependencyDashboard: true,
+
+  // Keep the repository's exact-pin convention: no update writes a range.
+  rangeStrategy: "pin",
+
+  // No update merges itself, whatever a preset might suggest: every pull
+  // request waits for the owner and passes `ci-ok` like any other change.
+  automerge: false,
+
+  packageRules: [
+    // The runtime libraries that end up in each app's deployed output. An
+    // update here changes what users run, so it is committed as `fix(deps)`
+    // and the apps it touches are proposed for a patch release
+    // (repository-governance spec: "Update commits signal release impact").
+    {
+      description: "SvelteKit runtime libraries: fix(deps), so touched apps get a patch release",
+      groupName: "svelte-runtime",
+      matchDatasources: ["npm"],
+      matchPackageNames: ["svelte", "@sveltejs/**"],
+      semanticCommitType: "fix",
+    },
+
+    // Cloudflare tooling builds the output but does not ship inside it, so it
+    // stays the default `chore(deps)`.
+    {
+      description: "Cloudflare tooling: chore(deps), one pull request",
+      groupName: "cloudflare",
+      matchDatasources: ["npm"],
+      matchPackageNames: ["wrangler", "@cloudflare/**"],
+    },
+    {
+      description: "Lint and format tooling: chore(deps), one pull request",
+      groupName: "lint-format",
+      matchDatasources: ["npm"],
+      matchPackageNames: [
+        "eslint",
+        "@eslint/**",
+        "typescript-eslint",
+        "eslint-plugin-*",
+        "eslint-config-*",
+        "prettier",
+        "prettier-plugin-*",
+      ],
+    },
+    {
+      description: "Test tooling: chore(deps), one pull request",
+      groupName: "test",
+      matchDatasources: ["npm"],
+      matchPackageNames: ["vitest", "@vitest/**", "@playwright/test"],
+    },
+    {
+      description: "Build tooling: chore(deps), one pull request",
+      groupName: "build",
+      matchDatasources: ["npm"],
+      matchPackageNames: ["turbo", "vite", "typescript", "@types/**"],
+    },
+    {
+      description: "Commit tooling: chore(deps), one pull request",
+      groupName: "commit-tooling",
+      matchDatasources: ["npm"],
+      matchPackageNames: ["@commitlint/**", "lefthook"],
+    },
+    {
+      description: "OpenSpec CLI: chore(deps)",
+      groupName: "openspec",
+      matchDatasources: ["npm"],
+      matchPackageNames: ["@fission-ai/openspec"],
+    },
+    // Every `uses:` reference in .github/workflows keeps its full-SHA pin
+    // (helpers:pinGitHubActionDigests); grouping keeps that in one PR.
+    {
+      description: "GitHub Actions: keep the SHA pins current, one pull request",
+      groupName: "github-actions",
+      matchManagers: ["github-actions"],
+    },
+    // The toolchain pins the workflows read: Bun's `packageManager` field and
+    // `.node-version` (A8's runner image is updated deliberately, by hand).
+    // Renovate 44 extracts package.json through its `bun` manager, and
+    // `.node-version` through `nodenv`.
+    {
+      description: "Toolchain pins: Bun's packageManager and .node-version",
+      groupName: "toolchain",
+      matchManagers: ["bun", "nodenv"],
+      matchDepNames: ["bun", "node"],
+    },
+
+    // A3: major updates are reviewed on the dependency dashboard first;
+    // approving there lets the update proceed as a normal pull request.
+    {
+      description: "Major updates wait for approval on the dependency dashboard (A3)",
+      matchUpdateTypes: ["major"],
+      dependencyDashboardApproval: true,
+    },
+
+    // A3: known incompatibilities stay below their next major until the
+    // blockers lift; the README explains each one.
+    {
+      description: "Vitest stays below 5 until @cloudflare/vitest-pool-workers supports it (A3)",
+      matchPackageNames: ["vitest", "@vitest/**"],
+      allowedVersions: "<5",
+    },
+    {
+      description: "TypeScript stays below 7 until svelte-check supports it (A3)",
+      matchPackageNames: ["typescript"],
+      allowedVersions: "<7",
+    },
+  ],
+
+  // Security advisories skip both the weekly schedule and the release-age
+  // wait, and are committed as `fix(deps)`, so affected apps get a patch
+  // release from the fix (repository-governance spec: "Vulnerability fix").
+  vulnerabilityAlerts: {
+    semanticCommitType: "fix",
+  },
+}
