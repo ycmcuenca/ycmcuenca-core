@@ -24,6 +24,7 @@ rules:
   proposal:
     - Scope each change to one capability area so it can be reviewed and merged as a single pull request.
     - Always state what is out of scope.
+    - Name each change after the capability work it delivers (for example `ci-release-pipeline`), never after a sprint or a date.
     - Ask the owner about any ambiguity that affects scope, behavior, security or cost.
   specs:
     - Describe behavior only. Name libraries or platforms only when they are external constraints.
