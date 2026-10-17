@@ -15,15 +15,15 @@ pre-commit:
         - "**/*.{css,html,js,json,jsonc,md,mjs,svelte,ts,yml,yaml}"
       run: bunx prettier --write {staged_files}
       stage_fixed: true
-    # Lint staged application sources. Limited to apps/ on purpose: ESLint
-    # resolves a config by walking up from each file, and it fails hard when
-    # it finds none (root files and config-less packages have none).
-    # --no-warn-ignored keeps generated files (matched by the shared config's
-    # ignores) from printing an advisory on every commit.
+    # Lint every staged file whose type the shared config covers: JavaScript,
+    # TypeScript, Svelte, JSON, YAML and Markdown. ESLint 10 resolves the
+    # nearest config per file, so each member lints with its own.
+    # --no-warn-ignored keeps generated files (already ignored by the shared
+    # config) from printing an advisory on every commit.
     - name: eslint
       glob:
-        - "apps/*.{js,mjs,cjs,svelte,ts}"
-        - "apps/**/*.{js,mjs,cjs,svelte,ts}"
+        - "*.{cjs,js,json,jsonc,md,mjs,svelte,ts,yaml,yml}"
+        - "**/*.{cjs,js,json,jsonc,md,mjs,svelte,ts,yaml,yml}"
       run: bunx eslint --fix --no-warn-ignored {staged_files}
       stage_fixed: true
 

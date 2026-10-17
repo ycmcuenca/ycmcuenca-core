@@ -37,14 +37,15 @@ bunx lefthook install
 | `bun run dev`      | Starts both apps: welcome on <http://localhost:5173>, admin on <http://localhost:5174>.                                         |
 | `bun run build`    | Builds every app for Workers; output lands in `apps/*/.svelte-kit/cloudflare`.                                                  |
 | `bun run check`    | Type-checks every app (svelte-check in strict mode; warnings fail the task).                                                    |
-| `bun run lint`     | Lints every app with the shared ESLint config.                                                                                  |
+| `bun run lint`     | Lints the whole repository (JavaScript, TypeScript, Svelte, JSON, YAML, Markdown) with the shared ESLint config.                |
 | `bun run format`   | Checks formatting with Prettier. `bun run format:write` fixes it.                                                               |
 | `bun run test`     | Runs unit tests (Vitest).                                                                                                       |
 | `bun run test:e2e` | Builds, then runs each app's Playwright smoke test in Chromium against `wrangler dev` — the same workerd runtime as production. |
 
-All tasks run through Turborepo, so unchanged inputs are not rebuilt. If a
-cached result looks wrong, bypass the cache with
-`bunx turbo run <task> --force`.
+Member tasks (`build`, `check`, `test`, `test:e2e`, `dev`) run through
+Turborepo, so unchanged inputs are not rebuilt; the repository-wide tools
+(`lint`, `format`) run directly from the root scripts. If a cached result
+looks wrong, bypass the cache with `bunx turbo run <task> --force`.
 
 The first `bun run test:e2e` on a machine needs Chromium once. Run it inside
 an app, so the Playwright version pinned there downloads its matching browser:

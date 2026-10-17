@@ -7,13 +7,22 @@
     "./base": "./base.js",
     "./svelte": "./svelte.js"
   },
+  "scripts": {
+    "lint": "eslint ."
+  },
   "dependencies": {
     "@eslint/js": "10.0.1",
+    "@eslint/json": "2.1.1",
+    "@eslint/markdown": "8.0.3",
     "eslint-config-prettier": "10.1.8",
     "eslint-plugin-svelte": "3.23.1",
+    "eslint-plugin-yml": "3.9.0",
     "typescript-eslint": "8.71.2"
   },
   "devDependencies": {
     "eslint": "10.13.0"
+  },
+  "peerDependencies": {
+    "eslint": "^10.13.0"
   }
 }
