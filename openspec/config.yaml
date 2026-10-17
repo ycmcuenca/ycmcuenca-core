@@ -1,32 +1,42 @@
 schema: spec-driven
 
-# Project context (optional)
-# Add only constraints that should guide OpenSpec artifacts and workflows.
-# Include constraints an agent cannot infer by reading the code.
-# Keep general project documentation and discoverable codebase facts out.
-# Example:
-#   context: |
-#     Designs and tasks must cover Windows, macOS, and Linux
-#     Write all artifacts in Spanish
+context: |
+  ycmcuenca-core is the owner's personal platform: a portfolio site, a
+  hand-built CMS and the base for future satellite projects. It is a public
+  repository, so nothing secret may ever be committed.
 
-# Per-artifact rules (optional)
-# Add custom rules for specific artifacts.
-# Example:
-#   rules:
-#     proposal:
-#       - Keep proposals under 500 words
-#       - Always state what is out of scope
-#     tasks:
-#       - Break tasks into chunks of max 2 hours
+  Deployment target: Cloudflare Workers with static assets, on the Workers
+  Free plan, so its limits (CPU time, subrequests, KV/R2 sizes) are hard
+  constraints. Workers serve *.ycmcuenca.workers.dev until a custom domain is
+  added. There is exactly one human editor: the admin app sits behind
+  Cloudflare Access with a single user, so multi-user or role features are not
+  needed.
 
-# Per-operation guidance (optional)
-# Add advisory guidance for how apply and archive work should be conducted.
-# This is separate from artifact rules above.
-# Example:
-#   operations:
-#     apply:
-#       guidance:
-#         - Keep test summaries concise
-#     archive:
-#       guidance:
-#         - Summarize the archive outcome before finishing
+  Locales are English (en), Filipino (fil) and Esperanto (eo). English content
+  must exist before anything is published. The roadmap runs in sprints from S1
+  (foundation) through S5 (content and 3D).
+
+  The learning goal shapes trade-offs: the CMS is hand-built on purpose, while
+  everything else stays on managed services. Prefer boring, widely adopted
+  tools with clear upgrade seams.
+
+rules:
+  proposal:
+    - Scope each change to one capability area so it can be reviewed and merged as a single pull request.
+    - Always state what is out of scope.
+    - Ask the owner about any ambiguity that affects scope, behavior, security or cost.
+  specs:
+    - Describe behavior only. Name libraries or platforms only when they are external constraints.
+  design:
+    - For every significant decision state the pattern, why it fits, the alternatives considered with their trade-offs, and the expected failure modes and their mitigation.
+    - Record the version and date of every external fact, and take those facts from current documentation (Context7).
+    - List facts that could not be verified as open questions, and list unconfirmed assumptions explicitly for the owner to review.
+  tasks:
+    - Add a verification step for any behavior that has not been verified in this repository yet (external services, library behavior, platform limits).
+    - Mark tasks only the owner can perform as an owner task and make the verification step explicit.
+
+operations:
+  archive:
+    guidance:
+      - Review every living document in docs/ (ARCHITECTURE.md, DESIGN.md, PRODUCT.md, ROADMAP.md, USER_JOURNEY.md) and update the ones this change affects, including their Mermaid diagrams, in the same branch before archiving.
+      - If docs/ does not exist yet, report that there were no living documents to sync and continue.
