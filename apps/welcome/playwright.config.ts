@@ -5,6 +5,9 @@
 // port 9229 (fixed so parallel e2e servers cannot race for it).
 import { defineConfig, devices } from "@playwright/test";
 
+// TEMPORARY (task 2.5 probe): prove turbo passes CI=true through to Playwright.
+console.log("CI env in playwright config:", process.env.CI);
+
 export default defineConfig({
   testDir: "./e2e",
   // Never let a focused test slip into CI.

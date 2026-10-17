@@ -154,9 +154,12 @@ jobs:
     permissions:
       contents: read
     steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/checkout@v7
         with:
           persist-credentials: false
+      # TEMPORARY (task 2.9 probe): template injection zizmor must catch.
+      - name: Template injection probe
+        run: echo "${{ github.event.pull_request.title }}"
       # Official image pinned by digest: the documented `curl | bash` install
       # is an unpinned supply-chain hop this change removes (D7).
       - name: Lint workflows (actionlint)
