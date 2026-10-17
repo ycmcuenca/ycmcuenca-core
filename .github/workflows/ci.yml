@@ -1,0 +1,226 @@
+# Continuous integration for every pull request targeting `main` and every
+# push to `main` (design D1-D7 in openspec/changes/ci-release-pipeline/design.md).
+name: CI
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+
+# A superseded pull-request run is cancelled; runs on `main` never cancel each
+# other (D2).
+concurrency:
+  group: ci-${{ github.event.pull_request.number || github.sha }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+# No token permissions by default; each job grants only what it needs (D2).
+permissions: {}
+
+# `bun install` runs the root `prepare` script (`lefthook install`) in CI; no
+# hook may ever execute itself (D3).
+env:
+  LEFTHOOK: "0"
+
+jobs:
+  # One frozen install, then every check as its own named step, so a failure
+  # names the check it came from (D1).
+  verify:
+    name: verify
+    runs-on: ubuntu-24.04 # Pinned runner image, never `-latest` (A8).
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false # Later steps cannot reuse the token (D2).
+      # No version input: setup-bun reads `packageManager` from package.json (D3).
+      - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version-file: .node-version # One source of truth (D3).
+      - name: install
+        run: bun install --frozen-lockfile
+      - name: Turbo cache
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: .turbo/cache
+          # Keyed per commit, restored from the newest entry for this OS:
+          # Turborepo's task hashes decide validity, so a stale entry costs
+          # nothing (D4).
+          key: turbo-${{ runner.os }}-${{ github.sha }}
+          restore-keys: turbo-${{ runner.os }}-
+      - name: format
+        run: bun run format
+      - name: lint
+        run: bun run lint
+      - name: check
+        run: bun run check
+      - name: build
+        run: bun run build
+      - name: test
+        run: bun run test
+
+  # The slowest job, so it runs in parallel with `verify` (D1). Only the
+  # browser download is cached; the e2e task itself is never cached (D4).
+  e2e:
+    name: e2e
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      # No version input: setup-bun reads `packageManager` from package.json (D3).
+      - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version-file: .node-version
+      - name: install
+        run: bun install --frozen-lockfile
+      - name: Cache Playwright browsers
+        id: playwright-cache
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ~/.cache/ms-playwright
+          # Browsers change only when the Playwright pin in the lockfile does
+          # (D4).
+          key: playwright-${{ runner.os }}-${{ hashFiles('bun.lock') }}
+      # A cache hit still needs the system packages, which are not cached (D4).
+      - name: Install Playwright browsers
+        if: steps.playwright-cache.outputs.cache-hit != 'true'
+        run: bunx playwright install --with-deps chromium
+      - name: Install Playwright system dependencies
+        if: steps.playwright-cache.outputs.cache-hit == 'true'
+        run: bunx playwright install-deps chromium
+      - name: test:e2e
+        run: bun run test:e2e
+
+  # Every pull-request commit becomes a `main` commit under rebase-only
+  # merging, so each one must be a Conventional Commit (D5). Pull requests
+  # only: a commit that reached `main` was validated by the PR that carried it.
+  commits:
+    name: commits
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0 # commitlint walks the whole PR range (D5).
+          persist-credentials: false
+      # No version input: setup-bun reads `packageManager` from package.json (D3).
+      - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version-file: .node-version
+      - name: install
+        run: bun install --frozen-lockfile
+      - name: Validate commit messages
+        # The SHAs arrive through `env`, never spliced into the script, and
+        # the event's own SHAs handle a base branch that moved (D5).
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: bunx commitlint --from "$BASE_SHA" --to "$HEAD_SHA" --verbose
+
+  # Specs are this repository's source of truth: an invalid delta blocks a
+  # merge like a type error (D6).
+  specs:
+    name: specs
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      # No version input: setup-bun reads `packageManager` from package.json (D3).
+      - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version-file: .node-version
+      - name: install
+        run: bun install --frozen-lockfile
+      - name: Validate specs
+        run: bunx openspec validate --all --strict --no-interactive
+
+  # CI audits itself, so this job cannot silently stop working (D7).
+  workflows:
+    name: workflows
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      # Official image pinned by digest: the documented `curl | bash` install
+      # is an unpinned supply-chain hop this change removes (D7).
+      - name: Lint workflows (actionlint)
+        uses: docker://rhysd/actionlint@sha256:b1934ee5f1c509618f2508e6eb47ee0d3520686341fec936f3b79331f9315667 # 1.7.12
+      # SARIF upload is disabled: in SARIF mode zizmor always exits 0, which
+      # would let findings pass; the action propagates the real exit code (D7).
+      - name: Audit workflows (zizmor)
+        uses: zizmorcore/zizmor-action@85b2b9fb8e3325e7a23d7d0a9d7ba5ae0f999e3e # v0.7.1
+        with:
+          advanced-security: "false"
+
+  # The single required check the ruleset pins, so jobs can be added or
+  # renamed without touching branch protection (D1, D9). It fails on
+  # `failure`, `cancelled`, and any skip other than `commits` on a push (D1).
+  ci-ok:
+    name: ci-ok
+    needs: [verify, e2e, commits, specs, workflows]
+    # Run even when a needed job failed, so the failure gets an aggregate
+    # result on the commit (D1).
+    if: always()
+    runs-on: ubuntu-24.04
+    env:
+      # Job results arrive through the environment, never spliced into the
+      # script (D1).
+      VERIFY_RESULT: ${{ needs.verify.result }}
+      E2E_RESULT: ${{ needs.e2e.result }}
+      COMMITS_RESULT: ${{ needs.commits.result }}
+      SPECS_RESULT: ${{ needs.specs.result }}
+      WORKFLOWS_RESULT: ${{ needs.workflows.result }}
+      EVENT_NAME: ${{ github.event_name }}
+    steps:
+      - name: Check every job
+        run: |
+          failed=0
+          check_result() {
+            job_name="$1"
+            result="$2"
+            case "$result" in
+              success)
+                echo "$job_name: success"
+                ;;
+              skipped)
+                # `commits` only runs on pull requests; on a push to `main`
+                # its skip is the expected one (D5).
+                if [ "$job_name" = "commits" ] && [ "$EVENT_NAME" = "push" ]; then
+                  echo "$job_name: skipped (expected on push)"
+                else
+                  echo "$job_name: unexpected skip"
+                  failed=1
+                fi
+                ;;
+              *)
+                echo "$job_name: $result"
+                failed=1
+                ;;
+            esac
+          }
+          check_result verify "$VERIFY_RESULT"
+          check_result e2e "$E2E_RESULT"
+          check_result commits "$COMMITS_RESULT"
+          check_result specs "$SPECS_RESULT"
+          check_result workflows "$WORKFLOWS_RESULT"
+          if [ "$failed" -ne 0 ]; then
+            echo "One or more jobs did not succeed."
+            exit 1
+          fi
+          echo "All jobs succeeded."
