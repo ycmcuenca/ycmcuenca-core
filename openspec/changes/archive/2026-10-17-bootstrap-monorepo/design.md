@@ -54,21 +54,23 @@ Constraints that shape this design:
 
 - **Why:** The core apps share contracts that will change together, for example a block schema that `admin` edits and `welcome` renders. A monorepo makes such a change one atomic commit and one PR, with one lockfile. Bun workspaces handle linking (`workspace:*`). Turborepo adds what Bun's `--filter` lacks: a dependency-aware task graph, content-hashed caching, and (in `ci-release-pipeline`) "only what changed" filtering for selective deploys.
 - **Alternatives:** _Bun workspaces only_: no caching or task graph, so CI re-runs everything. _Nx_: more powerful, but brings far more concepts and config than three apps need. _Polyrepo for core_: shared contracts would have to be published and versioned, and every schema change becomes a multi-repo dance.
-- **Failure modes:** Misdeclared `outputs` or `inputs` in `turbo.json` can serve a stale cached build ("cache poisoning"). Mitigation: declare outputs explicitly per task, keep env-var-dependent tasks declared under `env`, and document `turbo run <task> --force` as the escape hatch.
+- **Failure modes:** Misdeclared `outputs` or `inputs` in `turbo.jsonc` can serve a stale cached build ("cache poisoning"). Mitigation: declare outputs explicitly per task, keep env-var-dependent tasks declared under `env`, and document `turbo run <task> --force` as the escape hatch.
 
 ### D2. Toolchain pinning: exact Bun, Node 24 LTS for CI, Node 24+ allowed locally
 
 - **Why:** Bun installs dependencies and runs scripts. But the `vite`, `wrangler` and `svelte-check` binaries have `#!/usr/bin/env node` shebangs, so they run on Node unless forced with `bun --bun`. Running them on Node keeps us on the path their maintainers test. Pins: `"packageManager": "bun@1.4.2"` (read by Turborepo, and by `oven-sh/setup-bun` in CI later), `.node-version` = `24` (read by CI and version managers), `engines.node` = `">=24"`.
 - **Alternatives:** _Node 26_: not yet an LTS line. _`engines.node` ">=24 <25"_: would block the owner's local Node 26.10 (see Assumptions A1). _Run everything with `bun --bun`_: faster, but off the tested path for Vite and Wrangler.
 - **Failure modes:** Local Node 26 and CI Node 24 drift apart, so something works locally and fails in CI. Mitigation: CI (next change) is authoritative; the README recommends Node 24 via a version manager.
+- **Revised during verification (2026-10-17):** The application dependencies were pinned exactly as well, matching this decision; see the note under D4.
 
 ### D3. Shared config as "just-in-time" internal packages
 
-- `packages/tsconfig` (`@ycmcuenca/tsconfig`) exports JSON bases: `base.json` (strict) and `svelte-app.json`, which extends the SvelteKit-generated `./.svelte-kit/tsconfig.json`.
+- `packages/tsconfig` (`@ycmcuenca/tsconfig`) exports JSON bases: `base.json` (strict) and `svelte-app.json`; apps extend both it and SvelteKit 3's generated `$app/tsconfig`.
 - `packages/eslint-config` (`@ycmcuenca/eslint-config`) exports flat-config arrays: `base` (JS + typescript-eslint) and `svelte` (adds eslint-plugin-svelte, Svelte-aware TS parsing, `eslint-config-prettier` last).
 - **Why:** Packages, unlike root-relative files, are resolved by name. A future satellite repo could depend on the same rules via a git or npm dependency, and the dependency graph shows which members consume which config. "Just-in-time" means they export source or JSON directly with no build step. Turborepo recommends this for private packages that consumers' bundlers can read.
 - **Alternatives:** _Root `tsconfig.base.json` + relative `extends`_: simpler, but not reusable outside the repo and invisible to the task graph. _Compiled packages_: needed only for publishing, which these never are.
 - **Failure modes:** Prettier is configured once at the root (Prettier resolves its config by walking up the directory tree, so it doesn't need a package). If an app adds its own `.prettierrc`, it silently forks the formatting. Mitigation: a short note in the README and the shared ESLint config comments.
+- **Revised during verification (2026-10-17):** Apps extend `["@ycmcuenca/tsconfig/svelte-app.json", "$app/tsconfig"]`; SvelteKit 3's migration guide says a project's `tsconfig.json` "should now extend `$app/tsconfig` rather than `./.svelte-kit/tsconfig.json`". The apps also use the `#lib` package imports SvelteKit 3 introduced in place of `$lib` (`"#lib": "./src/lib/index.js"`, `"#lib/*": "./src/lib/*"`; imports need module extensions).
 
 ### D4. SvelteKit 3 apps scaffolded with `sv`, using adapter-cloudflare from day one
 
@@ -79,15 +81,17 @@ Constraints that shape this design:
 - **Why:** Building with the real adapter now surfaces Workers-incompatible code (Node-only APIs, oversized bundles) at the cheapest moment. The worker `name` values are chosen now because they become `welcome.ycmcuenca.workers.dev` and `admin.ycmcuenca.workers.dev` later.
 - **Alternatives:** _adapter-auto now, swap later_: hides runtime issues until deploy. _`nodejs_compat` now_: broader Node API surface than anything needs today. It gets added when the first library needs it (database drivers in Sprint 2).
 - **Failure modes:** SvelteKit 3 is about two weeks old, so `sv` or plugin versions may lag. Mitigation: exact versions in the lockfile, and the apply step verifies `check`, `build` and the smoke tests pass before anything is committed.
+- **Revised during verification (2026-10-17):** App dependencies are pinned exactly, not with carets, to the versions the lockfile resolved: SvelteKit 3.1.0, adapter-cloudflare 8.0.1, vite-plugin-svelte 7.3.1, Svelte 5.57.2, svelte-check 4.7.7, TypeScript 6.0.3, Vite 8.3.4 and Wrangler 4.151.1 (Vitest 4.1.12 and Playwright 1.64.1 were already exact). The adapter requires `wrangler ^4.118.0`, so the scaffold's `^4.97.0` caret allowed an unsupported version.
 
 ### D5. Type checking, linting and formatting
 
 - TypeScript 6.0.3 with `strict: true` and `noUncheckedIndexedAccess: true` (Assumption A2). `check` per app = `svelte-kit sync && svelte-check --tsconfig ./tsconfig.json --fail-on-warnings`.
-- ESLint 10 runs per member through Turborepo (`lint`). Because ESLint 10 resolves config from each file's directory, the pre-commit hook can run one root `eslint` over staged files from mixed members and each file still gets its own member's config.
-- Prettier 3.9 with `prettier-plugin-svelte`, root `.prettierrc` and `.prettierignore`. The root-only Turborepo task `//#format` runs `prettier --check .`, and `format:write` fixes.
+- ESLint 10 runs per member through Turborepo (`lint`) and repository-wide through a root `eslint.config.js` (`bun run lint` runs `eslint .`). Because ESLint 10 resolves config from each file's directory, one root ESLint run over files from mixed members gives each file its own member's config.
+- Prettier 3.9 with `prettier-plugin-svelte`, root `.prettierrc.yaml` and `.prettierignore`. `bun run format` runs `prettier --check .` directly, and `format:write` fixes.
 - **Why:** ESLint finds bugs and Prettier formats; `eslint-config-prettier` stops them from fighting. Keeping them separate avoids slow, noisy lint-as-format rules.
 - **Alternatives:** Biome (experimental full Svelte support, rejected by the owner), or a hybrid of two toolchains.
 - **Failure modes:** `svelte-check` results depend on `svelte-kit sync` having generated `.svelte-kit/` types. Running `check` before sync causes confusing errors. Mitigation: `sync` is always part of the `check` script.
+- **Revised during verification (2026-10-17):** Lint coverage was extended to JSON, YAML and Markdown (via `@eslint/json`, `eslint-plugin-yml` and `@eslint/markdown` in the shared config, which scopes each language's rules to its own files, lints `package.json` as strict JSON, and ignores generated and archived files) and to root files through a root `eslint.config.js`; the pre-commit ESLint job now accepts every covered file type across the repository. The Prettier config was renamed to `.prettierrc.yaml` so linters parse it unambiguously, and the `//#format` root task was removed: the root `format` script calls Prettier directly, so nothing reached it.
 
 ### D6. Tests: Vitest 4.1 for units, Playwright against the real Workers runtime for smoke tests
 
@@ -96,7 +100,8 @@ Constraints that shape this design:
 - Playwright 1.64 (Chromium), with a config per app. `webServer` runs **`wrangler dev`** against the built `.svelte-kit/cloudflare` output (welcome on 8787, admin on 8788), so the smoke test runs in **workerd, the same runtime as production**, not Node. `test:e2e` depends on `build`.
 - **Why:** Unit tests guard logic; the smoke test guards "it actually boots on Workers". `vite preview` would run the Node server, which is precisely the environment we don't ship to.
 - **Alternatives:** Vitest 5 (blocked by the Workers pool peer range); `vite preview` for e2e (less faithful); WebKit/mobile projects (owner chose Chromium only for now).
-- **Failure modes:** `wrangler dev` may prompt (telemetry, login) or need a free port. Mitigation: `WRANGLER_SEND_METRICS=false` in the Playwright `webServer` env, explicit `--port`, and `reuseExistingServer: !process.env.CI`. Verify during apply that `wrangler dev` serves the build locally without Cloudflare login. If it doesn't, stop and ask the owner before falling back.
+- **Failure modes:** `wrangler dev` may prompt (telemetry, login) or need a free port. Mitigation: `WRANGLER_SEND_METRICS=false` in the Playwright `webServer` env, explicit `--port` and `--inspector-port`, and `reuseExistingServer: !process.env.CI`. Verify during apply that `wrangler dev` serves the build locally without Cloudflare login. If it doesn't, stop and ask the owner before falling back.
+- **Revised during verification (2026-10-17):** Each e2e server pins `--inspector-port` (welcome 9229, admin 9230). Wrangler otherwise probes upward from 9229, so when both apps' `test:e2e` suites started together both servers picked 9229 and the second failed to bind ("Address already in use") — the race failed 3 of 4 runs before the fix.
 
 ### D7. Turborepo task graph
 
@@ -105,12 +110,13 @@ Constraints that shape this design:
 | `build`     | `^build`   | yes                     | `.svelte-kit/cloudflare/**`, `.svelte-kit/output/**`       |
 | `check`     | `^check`   | yes                     | none                                                       |
 | `lint`      | `^lint`    | yes                     | none                                                       |
-| `test`      | `^build`   | yes                     | `coverage/**`                                              |
+| `test`      | `^build`   | yes                     | none (coverage is not collected yet)                       |
 | `test:e2e`  | `build`    | no                      | `playwright-report/**`, `test-results/**` (ignored by git) |
 | `dev`       | none       | no (`persistent: true`) | none                                                       |
-| `//#format` | none       | yes                     | none (root task)                                           |
 
 `globalDependencies` include the root Prettier config, `tsconfig` changes reach consumers through the package graph, and Turborepo strict env mode stays on with no env vars declared yet.
+
+- **Revised during verification (2026-10-17):** The `//#format` task is gone (the root `format` script runs Prettier directly, so nothing reached it), and `test` declares no outputs until coverage is collected, which ends Turborepo's "no output files found" warning. The file is `turbo.jsonc` — Turborepo has supported JSONC configs since 2.5 — not `turbo.json`.
 
 ### D8. Local commit checks: Lefthook + commitlint
 
@@ -120,6 +126,7 @@ Constraints that shape this design:
 - Hooks are skipped in CI with `LEFTHOOK=0` (next change).
 - **Why:** Fast local feedback on formatting and commit messages, which release-please later depends on to compute versions and changelogs. CI enforces the same rules again, because local hooks can be bypassed with `--no-verify` or `--ignore-scripts`.
 - **Failure modes:** A contributor installs with `--ignore-scripts`, so no hooks get installed. Mitigation: CI is the real gate; the README documents `bunx lefthook install`.
+- **Revised during verification (2026-10-17):** The repository's commit identity is the owner's personal one (set per-repository, never globally); the whole history on this branch, including the initial commit, was rewritten to carry it. Rejected messages also link to the Conventional Commits specification via commitlint's `helpUrl`.
 
 ### D9. Repository creation and public-repo hygiene
 
@@ -129,6 +136,7 @@ Constraints that shape this design:
 - `LICENSE`: standard MIT text, copyright "Yosef Christian Mercene Cuenca", plus a separate clause stating that personal brand assets (name, logo, likeness) and published content (writing, artwork, images, 3D models) are not licensed under MIT.
 - **Why:** The initial commit gives `main` a base for the first PR, and keeps the bootstrap work reviewable as a normal PR, which itself shows the workflow.
 - **Failure modes:** A secret committed before scanning is on. Mitigation: no secret exists in this change; `.dev.vars*` and `.env*` are ignored before the first commit; push protection is checked immediately after repo creation.
+- **Revised during verification (2026-10-17):** The scaffold's per-app `.gitignore` files were removed — the app files re-included `.env.test` over the root rules — and the root `.gitignore` now also covers Vite's `vite.config.*.timestamp-*` files. Verified with `git check-ignore -v`: `.env`, `.env.test`, `.env.local`, `.env.production` and `.dev.vars` are ignored at any depth and `.env.example` is not. The npm-only `engine-strict` `.npmrc` files in the apps were removed too; Bun reads `.npmrc` only for registry and scope configuration.
 
 ### D10. `openspec/config.yaml` content
 
@@ -167,7 +175,7 @@ These were not explicitly confirmed. Each is easy to change before apply:
 - **A1** `engines.node` is `">=24"` (so local Node 26.10 works), while `.node-version` pins CI to 24.
 - **A2** TypeScript `strict` plus `noUncheckedIndexedAccess`.
 - **A3** commitlint uses `config-conventional` with no fixed scope list.
-- **A4** Dev ports 5173/5174 and e2e ports 8787/8788.
+- **A4** Dev ports 5173/5174 and e2e ports 8787/8788, with e2e inspector ports 9229/9230 (revised during verification 2026-10-17; see the note under D6).
 - **A5** The only compatibility flag is `nodejs_als`, with `compatibility_date` set to the apply date.
 - **A6** The initial commit on `main` holds only `openspec/`, `.claude/`, `.opencode/`, `.gitignore` and `LICENSE`, and is pushed when the repo is created (after your confirmation). Bootstrap work then goes through `/git` and `/ship` as a PR.
 - **A7** LICENSE copyright holder is "Yosef Christian Mercene Cuenca".

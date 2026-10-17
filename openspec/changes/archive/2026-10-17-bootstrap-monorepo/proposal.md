@@ -31,7 +31,7 @@ Out of scope (later changes): CI workflows, release-please, and deploy (`ci-rele
 
 ## Impact
 
-- **New files**: root `package.json`, `bun.lock`, `turbo.json`, `lefthook.yml`, commitlint config, Prettier config, `.gitignore`, `.node-version`, `LICENSE`, `README.md`, `packages/tsconfig/*`, `packages/eslint-config/*`, `apps/welcome/*`, `apps/admin/*`, and an updated `openspec/config.yaml`.
+- **New files**: root `package.json`, `bun.lock`, `turbo.jsonc`, `lefthook.yml`, commitlint config, Prettier config, `.gitignore`, `.node-version`, `LICENSE`, `README.md`, `packages/tsconfig/*`, `packages/eslint-config/*`, `apps/welcome/*`, `apps/admin/*`, and an updated `openspec/config.yaml`.
 - **Dependencies**: SvelteKit 3.1, Svelte 5.57, Vite 8, `@sveltejs/adapter-cloudflare` 8, TypeScript 6, Turborepo 2.11, ESLint + `eslint-plugin-svelte` + `typescript-eslint`, Prettier + `prettier-plugin-svelte`, Vitest 4.1, Playwright 1.64, Lefthook 2, commitlint, and Wrangler 4 (dev dependency, used by the adapter's local platform proxy).
 - **External systems**: one public GitHub repository is created. No Cloudflare, Neon or other cloud resources are touched.
 - **Existing OpenSpec setup**: the `.claude/` and `.opencode/` OpenSpec skill and command files already in the repo are kept and committed.
