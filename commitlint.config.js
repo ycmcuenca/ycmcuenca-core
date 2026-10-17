@@ -4,4 +4,7 @@
 // scope list, so any scope is fine (A3).
 export default {
   extends: ["@commitlint/config-conventional"],
+  // A rejected message points here, where the `type(scope): subject` shape is
+  // documented.
+  helpUrl: "https://www.conventionalcommits.org/en/v1.0.0/",
 };
