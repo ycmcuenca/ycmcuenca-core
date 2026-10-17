@@ -101,7 +101,7 @@ Constraints that shape this design:
 - **Why:** Unit tests guard logic; the smoke test guards "it actually boots on Workers". `vite preview` would run the Node server, which is precisely the environment we don't ship to.
 - **Alternatives:** Vitest 5 (blocked by the Workers pool peer range); `vite preview` for e2e (less faithful); WebKit/mobile projects (owner chose Chromium only for now).
 - **Failure modes:** `wrangler dev` may prompt (telemetry, login) or need a free port. Mitigation: `WRANGLER_SEND_METRICS=false` in the Playwright `webServer` env, explicit `--port` and `--inspector-port`, and `reuseExistingServer: !process.env.CI`. Verify during apply that `wrangler dev` serves the build locally without Cloudflare login. If it doesn't, stop and ask the owner before falling back.
-- **Revised during verification (2026-10-17):** Each e2e server pins `--inspector-port` (welcome 9229, admin 9230). Wrangler otherwise probes upward from 9229, so when both apps' `test:e2e` suites started together both servers picked 9229 and the second failed to bind ("Address already in use") — the race failed 3 of 4 runs before the fix.
+- **Revised during verification (2026-10-17):** Each e2e server pins `--inspector-port` (welcome 9229, admin 9230). Wrangler otherwise probes upward from 9229, so when both apps' `test:e2e` suites started together both servers picked 9229 and the second failed to bind ("Address already in use") — the race failed 3 of 4 runs before the fix. The placeholder heading renders the capitalized display name (`Welcome`, `Admin`), which the owner confirmed satisfies the spec's "names the app" requirement.
 
 ### D7. Turborepo task graph
 
