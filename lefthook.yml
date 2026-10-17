@@ -1,0 +1,35 @@
+# Local git hooks (design D8). Hooks can be bypassed (--no-verify,
+# --ignore-scripts), so CI re-enforces the same rules in ci-release-pipeline.
+#
+# Tool commands go through `bunx`: when Git runs a hook, node_modules/.bin is
+# not on PATH, and bunx resolves the local binaries reliably.
+pre-commit:
+  parallel: true
+  jobs:
+    # Format everything Prettier understands and re-stage the fixes.
+    # Prettier skips .prettierignore'd files (bun.lock, build output, the
+    # generated worker types) even when they are passed explicitly.
+    - name: prettier
+      glob:
+        - "*.{css,html,js,json,jsonc,md,mjs,svelte,ts,yml,yaml}"
+        - "**/*.{css,html,js,json,jsonc,md,mjs,svelte,ts,yml,yaml}"
+      run: bunx prettier --write {staged_files}
+      stage_fixed: true
+    # Lint staged application sources. Limited to apps/ on purpose: ESLint
+    # resolves a config by walking up from each file, and it fails hard when
+    # it finds none (root files and config-less packages have none).
+    # --no-warn-ignored keeps generated files (matched by the shared config's
+    # ignores) from printing an advisory on every commit.
+    - name: eslint
+      glob:
+        - "apps/*.{js,mjs,cjs,svelte,ts}"
+        - "apps/**/*.{js,mjs,cjs,svelte,ts}"
+      run: bunx eslint --fix --no-warn-ignored {staged_files}
+      stage_fixed: true
+
+# Check the commit message itself. {1} is the path of the message file Git
+# hands to the hook.
+commit-msg:
+  jobs:
+    - name: commitlint
+      run: bunx commitlint --edit {1}
