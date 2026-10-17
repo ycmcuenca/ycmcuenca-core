@@ -21,10 +21,12 @@ Out of scope (later changes): CI workflows, release-please, and deploy (`ci-rele
 ## Capabilities
 
 ### New Capabilities
+
 - `developer-workspace`: How the monorepo is structured and operated. This covers workspace layout and naming, pinned toolchain versions, the root task interface (build, check, lint, format, test, e2e), the shared config packages, the hello-world app baseline on the Workers adapter, local commit checks, and repository hygiene for a public repo (license, ignored secrets).
 - `planning-workflow`: The rules that govern OpenSpec artifacts in this repo. Designs must explain reasoning, trade-offs and failure modes; archiving a change requires syncing the living docs.
 
 ### Modified Capabilities
+
 <!-- None: no specs exist yet. -->
 
 ## Impact
