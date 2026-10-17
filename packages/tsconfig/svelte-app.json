@@ -1,0 +1,11 @@
+{
+  // Base for SvelteKit applications.
+  //
+  // The app's tsconfig.json extends this file first and SvelteKit's
+  // `$app/tsconfig` (written by `svelte-kit sync` into the app's
+  // node_modules) second. SvelteKit's file supplies everything app-specific:
+  // target, module, moduleResolution, $lib paths and generated types. This
+  // file therefore only adds the workspace's shared strictness.
+  // See README.md in this package for details.
+  "extends": "./base.json"
+}

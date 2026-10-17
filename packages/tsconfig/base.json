@@ -1,0 +1,14 @@
+{
+  // Shared TypeScript baseline for every workspace member.
+  // See README.md in this package for why each option is set.
+  "$schema": "https://json.schemastore.org/tsconfig",
+  "compilerOptions": {
+    // Full strictness (A2): strict null checks, no implicit any, strict
+    // function types, and the rest of the `strict` family.
+    "strict": true,
+    // Indexing an array or an object with an unknown key yields `T | undefined`
+    // instead of `T` (A2), so index access cannot silently bypass strict null
+    // checks at runtime boundaries.
+    "noUncheckedIndexedAccess": true
+  }
+}
