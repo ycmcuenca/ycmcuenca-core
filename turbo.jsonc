@@ -1,0 +1,52 @@
+// Turborepo task graph for this workspace (design D7 in
+// openspec/changes/bootstrap-monorepo/design.md).
+{
+  "$schema": "https://turborepo.com/schema.json",
+
+  "tasks": {
+    // Build a member after all of its workspace dependencies (^build) have built.
+    "build": {
+      "dependsOn": ["^build"],
+      "outputs": [".svelte-kit/cloudflare/**", ".svelte-kit/output/**"],
+    },
+
+    // Type-check a member after its workspace dependencies have been checked.
+    "check": {
+      "dependsOn": ["^check"],
+    },
+
+    // Lint a member after its workspace dependencies have been linted.
+    "lint": {
+      "dependsOn": ["^lint"],
+    },
+
+    // Unit tests run against built workspace dependencies, so they exercise
+    // the artifacts other members actually consume.
+    "test": {
+      "dependsOn": ["^build"],
+      "outputs": ["coverage/**"],
+    },
+
+    // End-to-end tests start a real server, so they are never cached.
+    "test:e2e": {
+      "dependsOn": ["build"],
+      "cache": false,
+      "outputs": ["playwright-report/**", "test-results/**"],
+    },
+
+    // Dev servers run until stopped, so they are persistent and never cached.
+    "dev": {
+      "cache": false,
+      "persistent": true,
+    },
+
+    // Root task: formatting is repository-wide, so it runs only at the root.
+    "//#format": {
+      "cache": true,
+    },
+  },
+
+  // Anything that changes these files invalidates every task's cache
+  // (the Prettier config is not part of any member's package).
+  "globalDependencies": [".prettierrc", ".prettierignore"],
+}
