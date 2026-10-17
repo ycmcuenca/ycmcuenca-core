@@ -1,0 +1,8 @@
+# Prettier configuration for the whole workspace (design D5).
+# Prettier resolves this file by walking up from each formatted file, so every
+# member formats with the same rules without carrying its own config.
+{
+  # Format Svelte components.
+  "plugins": ["prettier-plugin-svelte"],
+  "overrides": [{ "files": "*.svelte", "options": { "parser": "svelte" } }],
+}
