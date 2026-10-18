@@ -41,10 +41,14 @@ jobs:
     # The Cloudflare credentials live in this environment and reach only jobs
     # that use it, from `main` (D3).
     environment: production
-    # Deploys of one app never overlap: a newer one waits, never cancels (D2).
+    # Deploys of one app never overlap. Without `queue`, GitHub keeps only one
+    # run pending and cancels the older pending one, so a third deploy would
+    # silently drop the second; `queue: max` keeps up to 100 waiting in start
+    # order instead (D2).
     concurrency:
       group: deploy-${{ inputs.app }}
       cancel-in-progress: false
+      queue: max
     permissions:
       contents: read # Enough to check out the tag; task 4.3 confirms no more.
     steps:
