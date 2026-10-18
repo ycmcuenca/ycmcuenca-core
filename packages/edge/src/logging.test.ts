@@ -99,4 +99,18 @@ describe("handleErrorFor", () => {
     expect(lines).toEqual([]);
     expect(result).toEqual({ requestId: expect.stringMatching(/^local-/) });
   });
+
+  it("uses one local request id for the log line and the error page", () => {
+    const lines = captureLogLines();
+
+    const result = handleErrorFor("welcome")({
+      kind: "unknown",
+      error: new Error("boom"),
+      event: eventFor("https://example.com/"),
+    }) as { message: string; requestId: string };
+
+    expect(result.message).toBe("Internal Error");
+    expect(result.requestId).toMatch(/^local-[0-9a-f-]{36}$/);
+    expect(parsedLines(lines)[0]?.requestId).toBe(result.requestId);
+  });
 });
