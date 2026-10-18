@@ -7,6 +7,7 @@ Other documents cover neighboring topics. [ARCHITECTURE.md](ARCHITECTURE.md)
 describes how the system is built. [USER_JOURNEY.md](USER_JOURNEY.md) shows what
 each person does, step by step. [DESIGN.md](DESIGN.md) describes how it looks.
 [ROADMAP.md](ROADMAP.md) says when each part arrives.
+[SYSTEM_DESIGN.md](SYSTEM_DESIGN.md) explains the system design concepts.
 
 This document states intent. The roadmap is the plan of record. Where the two
 differ, follow the roadmap.
@@ -37,11 +38,11 @@ Today both apps show a placeholder page. Both are live on `workers.dev`:
 
 The public site has three audiences. Each comes with a different question.
 
-| Audience                       | What they come to do                                                         | What they need to find                                        |
-| ------------------------------ | ---------------------------------------------------------------------------- | ------------------------------------------------------------- |
-| Recruiters and hiring managers | Judge the owner's skills and experience, and decide whether to get in touch. | The owner's projects, and a way to make contact.              |
-| Prospective clients            | Decide whether the owner can deliver work like theirs, and ask about it.     | Past projects and a way to make contact.                      |
-| Developer peers                | See how the platform is built and learn from it.                             | The public repository, the decisions and the documents in it. |
+| Audience                       | What they come to do                                                         | What they need to find                                                                                                                     |
+| ------------------------------ | ---------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------ |
+| Recruiters and hiring managers | Judge the owner's skills and experience, and decide whether to get in touch. | The owner's projects, and a way to make contact.                                                                                           |
+| Prospective clients            | Decide whether the owner can deliver work like theirs, and ask about it.     | Past projects and a way to make contact.                                                                                                   |
+| Developer peers                | See how the platform is built and learn from it.                             | The public repository, the decisions and the documents in it, including the system design notebook ([SYSTEM_DESIGN.md](SYSTEM_DESIGN.md)). |
 
 The repository is public on purpose, so peers can read how the platform was
 built ([P2](DECISIONS.md#platform-and-scope)).
@@ -58,7 +59,7 @@ flowchart LR
 
     projects["Project pages<br/>(S6 portfolio-projects)"]:::planned
     contact["Contact form<br/>(S3 contact-inbox)"]:::planned
-    repo["Public repository,<br/>decisions and documents"]:::built
+    repo["Public repository, decisions,<br/>documents and the<br/>system design notebook"]:::built
 
     recruiters --> judge
     clients --> deliver

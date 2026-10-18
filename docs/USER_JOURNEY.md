@@ -7,7 +7,8 @@ content. It shows what people do and which steps work today.
 Other documents cover neighboring topics. [PRODUCT.md](PRODUCT.md) says who the
 audiences are. [ARCHITECTURE.md](ARCHITECTURE.md) shows how the parts connect.
 [DESIGN.md](DESIGN.md) describes how screens look. [ROADMAP.md](ROADMAP.md) says
-when each capability arrives.
+when each capability arrives. [SYSTEM_DESIGN.md](SYSTEM_DESIGN.md) explains the
+system design concepts behind the platform.
 
 ## How to read the journeys
 
@@ -82,17 +83,19 @@ journey
     section Follow the thinking
       Read decisions (today): 4: Peer
       Follow a change (today): 3: Peer
+      Study the concepts (today): 4: Peer
     section See the result
       Visit live site (today): 5: Peer
 ```
 
-| Step                                     | Status | Capability                                              |
-| ---------------------------------------- | ------ | ------------------------------------------------------- |
-| Open the repository on GitHub            | today  | The repository is public.                               |
-| Read the README and the documents        | today  | [README](../README.md) and the files in `docs/`.        |
-| Read the decisions and the roadmap       | today  | [DECISIONS.md](DECISIONS.md), [ROADMAP.md](ROADMAP.md). |
-| Follow a change from proposal to archive | today  | The `openspec/` directory.                              |
-| Visit the live site                      | today  | `welcome` is live at `welcome.ycmcuenca.workers.dev`    |
+| Step                                     | Status | Capability                                                        |
+| ---------------------------------------- | ------ | ----------------------------------------------------------------- |
+| Open the repository on GitHub            | today  | The repository is public.                                         |
+| Read the README and the documents        | today  | [README](../README.md) and the files in `docs/`.                  |
+| Read the decisions and the roadmap       | today  | [DECISIONS.md](DECISIONS.md), [ROADMAP.md](ROADMAP.md).           |
+| Follow a change from proposal to archive | today  | The `openspec/` directory.                                        |
+| Study the concepts                       | today  | [SYSTEM_DESIGN.md](SYSTEM_DESIGN.md), the system design notebook. |
+| Visit the live site                      | today  | `welcome` is live at `welcome.ycmcuenca.workers.dev`              |
 
 ## Owner: write, preview, publish, live
 

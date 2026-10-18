@@ -16,6 +16,8 @@ Workers and currently serve placeholder pages.
   step.
 - [Design](docs/DESIGN.md): how the apps should look, and which choices are
   open.
+- [System design](docs/SYSTEM_DESIGN.md): a study notebook of the system design
+  concepts each sprint applies.
 - [Roadmap](docs/ROADMAP.md): the sprint plan and the status of every change.
 - [Decisions](docs/DECISIONS.md): the platform-wide decisions and the parking
   lot of deferred work.
