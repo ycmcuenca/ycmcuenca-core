@@ -7,6 +7,20 @@ portfolio site (`apps/welcome`), its CMS admin (`apps/admin`) and the base for
 future satellite projects. Both are SvelteKit applications built for Cloudflare
 Workers and currently serve placeholder pages.
 
+## Documentation
+
+- [Architecture](docs/ARCHITECTURE.md): how the parts connect, and what exists
+  versus what is planned.
+- [Product](docs/PRODUCT.md): who the platform is for, and what it leaves out.
+- [User journeys](docs/USER_JOURNEY.md): what each kind of person does, step by
+  step.
+- [Design](docs/DESIGN.md): how the apps should look, and which choices are
+  open.
+- [Roadmap](docs/ROADMAP.md): the sprint plan and the status of every change.
+- [Decisions](docs/DECISIONS.md): the platform-wide decisions and the parking
+  lot of deferred work.
+- [AGENTS.md](AGENTS.md): the entry point for coding agents.
+
 ## Tools you need
 
 | Tool                  | Version    | Why                                                                                                                                                                                               |
@@ -180,5 +194,3 @@ owner.
   configuration holds each of these inside its current major
   (`allowedVersions` in `renovate.json5`); other majors wait on the
   Dependency Dashboard for approval.
-- Full documentation (architecture, product, roadmap) arrives with the
-  `living-docs` change; this README stays minimal on purpose.
