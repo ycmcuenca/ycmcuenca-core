@@ -1,5 +1,5 @@
 # Deploys one released app to Cloudflare Workers, from its release tag
-# (design D1 and D2 in openspec/changes/edge-infrastructure/design.md).
+# (design D1 and D2 in openspec/changes/archive/2026-10-18-edge-infrastructure/design.md).
 # `release-please.yml` calls it after a release; the owner starts it by hand
 # to roll back to an older tag. Both paths run these exact steps.
 name: deploy

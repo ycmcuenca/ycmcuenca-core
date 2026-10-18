@@ -44,7 +44,7 @@ jobs:
 
   # One deploy job per app, not a matrix: job outputs must be declared
   # statically, so a matrix cannot pick a per-path version (design D1 in
-  # openspec/changes/edge-infrastructure/design.md). A deploy never runs when
+  # openspec/changes/archive/2026-10-18-edge-infrastructure/design.md). A deploy never runs when
   # the app got no release; a failure of one app does not cancel the other.
   # The caller passes the secret by name; the called workflow's job (which
   # uses the `production` environment) receives the environment's value.

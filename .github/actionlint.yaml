@@ -1,6 +1,6 @@
 # actionlint 1.7.12, the version CI pins, predates GitHub's `concurrency.queue`
 # key, which deploy.yml uses so queued deploys of one app are never dropped
-# (design D2 in openspec/changes/edge-infrastructure/design.md). This ignores
+# (design D2 in openspec/changes/archive/2026-10-18-edge-infrastructure/design.md). This ignores
 # that one message, for that one file only; every other finding still fails CI.
 paths:
   .github/workflows/deploy.yml:

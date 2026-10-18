@@ -2,7 +2,7 @@
 #
 # Applies the Cloudflare Access configuration this project relies on, from the
 # committed desired state in scripts/cloudflare/access/ (design D5 in
-# openspec/changes/edge-infrastructure/design.md):
+# openspec/changes/archive/2026-10-18-edge-infrastructure/design.md):
 #
 #   1. the One-time PIN identity provider exists
 #   2. the reusable `owner-only` policy matches, with the owner's address

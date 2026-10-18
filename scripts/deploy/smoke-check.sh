@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 #
 # Verifies a deploy in production (design D11 in
-# openspec/changes/edge-infrastructure/design.md). The deploy workflow runs
+# openspec/changes/archive/2026-10-18-edge-infrastructure/design.md). The deploy workflow runs
 # it after `wrangler deploy`; the owner also runs it by hand after the
 # bootstrap deploy.
 #
