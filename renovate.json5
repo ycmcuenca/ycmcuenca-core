@@ -115,9 +115,10 @@
       semanticCommitType: "chore",
     },
     // The toolchain pins the workflows read: Bun's `packageManager` field and
-    // `.node-version` (A8's runner image is updated deliberately, by hand).
-    // Renovate 44 extracts package.json through its `bun` manager, and
-    // `.node-version` through `nodenv`.
+    // `.node-version` (A8's runner image is proposed by Renovate too, majors
+    // behind dashboard approval, like any other major). Renovate 44 extracts
+    // package.json through its `bun` manager, and `.node-version` through
+    // `nodenv`.
     {
       description: "Toolchain pins: Bun's packageManager and .node-version",
       groupName: "toolchain",
