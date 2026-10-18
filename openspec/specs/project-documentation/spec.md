@@ -6,14 +6,14 @@ Defines the living documents that describe `ycmcuenca-core` (its architecture, p
 
 ## Requirements
 
-### Requirement: Five living documents
+### Requirement: Six living documents
 
-The `docs/` directory SHALL contain the five living documents `ARCHITECTURE.md`, `DESIGN.md`, `PRODUCT.md`, `ROADMAP.md` and `USER_JOURNEY.md`. Each SHALL open by stating what it covers, and each SHALL contain at least one Mermaid diagram that renders on GitHub.
+The `docs/` directory SHALL contain the six living documents `ARCHITECTURE.md`, `DESIGN.md`, `PRODUCT.md`, `ROADMAP.md`, `SYSTEM_DESIGN.md` and `USER_JOURNEY.md`. Each SHALL open by stating what it covers, and each SHALL contain at least one Mermaid diagram that renders on GitHub.
 
 #### Scenario: Documents present
 
 - **WHEN** the `docs/` directory is listed
-- **THEN** all five living documents are present, alongside `DECISIONS.md`
+- **THEN** all six living documents are present, alongside `DECISIONS.md`
 
 #### Scenario: Diagram renders
 
@@ -24,6 +24,11 @@ The `docs/` directory SHALL contain the five living documents `ARCHITECTURE.md`,
 
 - **WHEN** a reader opens any living document
 - **THEN** its opening paragraphs state what the document covers and which other documents cover neighboring topics
+
+#### Scenario: Two design documents told apart
+
+- **WHEN** a reader opens `DESIGN.md` or `SYSTEM_DESIGN.md`
+- **THEN** its opening paragraphs say that DESIGN.md covers visual and user-experience design and SYSTEM_DESIGN.md covers system design concepts
 
 ### Requirement: Built versus planned in the architecture diagram
 
@@ -116,4 +121,4 @@ The README SHALL contain a documentation section that links every living documen
 #### Scenario: Reader finds the documents
 
 - **WHEN** a new contributor reads the README
-- **THEN** its documentation section links all five living documents, DECISIONS.md and AGENTS.md, and every link resolves
+- **THEN** its documentation section links all six living documents, DECISIONS.md and AGENTS.md, and every link resolves

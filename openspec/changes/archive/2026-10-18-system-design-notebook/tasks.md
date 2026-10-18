@@ -82,10 +82,10 @@ For every stub: a status line, a one-paragraph definition, 2 to 4 self-check que
 ## 6. Integration verification
 
 - [x] 6.1 Run `scripts/docs/check-living-docs.sh` on the finished tree. Verify that it prints `living documents: ok`, reporting no missing document, no broken link and no missing part
-- [ ] 6.2 Open the pull request, then verify A4 in the `specs` job log: the link check ran with the `origin` remote, and the step passes
-- [ ] 6.3 In GitHub's rendered view of `docs/SYSTEM_DESIGN.md`, verify in both light and dark themes that every Mermaid diagram renders without an error, that planned concepts are dashed in the overview, that every `<details>` answer is collapsed until clicked, and that the contents links jump to their headings. Record any diagram that needed a fix
-- [ ] 6.4 **Owner task:** rewrite the 13 S1 "What we learned here" parts in your own words, deleting each draft marker, and review the rendered notebook for plain language (ISO 24495-1) and accuracy. Verify that you post an approval comment on the pull request. CI does not check the rewrite
-- [ ] 6.5 Run the local CI equivalent from AGENTS.md (`bun install --frozen-lockfile`, format, lint, check, build, test, test:e2e, `bunx openspec validate --all --strict --no-interactive`, `scripts/docs/check-living-docs.sh`), plus actionlint and zizmor on the workflows. Verify that all pass and that `ci-ok` is green on the pull request
+- [x] 6.2 Open the pull request, then verify A4 in the `specs` job log: the link check ran with the `origin` remote, and the step passes
+- [x] 6.3 In GitHub's rendered view of `docs/SYSTEM_DESIGN.md`, verify in both light and dark themes that every Mermaid diagram renders without an error, that planned concepts are dashed in the overview, that every `<details>` answer is collapsed until clicked, and that the contents links jump to their headings. Record any diagram that needed a fix
+- [ ] 6.4 **Owner task:** rewrite the 13 S1 "What we learned here" parts in your own words, deleting each draft marker, and review the rendered notebook for plain language (ISO 24495-1) and accuracy. Verify that you post an approval comment on the pull request. CI does not check the rewrite **Deferred by the owner on 2026-10-18; not done at archive.**
+- [x] 6.5 Run the local CI equivalent from AGENTS.md (`bun install --frozen-lockfile`, format, lint, check, build, test, test:e2e, `bunx openspec validate --all --strict --no-interactive`, `scripts/docs/check-living-docs.sh`), plus actionlint and zizmor on the workflows. Verify that all pass and that `ci-ok` is green on the pull request
 
 ## Workflow follow-up
 
