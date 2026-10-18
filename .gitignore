@@ -18,6 +18,9 @@ test-results/
 .env
 .env.*
 !.env.example
+# Throwaway Access key pair written by the admin e2e fixture (test material,
+# but still key material: never committed)
+.access-fixture/
 
 # Editor and OS noise
 .DS_Store
