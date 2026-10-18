@@ -38,22 +38,25 @@ flowchart LR
         edge["edge-infrastructure"]:::planned
         docs["living-docs"]:::planned
     end
-    subgraph S2["S2 CMS core"]
-        s2["db, content model, revisions,<br/>publish projector, admin editor,<br/>media uploads, contact inbox"]:::planned
+    subgraph S2["S2 Publish path"]
+        s2["content store, content model,<br/>revisions + projector,<br/>public rendering, admin editor"]:::planned
     end
-    subgraph S3["S3 Workflow"]
-        s3["scheduled publishing,<br/>draft preview, localization"]:::planned
+    subgraph S3["S3 Media, inbox, backups"]
+        s3["media uploads, contact inbox,<br/>data backups"]:::planned
     end
-    subgraph S4["S4 Design + brand"]
-        s4["design system, brand,<br/>analytics beacon"]:::planned
+    subgraph S4["S4 Workflow"]
+        s4["scheduled publishing,<br/>draft preview, localization"]:::planned
     end
-    subgraph S5["S5 Content + 3D"]
-        s5["projects content,<br/>Threlte 3D"]:::planned
+    subgraph S5["S5 Brand"]
+        s5["brand identity, welcome design,<br/>analytics, a11y + perf budgets"]:::planned
+    end
+    subgraph S6["S6 Content + 3D"]
+        s6["projects content,<br/>Threlte 3D"]:::planned
     end
 
     bootstrap --> ci --> edge
     bootstrap --> docs
-    edge --> s2 --> s3 --> s4 --> s5
+    edge --> s2 --> s3 --> s4 --> s5 --> s6
 
     classDef archived fill:#d1fae5,stroke:#047857
     classDef merged fill:#dbeafe,stroke:#1d4ed8
@@ -65,12 +68,12 @@ flowchart LR
 **Goal:** a gated, hardened repository whose two workers are live on
 `*.ycmcuenca.workers.dev`, with the living documents in place.
 
-| Change                | Status   | What it delivers                                                                                                                                                                                                                                                        |
-| --------------------- | -------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `bootstrap-monorepo`  | archived | Bun + Turborepo workspace, `welcome` and `admin` as hello-world SvelteKit apps on the Workers adapter (local only), ESLint, Prettier, Lefthook + commitlint, Vitest, Chromium smoke tests on `wrangler dev`. PR #1, archived 2026-10-17.                                |
-| `ci-release-pipeline` | merged   | PR CI with one `ci-ok` gate, release-please (one version per app), repository settings as code, SHA-pinned actions, Renovate, CodeQL. PR #2 merged; follow-up PR #5 open; archive pending.                                                                              |
-| `edge-infrastructure` | planned  | Cloudflare API token, a deploy workflow that consumes release-please's `paths_released`, both workers live on `workers.dev`, Cloudflare Access in front of `admin` (production and preview URLs). KV, R2 and Neon are created in S2 by the change that first uses them. |
-| `living-docs`         | planned  | Adopts this file and DECISIONS.md and adds ARCHITECTURE, DESIGN, PRODUCT and USER_JOURNEY, each with a Mermaid diagram. Revises the master architecture diagram: solid lines for what exists, dashed for what is planned.                                               |
+| Change                | Status   | What it delivers                                                                                                                                                                                                                                                                                                                             |
+| --------------------- | -------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `bootstrap-monorepo`  | archived | Bun + Turborepo workspace, `welcome` and `admin` as hello-world SvelteKit apps on the Workers adapter (local only), ESLint, Prettier, Lefthook + commitlint, Vitest, Chromium smoke tests on `wrangler dev`. PR #1, archived 2026-10-17.                                                                                                     |
+| `ci-release-pipeline` | merged   | PR CI with one `ci-ok` gate, release-please (one version per app), repository settings as code, SHA-pinned actions, Renovate, CodeQL. PR #2 merged; follow-up PR #5 open; archive pending.                                                                                                                                                   |
+| `edge-infrastructure` | planned  | Cloudflare API token, a deploy workflow that consumes release-please's `paths_released`, both workers live on `workers.dev`, Cloudflare Access in front of `admin` (production and preview URLs), Workers Logs and traces (I9), security headers and CSP (I10). KV, R2 and Neon are created in S2 and S3 by the change that first uses them. |
+| `living-docs`         | planned  | Adopts this file and DECISIONS.md and adds ARCHITECTURE, DESIGN, PRODUCT and USER_JOURNEY, each with a Mermaid diagram. Revises the master architecture diagram: solid lines for what exists, dashed for what is planned.                                                                                                                    |
 
 **Exit criteria:** `main` changes only through checked PRs; a merged release
 PR deploys the released app; `admin` is reachable only through Access; all five
@@ -82,36 +85,67 @@ Commits, settings as code (desired state plus an idempotent reconciler),
 supply-chain hardening (SHA pinning, least privilege, workflow auditing),
 zero-trust access at the edge.
 
-## Sprint 2: CMS core
+## Sprint 2: Publish path
 
-**Goal:** the owner can write, revise and publish an entry in `admin`, and
-`welcome` serves it from a published snapshot.
+**Goal:** a walking skeleton. The owner writes and publishes an English entry in
+`admin`, and `welcome` serves it from a published snapshot.
 
-Candidate changes (tentative names): `content-store` (Neon, Hyperdrive, Drizzle
-in `@ycmcuenca/db`), `content-model` (code-first field, block and type layers
-in `@ycmcuenca/cms-core`), `revisions-publishing` (append-only revisions,
-pointer moves, the KV publish projector), `public-rendering` (`welcome` reads
-KV through `@ycmcuenca/cms-render`), `admin-editor` (forms and Markdown
-editor), `media-uploads` (single-part uploads to R2 through the three-step
-protocol), `contact-inbox` (contact form into the CMS inbox).
+Candidate changes (tentative names):
+
+- `content-store`: Neon, Hyperdrive and Drizzle in `@ycmcuenca/db`, two Neon
+  roles (I6), integration tests on a Neon branch per PR (Q1). Settles the
+  Drizzle version (Q5).
+- `content-model`: code-first field, block and type layers in
+  `@ycmcuenca/cms-core` (C2).
+- `revisions-publishing`: append-only revisions, pointer moves, the KV publish
+  projector with a versioned snapshot (C8) and Markdown rendered at publish
+  (C9).
+- `public-rendering`: `welcome` reads KV through `@ycmcuenca/cms-render`,
+  behind Workers Cache with tag purges over a service binding (C10), plus SEO
+  basics (Q4).
+- `admin-editor`: forms and the Markdown editor, with Tailwind and
+  shadcn-svelte arriving in `@ycmcuenca/ui` (Q2).
 
 **Exit criteria:** publishing an English entry makes it visible on `welcome`
 with no database binding on `welcome`; editing creates a new revision and never
-overwrites one; a single image upload produces its WebP widths.
+overwrites one; a publish purges exactly the affected cached pages.
 
 **Learning concepts:** hexagonal architecture (ports and adapters), CQRS-lite
 read projections, event-sourcing-lite append-only revisions, schema versioning
-with upcasters, content-addressed storage, idempotent projection and retries.
+with upcasters, versioned contracts and tolerant readers, cache invalidation
+by tag, branch-per-PR database testing.
 
-## Sprint 3: Scheduling, preview and localization
+## Sprint 3: Media, inbox and backups
+
+**Goal:** entries can carry images, visitors can send a message, and the data
+survives a mistake.
+
+Candidate changes (tentative names):
+
+- `media-uploads`: single-part uploads to R2 through the three-step protocol
+  (M3), derivatives from the Images binding (M4), BlurHash in the browser.
+- `contact-inbox`: the contact form into the CMS inbox, with Turnstile and rate
+  limiting (I1).
+- `data-backups`: `cms export` (I5) and the nightly backup job to private R2
+  with a restore drill (I8).
+
+**Exit criteria:** an uploaded image is served at its three widths; a contact
+message appears in the inbox and spam is rejected; a backup restores into a
+Neon branch with matching row counts.
+
+**Learning concepts:** content-addressed storage, upload protocols and
+integrity checks, abuse prevention, backup and restore as a tested process
+(RPO and RTO).
+
+## Sprint 4: Scheduling, preview and localization
 
 **Goal:** the owner can schedule a publish, preview a draft, and publish in
 English, Filipino and Esperanto.
 
 Candidate changes (tentative names): `scheduled-publishing` (cron reconciler
-with an atomic claim), `draft-preview` (owner-only preview in `admin`, reading
-Neon), `content-localization` (per-field localization, per-locale `ready`
-flags, Paraglide for UI strings, `/{locale}/{type}/{slug}` URLs).
+with an atomic claim, W1), `draft-preview` (owner-only preview in `admin`,
+reading Neon, W2), `content-localization` (per-field localization, per-locale
+`ready` flags, Paraglide for UI strings, `/{locale}/{type}/{slug}` URLs).
 
 **Exit criteria:** a scheduled entry publishes within the reconciler's window;
 a draft is visible only through `admin`; an untranslated entry is hidden in
@@ -121,23 +155,25 @@ that locale and English must be ready before any publish.
 eventual consistency and its SLOs, time handling in UTC, internationalization
 versus localization, read-your-writes for previews.
 
-## Sprint 4: Design and brand
+## Sprint 5: Brand
 
-**Goal:** both apps share a designed, branded UI.
+**Goal:** both apps carry the owner's brand, and quality is measured.
 
-Candidate changes (tentative names): `design-system` (Tailwind, shadcn,
-`@ycmcuenca/ui`), `brand-identity` (type, colour, fonts covering Latin
-Extended-A for Esperanto), `web-analytics` (Cloudflare Web Analytics beacon).
+Candidate changes (tentative names): `brand-identity` (tokens, type and colour
+on top of `@ycmcuenca/ui`, fonts covering Latin Extended-A), `welcome-design`
+(the public site's visual design), `web-analytics` (Cloudflare Web Analytics
+beacon), `quality-budgets` (axe accessibility checks and Lighthouse budgets in
+CI, Q3).
 
-**Exit criteria:** every page uses the shared design tokens and components;
-all three locales render with correct glyphs; page views are visible in Web
-Analytics.
+**Exit criteria:** every page uses the shared design tokens; all three locales
+render with correct glyphs; accessibility and performance budgets pass in CI;
+page views are visible in Web Analytics.
 
-**Learning concepts:** design tokens and theming, component libraries as a
-shared package, accessibility as a requirement, font subsetting and loading,
+**Learning concepts:** design tokens and theming, accessibility as a
+requirement, font subsetting and loading, performance budgets,
 privacy-preserving analytics.
 
-## Sprint 5: Content and 3D
+## Sprint 6: Content and 3D
 
 **Goal:** the portfolio is filled with real content and has its 3D layer.
 
@@ -152,12 +188,18 @@ limits and degrade gracefully.
 **Learning concepts:** content modelling against real content, progressive
 enhancement, performance budgets for 3D on the web.
 
-## After Sprint 5
+## After Sprint 6
 
 Deferred work, each with the trigger that brings it in, is listed in the
-parking lot of [DECISIONS.md](DECISIONS.md#parking-lot): the custom domain and
-email, multipart uploads, `apps/auth`, OpenAPI, the metrics dashboard and
-versioned internal packages.
+parking lot of [DECISIONS.md](DECISIONS.md#parking-lot): the Workers Paid
+plan, the custom domain and email, multipart uploads, `apps/auth`, OpenAPI,
+the metrics dashboard and versioned internal packages.
+
+## Recurring checks
+
+- **Monthly:** compare usage in the Cloudflare dashboard with the Free limits
+  (P3). Any limit at 70% or more for 3 days triggers the Workers Paid review.
+- **Quarterly:** run the backup restore drill (I8).
 
 ## How versions relate to sprints
 

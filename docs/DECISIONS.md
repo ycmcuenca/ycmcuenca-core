@@ -9,6 +9,8 @@ How to use this log:
 - **Decided** entries are settled. A change that contradicts one must say so
   in its proposal and get the owner's approval, then this log is updated.
 - **Proposed** entries are leanings to decide in the change that needs them.
+- A changed decision is never edited in place: it is marked **Superseded by**
+  the new entry, and the new entry says what it **Supersedes**.
 - A change's own `design.md` holds the detailed reasoning, versions and
   alternatives. This log records only the outcome and a short why.
 - Decisions made inside a change are not repeated here. See
@@ -16,9 +18,13 @@ How to use this log:
   workspace tooling and `openspec/changes/ci-release-pipeline/design.md` (moves
   to the archive when it is archived) for CI, releases, repository governance
   and Renovate.
+- If this file grows past about 300 lines, split it into one file per decision
+  under `docs/adr/` (MADR format).
 
-All entries below are **Decided** and were recorded on 2026-10-18 from the
-planning discussions before and during Sprint 1.
+Entries are **Decided** unless marked otherwise. The first set was recorded on
+2026-10-18 from the planning discussions before and during Sprint 1; entries
+marked _(audit)_ came from the stack audit on the same day (see
+[Facts behind the audit](#facts-behind-the-audit)).
 
 ## Platform and scope
 
@@ -28,9 +34,11 @@ planning discussions before and during Sprint 1.
   elsewhere.
 - **P2 Public repository.** The repo shows how the platform was built, so no
   secret is ever committed and security is part of every change.
-- **P3 Cloudflare Workers on the Free plan.** Its limits (10 ms CPU per
-  request, 1,000 KV writes a day, subrequest and size limits) are hard design
-  constraints.
+- **P3 Cloudflare Workers on the Free plan.** Its limits (10 ms CPU per request
+  and per cron run, 50 subrequests per request, 100,000 requests and 1,000 KV
+  writes a day) are hard design constraints; exceeding one makes requests fail
+  rather than bill. _(audit)_ Kept on purpose: designing within the limits is
+  part of the learning. Revisit on the trigger in the parking lot.
 - **P4 `*.ycmcuenca.workers.dev` only, for now.** The custom domain
   `ycmcuenca.dev` comes later (parking lot). The Public Suffix List lists
   `workers.dev`, not `*.workers.dev`, so a cookie scoped to
@@ -45,11 +53,22 @@ planning discussions before and during Sprint 1.
   ROADMAP, USER_JOURNEY), each with a Mermaid diagram, synced when a change is
   archived. The master architecture diagram uses solid lines for what exists
   and dashed lines for what is planned.
-- **P9 Sprints are the plan; versions follow.** Five sprints (see ROADMAP.md),
-  one semantic version per app, Conventional Commits and release-please.
+- **P9 Sprints are the plan; versions follow.** One semantic version per app,
+  Conventional Commits and release-please. **Superseded by P13** for the number
+  of sprints.
 - **P10 Long-lived and flexible.** The system must stay maintainable over a
   career; prefer boring tools with clear upgrade seams and avoid
   over-engineering.
+- **P11 SvelteKit for both apps** _(audit)_, not Astro for `welcome`. One
+  framework, and `cms-render` stays one Svelte block registry, so the admin
+  preview renders exactly like the site. Workers Cache (C10) covers most of
+  Astro's performance advantage.
+- **P12 Wrangler, not the `cf` CLI** _(audit)_. `cf` and `cloudflare.config.ts`
+  are in beta, and the config file cannot be loaded under Bun. Revisit when
+  `cf` is stable and supports Bun.
+- **P13 Six sprints** _(audit)_. Supersedes P9's five: the CMS core was too
+  large for one sprint at 8–12 hours a week, so it is split into "Publish path"
+  and "Media, inbox and backups". See ROADMAP.md.
 
 ## Identity and access
 
@@ -77,7 +96,9 @@ planning discussions before and during Sprint 1.
   moves a pointer to a revision.
 - **C4 Neon is the source of truth; KV and R2 are projections.** Anything in KV
   or R2 can be rebuilt from Neon. A failed projection leaves a dirty flag that
-  the cron reconciler retries.
+  the cron reconciler retries. _(audit)_ Neon Postgres is kept over Cloudflare
+  D1: real Postgres is the more transferable skill and satellites can reuse
+  it; Neon's weak free backups are covered by I8.
 - **C5 Publish-snapshot read path (CQRS-lite).** Publishing writes a snapshot
   to KV; `welcome` reads only KV and has no database binding. This is a
   projection written at publish time, not cache-aside.
@@ -85,12 +106,26 @@ planning discussions before and during Sprint 1.
   which keeps writes under the free 1,000 per day.
 - **C7 Every service owns its own database.** Portfolio projects are a CMS
   content type, not a separate service.
+- **C8 The snapshot is a versioned contract** _(audit)_. Every snapshot carries
+  a `snapshot_v`; `cms-core` owns its Zod schema; `welcome` reads the current
+  and the previous version (tolerant reader) and the reconciler re-projects old
+  snapshots. The two workers can then deploy in either order.
+- **C9 Markdown is rendered at publish** _(audit)_. The projector stores
+  sanitized HTML per locale in the snapshot, so `welcome` only renders
+  templates. The change that builds it verifies that a long article renders
+  within `admin`'s 10 ms; if not, the browser renders on save and the server
+  sanitizes.
+- **C10 Workers Cache in front of `welcome`** _(audit)_. Responses carry cache
+  tags per entry, type and locale. Each Worker's cache is private, so `welcome`
+  exposes an RPC entrypoint that `admin` calls through a service binding to
+  purge tags after the projector writes KV.
 
 ## Publishing workflow
 
 - **W1 One cron reconciler.** One cron tick publishes due entries, claiming
   each with an atomic conditional `UPDATE`, and re-projects dirty snapshots.
   Target: about two minutes from due time to live. Times are stored in UTC.
+  Each tick must fit the 10 ms CPU limit, so it works in small batches.
 - **W2 Draft previews are owner-only**, inside `admin` behind Access, reading
   Neon directly.
 
@@ -113,10 +148,18 @@ planning discussions before and during Sprint 1.
   routed.
 - **M2 Processing pipeline.** The browser computes the SHA-256 and R2 checks
   it; derivatives are EXIF-free WebP at 640, 1280 and 2048 px plus a BlurHash,
-  served through a `welcome` route.
+  served through a `welcome` route. **Superseded by M4** for where derivatives
+  are produced.
 - **M3 Three-step upload protocol:** create, then parts, then complete.
   Single-part first; large files move to R2 multipart through the binding later
   with no client change.
+- **M4 Derivatives from the Images binding** _(audit)_. Supersedes M2, which
+  left open where derivatives are produced; encoding them inside a Worker
+  cannot fit 10 ms of CPU. At upload,
+  `admin` passes the R2 original to the Cloudflare Images binding and stores
+  the three WebP widths under `public/` (M1 unchanged). The browser computes
+  the BlurHash. Free for 5,000 unique transformations a month, about 1,600
+  images.
 
 ## Integrations and longevity
 
@@ -133,18 +176,68 @@ planning discussions before and during Sprint 1.
 - **I6 Two Neon roles:** one for migrations, one with runtime privileges only.
 - **I7 Satellite boundary.** Satellites own their own database, integrate only
   through published contracts and never reach into core's Neon.
+- **I8 Nightly backups to private R2** _(audit)_. Neon Free restores only the
+  last 6 hours. A scheduled GitHub Actions job writes `pg_dump` and
+  `cms export` output to a private R2 bucket, kept 30 days, with a quarterly
+  restore drill into a Neon branch.
+- **I9 Observability with Cloudflare's built-in tools** _(audit)_. Workers Logs
+  and traces enabled on both workers, structured JSON logs with a request id,
+  and a heartbeat log line per cron tick. No third-party error tracker.
+- **I10 Security headers from day one** _(audit)_. HSTS, a Content Security
+  Policy (SvelteKit's `csp` config with nonces or hashes), `frame-ancestors`
+  and `Referrer-Policy` on both workers, starting in `edge-infrastructure`.
+
+## Quality
+
+- **Q1 Database tests on a Neon branch per PR** _(audit)_. CI creates a
+  throwaway Neon branch, migrates it, runs the integration tests and deletes
+  it. This needs a Neon API key secret, so these tests do not run on fork PRs.
+- **Q2 UI in two steps** _(audit)_. Tailwind and shadcn-svelte arrive in
+  `@ycmcuenca/ui` with the first admin UI (S2); the brand sprint later adds
+  tokens, typography and the `welcome` visual design on top.
+- **Q3 Accessibility and performance budgets** _(audit)_. WCAG 2.2 AA checks
+  (axe in the Playwright suite) and Lighthouse budgets in CI, from the brand
+  sprint on.
+- **Q4 SEO basics with public rendering** _(audit)_. Canonical URLs, `hreflang`
+  for the three locales, `sitemap.xml` and an RSS/Atom feed generated from the
+  KV indexes.
+- **Q5 Drizzle version** — **Proposed** _(audit)_. Decide in the S2
+  `content-store` proposal: Drizzle 1.0 if it is generally available by then,
+  otherwise its release candidate, to avoid building on 0.x relational queries
+  and migrating soon after.
 
 ## Parking lot
 
 Deferred work and the trigger that brings each one in.
 
-| Item                                                        | Trigger                                                                |
-| ----------------------------------------------------------- | ---------------------------------------------------------------------- |
-| Custom domain `ycmcuenca.dev`, workers.dev 301s, email (I4) | The owner decides to cut over; after Sprint 5 unless brought forward.  |
-| R2 multipart uploads (M3)                                   | The first upload too large for a single part.                          |
-| `apps/auth` with Better Auth (A3)                           | The first satellite that needs public sign-ups.                        |
-| OpenAPI + Orval (I2)                                        | The first consumer of the admin API outside this repository.           |
-| Custom metrics dashboard (I3)                               | The Web Analytics beacon no longer answers the owner's questions.      |
-| Versioning internal packages                                | Sprint 2, when `cms-core` changes start changing app behavior.         |
-| Vitest 5 and TypeScript 7                                   | `vitest-pool-workers` supports Vitest 5; `svelte-check` supports TS 7. |
-| GitHub Milestones per sprint                                | The owner wants PRs grouped by sprint on GitHub.                       |
+| Item                                                        | Trigger                                                                                                                                     |
+| ----------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------- |
+| Workers Paid plan ($5/month) (P3)                           | Any Free limit at 70% or more for 3 days (checked by hand monthly in the Cloudflare dashboard), or a design that needs more than 10 ms CPU. |
+| Custom domain `ycmcuenca.dev`, workers.dev 301s, email (I4) | The owner decides to cut over; after Sprint 6 unless brought forward.                                                                       |
+| R2 multipart uploads (M3)                                   | The first upload too large for a single part.                                                                                               |
+| `apps/auth` with Better Auth (A3)                           | The first satellite that needs public sign-ups.                                                                                             |
+| OpenAPI + Orval (I2)                                        | The first consumer of the admin API outside this repository.                                                                                |
+| Custom metrics dashboard (I3)                               | The Web Analytics beacon no longer answers the owner's questions.                                                                           |
+| Automated Free-plan usage alarms                            | The monthly manual usage check becomes a chore.                                                                                             |
+| Versioning internal packages                                | Sprint 2, when `cms-core` changes start changing app behavior.                                                                              |
+| Vitest 5 and TypeScript 7                                   | `vitest-pool-workers` supports Vitest 5; `svelte-check` supports TS 7.                                                                      |
+| `cf` CLI instead of Wrangler (P12)                          | `cf` leaves beta and loads `cloudflare.config.ts` under Bun.                                                                                |
+| GitHub Milestones per sprint                                | The owner wants PRs grouped by sprint on GitHub.                                                                                            |
+
+## Facts behind the audit
+
+Read from the official documentation on 2026-10-18. Re-check them in the
+change that relies on them.
+
+| Fact                                                                                                                       | Source                                        |
+| -------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------- |
+| Workers Free: 10 ms CPU per request and per cron run, 50 subrequests, 100,000 requests/day, 5 cron triggers per account    | developers.cloudflare.com, Workers limits     |
+| KV Free: 100,000 reads and 1,000 writes a day, 1 write per second per key, 1 GB                                            | developers.cloudflare.com, KV limits          |
+| Hyperdrive Free: 100,000 queries a day                                                                                     | developers.cloudflare.com, Hyperdrive pricing |
+| Images Free: 5,000 unique transformations a month, including calls to the Images binding                                   | developers.cloudflare.com, Images pricing     |
+| Workers Cache: per-Worker cache on workers.dev, purge by tag from code, cached hits still count as Worker requests         | developers.cloudflare.com, Workers Cache      |
+| D1 Free: 500 MB per database, 7-day point-in-time restore                                                                  | developers.cloudflare.com, D1 limits          |
+| Neon Free: 1 GB per project, 100 CU-hours/month, scale to zero after 5 min, 6-hour restore window, 1 snapshot              | neon.com plans and blog (2026-10-02)          |
+| `cf` CLI and `cloudflare.config.ts` are in beta; the config cannot be loaded under Bun                                     | developers.cloudflare.com, Cloudflare CLI     |
+| Cloudflare acquired the Astro team (2026-01-16); Astro stays MIT and multi-platform; latest Astro 7.4.0                    | cloudflare.com press release; npm             |
+| SvelteKit 3.1.0; remote functions still experimental. Paraglide JS 2.29.0. Better Auth 1.7.10. Drizzle 0.45.4, 1.0 at rc.5 | npm registry; Context7 `/sveltejs/kit`        |
