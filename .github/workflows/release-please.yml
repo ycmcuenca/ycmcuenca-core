@@ -31,11 +31,49 @@ jobs:
       pull-requests: write # Open and update the release pull request.
     # No checkout and no cache: the action works entirely through the API, and
     # a cache-free workflow keeps zizmor's cache-poisoning audit clean (D8).
-    # `releases_created` and `paths_released` are always set; the future
-    # deploy workflow consumes `paths_released`.
+    # `releases_created` and `paths_released` are always set. The two
+    # caller jobs below consume `paths_released` and the per-path versions.
     outputs:
       releases_created: ${{ steps.release.outputs.releases_created }}
       paths_released: ${{ steps.release.outputs.paths_released }}
+      welcome_version: ${{ steps.release.outputs['apps/welcome--version'] }}
+      admin_version: ${{ steps.release.outputs['apps/admin--version'] }}
     steps:
       - id: release
         uses: googleapis/release-please-action@45996ed1f6d02564a971a2fa1b5860e934307cf7 # v5.0.0
+
+  # One deploy job per app, not a matrix: job outputs must be declared
+  # statically, so a matrix cannot pick a per-path version (design D1 in
+  # openspec/changes/edge-infrastructure/design.md). A deploy never runs when
+  # the app got no release; a failure of one app does not cancel the other.
+  # The caller passes the secret by name; the called workflow's job (which
+  # uses the `production` environment) receives the environment's value.
+  deploy-welcome:
+    name: deploy welcome
+    needs: release-please
+    if: contains(fromJSON(needs.release-please.outputs.paths_released), 'apps/welcome')
+    permissions:
+      contents: read
+    # `./` stays until actionlint (1.7.12 is the current release) accepts
+    # GitHub's newer `$/` same-repository syntax; CI pins that version.
+    uses: ./.github/workflows/deploy.yml # zizmor: ignore[self-repository]
+    with:
+      app: welcome
+      version: ${{ needs.release-please.outputs.welcome_version }}
+    secrets:
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+
+  deploy-admin:
+    name: deploy admin
+    needs: release-please
+    if: contains(fromJSON(needs.release-please.outputs.paths_released), 'apps/admin')
+    permissions:
+      contents: read
+    # `./` stays until actionlint (1.7.12 is the current release) accepts
+    # GitHub's newer `$/` same-repository syntax; CI pins that version.
+    uses: ./.github/workflows/deploy.yml # zizmor: ignore[self-repository]
+    with:
+      app: admin
+      version: ${{ needs.release-please.outputs.admin_version }}
+    secrets:
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
