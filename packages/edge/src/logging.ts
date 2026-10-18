@@ -25,7 +25,11 @@ function requestIdFor(request: Request): string {
 
 /** A logger bound to one request; see design D9. */
 export function createLogger(app: string, request: Request): Logger {
-  const requestId = requestIdFor(request);
+  return loggerFor(app, requestIdFor(request));
+}
+
+/** The same logger when the request's id is already known (design D9). */
+function loggerFor(app: string, requestId: string): Logger {
   const write = (level: LogLevel, msg: string, fields?: LogFields): void => {
     console.log(JSON.stringify({ level, msg, app, requestId, ...fields }));
   };
@@ -55,10 +59,7 @@ export function handleErrorFor(app: string): HandleServerError {
     if (kind !== "unknown") {
       return { requestId };
     }
-    createLogger(app, event.request).error(
-      "unexpected error",
-      describeError(error),
-    );
+    loggerFor(app, requestId).error("unexpected error", describeError(error));
     return { message: "Internal Error", requestId };
   };
 }
