@@ -26,9 +26,14 @@
 
 - [x] 5.1 Check every relative link and anchor in `docs/*.md`, `AGENTS.md` and `README.md` (a small loop over the Markdown link targets, with each anchor compared against the target file's headings in GitHub's slug form). Verify there are no broken targets
 - [x] 5.2 Run `scripts/docs/check-living-docs.sh` and verify it prints `living documents: ok`. On a local throwaway branch, delete `docs/PRODUCT.md` and remove the Mermaid block from `docs/DESIGN.md`, then verify the script exits non-zero and names both files. Delete the branch
-- [ ] 5.3 Open the pull request, then verify in GitHub's rendered view that every Mermaid diagram in the five living documents renders without an error, in both light and dark themes, and that planned elements are visibly dashed. Record any diagram that needed changes
+- [x] 5.3 Open the pull request, then verify in GitHub's rendered view that every Mermaid diagram in the five living documents renders without an error, in both light and dark themes, and that planned elements are visibly dashed. Record any diagram that needed changes
 - [ ] 5.4 **Owner task:** review the wording of `docs/PRODUCT.md` and `docs/USER_JOURNEY.md` on the pull request (audiences, goals, non-goals, journeys). Verify by an explicit approval comment from the owner on the pull request before merging
-- [ ] 5.5 Run the local CI equivalent (`bun install --frozen-lockfile`, `bun run format`, `bun run lint`, `bun run check`, `bun run build`, `bun run test`, `bun run test:e2e`, `bunx openspec validate --all --strict --no-interactive`, `scripts/docs/check-living-docs.sh`, actionlint and zizmor), then verify all pass, `openspec validate living-docs --strict` passes, and `ci-ok` is green on the pull request
+- [x] 5.5 Run the local CI equivalent (`bun install --frozen-lockfile`, `bun run format`, `bun run lint`, `bun run check`, `bun run build`, `bun run test`, `bun run test:e2e`, `bunx openspec validate --all --strict --no-interactive`, `scripts/docs/check-living-docs.sh`, actionlint and zizmor), then verify all pass, `openspec validate living-docs --strict` passes, and `ci-ok` is green on the pull request
+
+## Verification record
+
+- 5.3: all 9 diagrams render on GitHub in the light theme (verifying agent) and the dark theme (re-checked on 2026-10-18, each with dashed planned elements). No diagram needed a rendering fix. The review changed one label for meaning: the backup arrow in ARCHITECTURE.md now reads "reads with pg_dump (I8)".
+- 5.5: the local run lints with `openspec/changes/edge-infrastructure/` ignored, because that untracked change fails `markdown/no-missing-label-refs` and is not part of this branch. The welcome e2e run used a temporary inspector port, because another application on the owner's machine holds 9229.
 
 ## Workflow follow-up
 
