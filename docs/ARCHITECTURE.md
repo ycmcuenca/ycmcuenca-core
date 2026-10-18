@@ -62,7 +62,7 @@ flowchart TB
     owner -->|"reviews and merges"| repo
     repo -.->|"released apps"| deploy
     deploy -.->|"deploys"| welcome & admin
-    backup -.->|"dumps to a private R2 bucket (I8)"| neon
+    backup -.->|"reads with pg_dump (I8)"| neon
 
     visitors -.->|"workers.dev<br/>(edge-infrastructure)"| welcome
     cache -.-|"in front of"| welcome
@@ -71,7 +71,7 @@ flowchart TB
     edge -.-> welcome & admin
 
     welcome -.->|"reads only (C5)"| kv
-    welcome -.->|"serves images (M2)"| r2
+    welcome -.->|"serves images (M2, M4)"| r2
     welcome -.->|"page-view beacon"| wa
     admin -.->|"writes revisions (C3)"| neon
     admin -.->|"projects on publish (C4)"| kv
