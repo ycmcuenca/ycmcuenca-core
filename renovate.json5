@@ -1,5 +1,5 @@
 // Renovate configuration for the Mend hosted app (design D11 in
-// openspec/changes/ci-release-pipeline/design.md). JSON5 is used so every
+// openspec/changes/archive/2026-10-18-ci-release-pipeline/design.md). JSON5 is used so every
 // rule can carry a comment next to it.
 {
   $schema: "https://docs.renovatebot.com/renovate-schema.json",

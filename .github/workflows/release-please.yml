@@ -1,6 +1,6 @@
 # Release automation: one version, changelog, tag and GitHub Release per app,
 # derived from the Conventional Commits that land on `main` (design D8 in
-# openspec/changes/ci-release-pipeline/design.md).
+# openspec/changes/archive/2026-10-18-ci-release-pipeline/design.md).
 name: release-please
 
 on:
