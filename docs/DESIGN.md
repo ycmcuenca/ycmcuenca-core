@@ -46,10 +46,16 @@ then, no automated check enforces the target.
 
 ## Glyph coverage
 
-Fonts must cover the Latin Extended-A block (U+0100 to U+017F)
-([L6](DECISIONS.md#localization)). Esperanto needs it for six letters, each in
-upper and lower case: ĉ, ĝ, ĥ, ĵ, ŝ and ŭ. The brand sprint chooses the fonts
-and checks the result on a page in each locale.
+Fonts must cover every character of the three locales
+([L6](DECISIONS.md#localization)):
+
+- English needs Basic Latin.
+- Filipino adds Ñ and ñ (U+00D1 and U+00F1), which are in Latin-1 Supplement.
+- Esperanto adds the Latin Extended-A block (U+0100 to U+017F), for six letters
+  in upper and lower case: ĉ, ĝ, ĥ, ĵ, ŝ and ŭ.
+
+The brand sprint chooses the fonts and checks the result on a page in each
+locale.
 
 ## How design values are layered
 

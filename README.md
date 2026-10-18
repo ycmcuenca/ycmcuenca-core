@@ -93,8 +93,8 @@ After changing an app's `wrangler.jsonc`, refresh its generated types with
 1. Open a pull request against `main`. CI (`.github/workflows/ci.yml`) runs
    on it: format, lint, type check, build, unit tests, the Playwright smoke
    tests, a Conventional Commits check of every commit it adds,
-   `openspec validate --strict`, and a lint/audit of the workflow files
-   themselves.
+   `openspec validate --strict`, the living-documents check, and a lint/audit
+   of the workflow files themselves.
 2. Fix anything red and push again; a newer push cancels the older run.
 3. When the run is green, its `ci-ok` aggregate check passes. The `main`
    ruleset requires exactly that check, so it fails whenever anything real
