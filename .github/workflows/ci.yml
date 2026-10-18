@@ -148,7 +148,7 @@ jobs:
         run: bunx openspec validate --all --strict --no-interactive
       # The living documents guard the same planning artifacts and need no
       # install or build, so they share this job rather than adding one
-      # (design D4 in openspec/changes/living-docs/design.md).
+      # (design D4 in openspec/changes/archive/2026-10-18-living-docs/design.md).
       - name: Check living documents
         run: scripts/docs/check-living-docs.sh
 
