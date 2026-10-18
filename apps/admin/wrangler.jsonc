@@ -1,7 +1,6 @@
-// Cloudflare Workers configuration for `admin` (design D4).
-// The worker name is what will serve admin.ycmcuenca.workers.dev once
-// `edge-infrastructure` deploys; nothing is deployed in this change, and there
-// are deliberately no bindings, routes or workers_dev settings yet.
+// Cloudflare Workers configuration for `admin` (design D4 in
+// openspec/changes/edge-infrastructure/design.md). The worker name is what
+// serves admin.ycmcuenca.workers.dev once deployed.
 {
   "$schema": "./node_modules/wrangler/config-schema.json",
 
@@ -21,4 +20,33 @@
   // nodejs_als provides AsyncLocalStorage, which this ecosystem expects;
   // `nodejs_compat` waits until a library actually needs it (A5).
   "compatibility_flags": ["nodejs_als"],
+
+  // Serve on admin.ycmcuenca.workers.dev and give every version a preview
+  // URL; there is no route or custom domain (D4, P4).
+  "workers_dev": true,
+  "preview_urls": true,
+
+  // Workers Logs with invocation logs and traces at full sampling (D4, I9).
+  // A refusal writes one warning line and a 404 no application line, so the
+  // Free plan's log volume stays proportional to real traffic.
+  "observability": {
+    "enabled": true,
+    "logs": {
+      "enabled": true,
+      "invocation_logs": true,
+      "head_sampling_rate": 1,
+    },
+    "traces": { "enabled": true, "head_sampling_rate": 1 },
+  },
+
+  // The committed production trust configuration for the in-worker Access
+  // check (D4, D6). Both values are public identifiers, not secrets: the team
+  // domain must be an https://<team>.cloudflareaccess.com origin (the unit
+  // test and the deploy both enforce it), and the audience is the Access
+  // application's tag, printed by `scripts/cloudflare/apply-access.sh`
+  // (task 5.3).
+  "vars": {
+    "ACCESS_TEAM_DOMAIN": "https://ycmcuenca.cloudflareaccess.com",
+    "ACCESS_AUD": "00be52cc2f99c06cde34a5ea393d5e09a5b3cf9a54637b5ec6ec81a8e7709c88",
+  },
 }
