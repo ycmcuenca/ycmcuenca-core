@@ -57,10 +57,14 @@
 
 ## 8. First release deploy
 
-- [ ] 8.1 Rebase-merge the PR, then verify release-please opens one release PR proposing `welcome` 0.1.0 and `admin` 0.1.0
-- [ ] 8.2 Approve the release PR's CI run and merge it. Verify `deploy-welcome` and `deploy-admin` run in the `production` environment from the released tags, both smoke checks pass, the deploy messages name the tags (`bunx wrangler deployments list`), and the job permissions match task 4.3
-- [ ] 8.3 Verify the manual path: start `deploy.yml` by hand for `welcome` `0.1.0` from `main` and confirm it succeeds; start it with `version=latest` and confirm it fails before building; start it from a non-`main` branch and confirm the job cannot use the `production` environment
-- [ ] 8.4 **Owner task:** sign in to `https://admin.ycmcuenca.workers.dev` with a one-time PIN and confirm `Admin` loads, and confirm an anonymous request from a private window is sent to the Access sign-in. Record the outcome in this file
+- [x] 8.1 Rebase-merge the PR, then verify release-please opens one release PR proposing `welcome` 0.1.0 and `admin` 0.1.0
+- [x] 8.2 Approve the release PR's CI run and merge it. Verify `deploy-welcome` and `deploy-admin` run in the `production` environment from the released tags, both smoke checks pass, the deploy messages name the tags (`bunx wrangler deployments list`), and the job permissions match task 4.3
+- [x] 8.3 Verify the manual path: start `deploy.yml` by hand for `welcome` `0.1.0` from `main` and confirm it succeeds; start it with `version=latest` and confirm it fails before building; start it from a non-`main` branch and confirm the job cannot use the `production` environment
+- [x] 8.4 **Owner task:** sign in to `https://admin.ycmcuenca.workers.dev` with a one-time PIN and confirm `Admin` loads, and confirm an anonymous request from a private window is sent to the Access sign-in. Record the outcome in this file
+  - the owner signed in with a one-time PIN and saw `Admin`
+  - the deployed version `e67771b4-aea9-43af-b47b-a444bbe14f95` answered 200
+  - `Cf-Access-Jwt-Assertion` was present on the request
+  - an anonymous request got a 302 to the Access sign-in
 
 ## Workflow follow-up
 
