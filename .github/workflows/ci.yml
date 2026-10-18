@@ -1,5 +1,5 @@
 # Continuous integration for every pull request targeting `main` and every
-# push to `main` (design D1-D7 in openspec/changes/ci-release-pipeline/design.md).
+# push to `main` (design D1-D7 in openspec/changes/archive/2026-10-18-ci-release-pipeline/design.md).
 name: CI
 
 on:

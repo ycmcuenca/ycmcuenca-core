@@ -2,7 +2,7 @@
 #
 # Applies the GitHub repository settings this project relies on, from the
 # committed sources of truth (design D9 in
-# openspec/changes/ci-release-pipeline/design.md):
+# openspec/changes/archive/2026-10-18-ci-release-pipeline/design.md):
 #
 #   1. repository merge settings: rebase merging only, merged branches deleted
 #   2. Actions permissions: enabled, all actions allowed, SHA pinning required
