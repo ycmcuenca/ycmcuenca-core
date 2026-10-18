@@ -38,6 +38,7 @@ rules:
     - For every significant decision state the pattern, why it fits, the alternatives considered with their trade-offs, and the expected failure modes and their mitigation.
     - Record the version and date of every external fact, and take those facts from current documentation (Context7).
     - List facts that could not be verified as open questions, and list unconfirmed assumptions explicitly for the owner to review.
+    - Link each `**Pattern:**` to its entry in docs/SYSTEM_DESIGN.md. When the pattern has no entry yet, add a planned entry in the same change.
   tasks:
     - Add a verification step for any behavior that has not been verified in this repository yet (external services, library behavior, platform limits).
     - Mark tasks only the owner can perform as an owner task and make the verification step explicit.
@@ -46,5 +47,6 @@ operations:
   archive:
     guidance:
       - Set the change's row in docs/ROADMAP.md to `archived`, and record any platform-wide decision the change made or overturned in docs/DECISIONS.md.
-      - Review every living document in docs/ (ARCHITECTURE.md, DESIGN.md, PRODUCT.md, ROADMAP.md, USER_JOURNEY.md) and update the ones this change affects, including their Mermaid diagrams, in the same branch before archiving.
+      - Review every living document in docs/ (ARCHITECTURE.md, DESIGN.md, PRODUCT.md, ROADMAP.md, SYSTEM_DESIGN.md, USER_JOURNEY.md) and update the ones this change affects, including their Mermaid diagrams, in the same branch before archiving.
+      - 'Complete the docs/SYSTEM_DESIGN.md entries for the concepts this change applies: turn a planned entry into a built one, or add a new entry. Draft "What we learned here" from the change''s design risks, open questions and follow-ups, starting with the line `> Draft: awaiting the owner''s rewrite.`, and leave the rewrite to the owner.'
       - If docs/ does not exist yet, report that there were no living documents to sync and continue.
