@@ -1,0 +1,111 @@
+# Deploys one released app to Cloudflare Workers, from its release tag
+# (design D1 and D2 in openspec/changes/edge-infrastructure/design.md).
+# `release-please.yml` calls it after a release; the owner starts it by hand
+# to roll back to an older tag. Both paths run these exact steps.
+name: deploy
+
+on:
+  workflow_call:
+    inputs:
+      app:
+        description: The app to deploy.
+        required: true
+        type: string
+      version:
+        description: The released version, for example 0.1.0.
+        required: true
+        type: string
+    secrets:
+      CLOUDFLARE_API_TOKEN:
+        description: The Workers Scripts Edit token from task 4.5 (D3).
+        required: true
+  workflow_dispatch:
+    inputs:
+      app:
+        description: The app to deploy.
+        required: true
+        type: choice
+        options: [welcome, admin]
+      version:
+        description: The released version to deploy, for example 0.1.0.
+        required: true
+        type: string
+
+# No permissions by default; the job grants only what it needs (D2).
+permissions: {}
+
+jobs:
+  deploy:
+    name: deploy ${{ inputs.app }}
+    runs-on: ubuntu-24.04 # Pinned runner image, never `-latest` (A8).
+    # The Cloudflare credentials live in this environment and reach only jobs
+    # that use it, from `main` (D3).
+    environment: production
+    # Deploys of one app never overlap: a newer one waits, never cancels (D2).
+    concurrency:
+      group: deploy-${{ inputs.app }}
+      cancel-in-progress: false
+    permissions:
+      contents: read # Enough to check out the tag; task 4.3 confirms no more.
+    steps:
+      # The inputs are validated here, before anything is built, and the
+      # release tag every later step uses is built from them (D2). They
+      # arrive through `env`, never spliced into the script.
+      - name: Resolve the release tag
+        env:
+          APP: ${{ inputs.app }}
+          VERSION: ${{ inputs.version }}
+        run: |
+          if [ "$APP" != "welcome" ] && [ "$APP" != "admin" ]; then
+            echo "unknown app: $APP" >&2
+            exit 1
+          fi
+          if ! printf '%s\n' "$VERSION" | grep -Eq '^[0-9]+\.[0-9]+\.[0-9]+$'; then
+            echo "invalid version: $VERSION" >&2
+            exit 1
+          fi
+          echo "TAG=$APP-v$VERSION" >> "$GITHUB_ENV"
+          echo "Deploying $APP-v$VERSION."
+
+      # A missing tag fails here, before anything is built (D2).
+      - name: Check out the release tag
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: refs/tags/${{ env.TAG }}
+          persist-credentials: false # Later steps cannot reuse the token (D2).
+
+      # No cache anywhere in this workflow: a deploy never reuses build
+      # output from another run (D2, zizmor's cache-poisoning).
+      - name: Set up Bun
+        # No version input: setup-bun reads `packageManager` from package.json.
+        # `no-cache` disables the action's default cache of the Bun executable,
+        # so a deploy caches nothing at all (task 4.4).
+        uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
+        with:
+          no-cache: "true"
+      - name: Set up Node
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version-file: .node-version # One source of truth (D2).
+
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+
+      # The app's unit tests include the trust-configuration test, so a
+      # misconfigured `admin` never deploys (D2).
+      - name: Check, test and build the app
+        env:
+          APP: ${{ inputs.app }}
+        run: bunx turbo run check test build --filter="$APP"
+
+      - name: Deploy with Wrangler
+        working-directory: apps/${{ inputs.app }}
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
+        run: bunx wrangler deploy --message "$TAG"
+
+      - name: Smoke check
+        env:
+          APP: ${{ inputs.app }}
+        run: scripts/deploy/smoke-check.sh "$APP"
