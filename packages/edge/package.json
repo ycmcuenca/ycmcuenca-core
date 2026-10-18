@@ -1,0 +1,26 @@
+{
+  "name": "@ycmcuenca/edge",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts",
+    "./access": "./src/access.ts"
+  },
+  "scripts": {
+    "check": "tsc --noEmit",
+    "test": "vitest run",
+    "lint": "eslint ."
+  },
+  "peerDependencies": {
+    "jose": "^6.2.12"
+  },
+  "devDependencies": {
+    "@sveltejs/kit": "3.1.0",
+    "@ycmcuenca/eslint-config": "workspace:*",
+    "@ycmcuenca/tsconfig": "workspace:*",
+    "jose": "6.2.12",
+    "typescript": "6.0.3",
+    "vitest": "4.1.12"
+  }
+}
