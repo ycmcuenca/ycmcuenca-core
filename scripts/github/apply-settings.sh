@@ -199,8 +199,10 @@ handle_step "code scanning default setup" "$code_scanning_detail" apply_code_sca
 # Upsert by name: PUT when it exists, POST when it does not (D9). The
 # comparison keeps only the fields the committed file defines - and, per
 # rule, only the parameters the file sets - dropping everything the API adds
-# (ids, URLs, timestamps, defaulted parameters), so an applied ruleset
-# compares equal and a re-run changes nothing.
+# (ids, URLs, timestamps, defaulted parameters) - but it compares the sorted
+# list of rule types in full, so a rule added outside the committed file is
+# drift. An applied ruleset therefore compares equal and a re-run changes
+# nothing.
 
 canonical_ruleset() { # canonical_ruleset <json> <desired-json>
   jq -S --argjson desired "$2" '
@@ -224,7 +226,8 @@ canonical_ruleset() { # canonical_ruleset <json> <desired-json>
             )
           }
         ] | sort_by(.type)
-      )
+      ),
+      rule_types: ([.rules[].type] | sort)
     }
   ' <<< "$1"
 }
