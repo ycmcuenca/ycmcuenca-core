@@ -10,6 +10,8 @@
 #   4. secret scanning and push protection: on (the extra modes stay off, A9)
 #   5. CodeQL default setup: code scanning on, GitHub's default query suite
 #   6. the `main` ruleset, from .github/rulesets/main.json
+#   7. the `production` environment: custom branch policy limited to `main`,
+#      and the deploy credential names reported as set or missing
 #
 # Usage:
 #   scripts/github/apply-settings.sh           apply drift (idempotent)
@@ -262,6 +264,102 @@ else
   fi
 fi
 handle_step "$RULESET_NAME ruleset" "$ruleset_detail" apply_ruleset
+
+# --- 7. The `production` environment ----------------------------------------
+# The deploy job runs in this environment, so the Cloudflare credentials are
+# scoped to it and only `main` may use them (design D3 in
+# openspec/changes/edge-infrastructure/design.md). The environment is
+# upserted, never recreated, and its branch policies converge to exactly
+# `main`. A missing credential can only be reported by name - the script
+# cannot set the secret's value - so it counts as drift under --check and
+# stays a note otherwise (the owner sets it once).
+
+ENVIRONMENT_NAME="production"
+
+apply_environment() {
+  gh api --method PUT "repos/$REPO/environments/$ENVIRONMENT_NAME" --input - >/dev/null <<'JSON'
+{
+  "deployment_branch_policy": {
+    "protected_branches": false,
+    "custom_branch_policies": true
+  }
+}
+JSON
+  if [ -z "$main_policy_id" ]; then
+    gh api --method POST "repos/$REPO/environments/$ENVIRONMENT_NAME/deployment-branch-policies" \
+      -f name=main -f type=branch >/dev/null
+  fi
+  while IFS=$'\t' read -r policy_id policy_name; do
+    if [ -n "$policy_id" ] && [ "$policy_name" != "main" ]; then
+      gh api --method DELETE "repos/$REPO/environments/$ENVIRONMENT_NAME/deployment-branch-policies/$policy_id" >/dev/null
+    fi
+  done <<< "$branch_policies_tsv"
+}
+
+environment_detail=""
+main_policy_id=""
+branch_policies_tsv=""
+# gh prints the 404's JSON body even though the call failed, so the absence
+# of the environment is a status check, never an empty response (step 3 uses
+# the same probe).
+environment_probe="$(gh api -i "repos/$REPO/environments/$ENVIRONMENT_NAME" 2>&1 || true)"
+environment_status="$(printf '%s\n' "$environment_probe" | awk '/^HTTP\// { print $2; exit }')"
+case "$environment_status" in
+  200)
+    environment_json="$(gh api "repos/$REPO/environments/$ENVIRONMENT_NAME")"
+    branch_policies_json="$(gh api "repos/$REPO/environments/$ENVIRONMENT_NAME/deployment-branch-policies")"
+    branch_policies_tsv="$(printf '%s' "$branch_policies_json" | jq -r '.branch_policies[]? | "\(.id)\t\(.name)"')"
+    main_policy_id="$(printf '%s' "$branch_policies_tsv" | awk -F'\t' '$2 == "main" { print $1; exit }')"
+    policy_names="$(printf '%s' "$branch_policies_tsv" | cut -f2 | paste -sd, -)"
+    if [ "$policy_names" != "main" ]; then
+      environment_detail="branch policies: ${policy_names:-none} -> main"
+    fi
+    policy_mode="$(printf '%s' "$environment_json" | jq -r '
+      .deployment_branch_policy as $policy |
+      if $policy == null then "all branches"
+      elif $policy.protected_branches == true then "protected branches"
+      elif $policy.custom_branch_policies == true then "custom"
+      else "none" end')"
+    if [ "$policy_mode" != "custom" ]; then
+      environment_detail="${environment_detail}${environment_detail:+; }branch policy mode: $policy_mode -> custom"
+    fi
+    ;;
+  404)
+    environment_detail="not present"
+    ;;
+  *)
+    die "environment check failed (HTTP '${environment_status:-no response}')" \
+      "only a 404 means the environment does not exist, so this is an error"
+    ;;
+esac
+handle_step "$ENVIRONMENT_NAME environment" "$environment_detail" apply_environment
+
+# Names only, never values: the API returns secret names and variable names
+# (with values), so naming a missing one cannot leak anything. Without the
+# environment, neither can exist.
+if [ "$environment_detail" = "not present" ]; then
+  environment_secret_names=""
+  environment_variable_names=""
+else
+  environment_secret_names="$(gh api "repos/$REPO/environments/$ENVIRONMENT_NAME/secrets" --jq '.secrets[].name')"
+  environment_variable_names="$(gh api "repos/$REPO/environments/$ENVIRONMENT_NAME/variables" --jq '.variables[].name')"
+fi
+credentials_detail=""
+if ! grep -qx 'CLOUDFLARE_API_TOKEN' <<< "$environment_secret_names"; then
+  credentials_detail="CLOUDFLARE_API_TOKEN (secret) not set"
+fi
+if ! grep -qx 'CLOUDFLARE_ACCOUNT_ID' <<< "$environment_variable_names"; then
+  credentials_detail="${credentials_detail}${credentials_detail:+; }CLOUDFLARE_ACCOUNT_ID (variable) not set"
+fi
+if [ -z "$credentials_detail" ]; then
+  printf '%s: unchanged\n' "$ENVIRONMENT_NAME credentials"
+elif [ "$mode" = "check" ]; then
+  printf '%s: drifted (%s)\n' "$ENVIRONMENT_NAME credentials" "$credentials_detail"
+  drift_found=1
+else
+  printf '%s: missing (%s); set them by hand (see README, "Deploying")\n' \
+    "$ENVIRONMENT_NAME credentials" "$credentials_detail"
+fi
 
 # --- Result -----------------------------------------------------------------
 
