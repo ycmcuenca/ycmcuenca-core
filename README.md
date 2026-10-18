@@ -124,13 +124,103 @@ directory. No version is ever edited by hand.
   (for example `welcome-v0.1.0`) with the changelog notes. Internal packages
   (`packages/*`) are not versioned.
 
+## Deploying
+
+A release deploys itself; nobody runs `wrangler deploy` by hand.
+
+- Merging a release pull request tags each released app (see Releases).
+  `.github/workflows/deploy.yml` then deploys that app from its tag, inside
+  the `production` environment. The environment is the only place that holds
+  `CLOUDFLARE_API_TOKEN` (secret) and `CLOUDFLARE_ACCOUNT_ID` (variable), and
+  its branch policy lets only `main` use them.
+- The job checks out the tag, runs the app's checks, tests and build, deploys
+  with `bunx wrangler deploy`, and then runs
+  `scripts/deploy/smoke-check.sh <app>`. A failed smoke check leaves the run
+  red; the version that was serving keeps serving.
+- To deploy by hand — a rollback, for example — start the workflow yourself:
+  **Actions** → **Deploy** → **Run workflow**, then give the app and the
+  version to deploy, such as `0.1.0`. It builds the matching tag and runs the
+  same checks and smoke test. Name an older version to roll back.
+- Both smoke checks also run standalone against the production URLs:
+
+  ```sh
+  scripts/deploy/smoke-check.sh welcome
+  scripts/deploy/smoke-check.sh admin
+  ```
+
+  `welcome` must answer 200 with the security headers; `admin` must refuse an
+  anonymous request (302, 401 or 403) and never serve the app. Pass a second
+  argument to point a check at another URL, for example a local
+  `wrangler dev`.
+
+- **Token rotation:** roll the deploy token in the Cloudflare dashboard
+  (**My Profile** → **API Tokens** → **Roll**), then update the secret:
+
+  ```sh
+  gh secret set CLOUDFLARE_API_TOKEN --env production
+  ```
+
+  The next deploy authenticates with the new token. No code or workflow
+  change is needed.
+
+- **Deploy token:** an account-owned token with **Workers Scripts: Edit** on
+  the one account, the only permission its deploys have needed. If a deploy
+  is ever refused, the API names the missing permission.
+
+## Cloudflare Access
+
+`admin` is closed twice over. Cloudflare Access sits in front of every route,
+and the worker itself verifies the `Cf-Access-Jwt-Assertion` header against
+the team's key set (`accessGuard` in `apps/admin/src/hooks.server.ts`). A
+request without a valid token is answered with 403, so a misconfiguration
+fails closed.
+
+The Zero Trust setup is committed as code under
+`scripts/cloudflare/access/`, applied by a compare-then-apply script: one
+One-time PIN identity provider, one `owner-only` policy for the owner's
+email, and two Worker-level applications (`admin` for all traffic, `welcome`
+for preview URLs only). The script reads `CLOUDFLARE_API_TOKEN` (a personal
+Access-admin token, never stored in GitHub), `CLOUDFLARE_ACCOUNT_ID` and
+`OWNER_EMAIL`:
+
+```sh
+OWNER_EMAIL=... CLOUDFLARE_API_TOKEN=... scripts/cloudflare/apply-access.sh --check
+OWNER_EMAIL=... CLOUDFLARE_API_TOKEN=... scripts/cloudflare/apply-access.sh
+```
+
+`--check` reports drift and changes nothing; the plain run applies it and
+never deletes an application, so each keeps its AUD. The script prints
+`admin`'s AUD, which is committed as `ACCESS_AUD` in
+`apps/admin/wrangler.jsonc`; the deployed worker trusts exactly that
+application. The owner signs in with a one-time PIN sent to the owner's
+email — the policy includes that one address, so codes go nowhere else.
+
+If an application is deleted by hand, the next run recreates it with a new
+AUD. The committed AUD no longer matches, `admin` stays closed, and
+`--check` reports the mismatch until the new AUD is committed and `admin`
+redeployed.
+
+**Access-admin token:** Access: Apps and Policies Edit, Access:
+Organizations, Identity Providers, and Groups Edit, and Workers Scripts
+Read.
+
+## Shipping shared-package changes
+
+`packages/edge` is internal and is never versioned on its own. A change
+there reaches production only through an app release. Every change that must
+ship therefore comes with a `fix(<app>)` (or `feat(<app>)`) commit that
+touches each affected app — a line in that app's `hooks.server.ts`, for
+example. That commit is what release-please proposes as the app's patch
+release, and the deploy carries the package change along. A package change
+without such a commit waits for the next app release.
+
 ## Repository settings
 
 The settings this repository depends on are defined in committed files and
 applied by one idempotent script: rebase-only merging with merged branches
 deleted, Actions restricted to SHA-pinned references, Dependabot
 vulnerability alerts, secret scanning and push protection, CodeQL default
-setup, and the `main` ruleset
+setup, the `main` ruleset, and the `production` environment the deploy uses
 (`.github/rulesets/main.json`, `scripts/github/apply-settings.sh`).
 
 ```sh
@@ -139,7 +229,9 @@ scripts/github/apply-settings.sh           # apply drift
 ```
 
 Both need `gh` authenticated as a repository admin. Once the repository
-matches, the script only reports `unchanged`.
+matches, the script only reports `unchanged`. It also reports the
+`production` environment's credentials by name; it cannot set them, and a
+missing one counts as drift.
 
 **Break-glass:** if the ruleset ever blocks an emergency fix, an admin can
 disable it in the repository's ruleset settings (or through the API), land the
