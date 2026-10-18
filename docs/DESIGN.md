@@ -85,8 +85,9 @@ it.
 
 ## Current visual state
 
-Checked on 2026-10-18 with `bun run dev`. `welcome` runs on
-<http://localhost:5173> and `admin` on <http://localhost:5174>.
+Checked on 2026-10-18 with `bun run dev`; both apps are also deployed and look
+the same. `welcome` runs on <http://localhost:5173> and `admin` on
+<http://localhost:5174>.
 
 - Each app shows one heading, "Welcome" or "Admin", and nothing else.
 - The heading uses the browser's default serif typeface in black on a white
@@ -94,6 +95,8 @@ Checked on 2026-10-18 with `bun run dev`. `welcome` runs on
 - There is no layout, navigation, colour, custom font, logo or dark theme.
 - The pages have no title, so the browser tab shows only the address.
 - Both browser tabs show SvelteKit's default favicon, the Svelte logo.
+- A failed request shows a minimal error page: the status as a heading and the
+  request id, never the error's message.
 
 The apps carry no styles of their own, so they follow the browser's defaults. No
 automated accessibility check exists yet.
