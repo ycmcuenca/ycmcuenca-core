@@ -3,6 +3,23 @@
   // `$app/tsconfig` entry is written by `svelte-kit sync` into node_modules
   // and supplies module/target/moduleResolution, $lib paths and route types.
   // See packages/tsconfig/README.md for the full explanation.
+  // `worker-configuration.d.ts` is what `wrangler types` regenerates; it types
+  // `env` from `cloudflare:workers` with this app's bindings and vars (task
+  // 4.1, design D4).
   "extends": ["@ycmcuenca/tsconfig/svelte-app.json", "$app/tsconfig"],
-  "include": ["src", "vite.config.ts", "playwright.config.ts", "e2e"]
+  "include": [
+    "src",
+    "vite.config.ts",
+    "playwright.config.ts",
+    "e2e",
+    "worker-configuration.d.ts"
+  ],
+  "compilerOptions": {
+    // The generated types reference `.svelte-kit/cloudflare/_worker` (build
+    // output) from a skipped declaration; without JS modules that reference
+    // cannot drag the build output into the type program (D4). This app is
+    // all TypeScript anyway.
+    "allowJs": false,
+    "checkJs": false
+  }
 }
