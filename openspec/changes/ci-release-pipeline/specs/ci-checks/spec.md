@@ -97,7 +97,7 @@ CI SHALL report one aggregate check that succeeds only when every other check in
 
 ### Requirement: Least-privilege workflows
 
-Every workflow SHALL declare explicit token permissions. The default SHALL be no permissions, with each job granted only what it needs. Repository checkouts SHALL NOT persist credentials. Every third-party or GitHub-authored action SHALL be referenced by full commit SHA.
+Every workflow SHALL declare explicit token permissions. The default SHALL be no permissions, with each job granted only what it needs. Repository checkouts SHALL NOT persist credentials. Every third-party or GitHub-authored action SHALL be referenced by full commit SHA; container images used through `docker://` SHALL be pinned by `sha256` digest.
 
 #### Scenario: Read-only CI
 
@@ -107,7 +107,7 @@ Every workflow SHALL declare explicit token permissions. The default SHALL be no
 #### Scenario: Pinned references
 
 - **WHEN** any workflow file in the repository is inspected
-- **THEN** every `uses:` reference to an action is a 40-character commit SHA followed by a comment naming its version
+- **THEN** every `uses:` reference to an action is a 40-character commit SHA followed by a comment naming its version, and every `docker://` container image is pinned by a `sha256` digest whose tag names the version
 
 ### Requirement: Untrusted code never receives secrets
 
