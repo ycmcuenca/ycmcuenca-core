@@ -117,7 +117,7 @@ Current state, observed on 2026-10-18:
   - `separate-pull-requests: false`, and **no** `node-workspace` plugin (it would try to update a non-existent `package-lock.json` and rewrite dependency ranges).
   - `bootstrap-sha: 2f69ec2810dced8df7068a62c0d2b5e2030a50d5`, so history before this change is excluded (A5).
 - `.release-please-manifest.json`: `{ "apps/welcome": "0.0.1", "apps/admin": "0.0.1" }`.
-- `.github/workflows/release-please.yml`: on `push` to `main`, `permissions: {}` at the top. One job with `contents: write`, `pull-requests: write` and `issues: write` (release-please creates its labels), using the default `GITHUB_TOKEN`. It exposes `releases_created` and `paths_released` as job outputs for the future deploy workflow. No checkout, no cache.
+- `.github/workflows/release-please.yml`: on `push` to `main`, `permissions: {}` at the top. One job with `contents: write`, `pull-requests: write` and `issues: write` (release-please creates its labels), using the default `GITHUB_TOKEN`, and a workflow-level `concurrency` group with `cancel-in-progress: false`, so two quick pushes queue instead of racing the release pull request. It exposes `releases_created` and `paths_released` as job outputs for the future deploy workflow. No checkout, no cache.
 - **Pattern:** "release PR" (release train). Versions are proposed continuously and published only on an explicit, reviewed merge.
 - **Alternatives:** _changesets_ (manual intent files per change; more ceremony, though better for npm publishing). _semantic-release_ (publishes on every merge with no review step, and is weak at per-path monorepos). _A PAT or GitHub App token_ (CI would run without approval, but needs a long-lived secret; rejected by the owner).
 - **Failure modes:**

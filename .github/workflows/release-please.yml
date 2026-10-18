@@ -7,6 +7,14 @@ on:
   push:
     branches: [main]
 
+# Serialize runs (zizmor's concurrency-limits): two quick pushes to `main`
+# would otherwise run release-please twice at once, both updating the release
+# pull request. Queue, don't cancel: a run stopped midway could leave that
+# pull request half-updated.
+concurrency:
+  group: release-please
+  cancel-in-progress: false
+
 # No permissions by default; the job below grants only what release-please
 # needs (D8).
 permissions: {}
