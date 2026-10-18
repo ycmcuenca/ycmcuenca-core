@@ -69,6 +69,12 @@ marked _(audit)_ came from the stack audit on the same day (see
 - **P13 Six sprints** _(audit)_. Supersedes P9's five: the CMS core was too
   large for one sprint at 8–12 hours a week, so it is split into "Publish path"
   and "Media, inbox and backups". See ROADMAP.md.
+- **P14 Shared-package changes ship through `fix(<app>)`.** A change under
+  `packages/edge` that must reach production carries a `fix(<app>)` (or
+  `feat(<app>)`) commit touching each affected app, so release-please proposes
+  that app's release and the deploy carries the package change along. Without
+  such a commit the change waits for the next app release. Why: only apps are
+  versioned and deployed (P6); packages are internal.
 
 ## Identity and access
 
@@ -80,6 +86,16 @@ marked _(audit)_ came from the stack audit on the same day (see
   production.
 - **A3 `apps/auth` only when needed.** A Better Auth-based `apps/auth` (not
   OpenAuth) is built only when the first satellite needs public sign-ups.
+- **A4 Worker-level Access applications.** One application follows `admin` to
+  all its URLs (production, previews and versions); `welcome`'s application
+  covers its preview URLs only, so production `welcome` stays public. Why: the
+  per-Worker scope follows a Worker across `workers.dev` and a future custom
+  domain, with no hostname list to keep in sync.
+- **A5 The worker re-verifies Access.** Workers with Static Assets do not
+  expose `ctx.access`, so `admin` verifies the `Cf-Access-Jwt-Assertion`
+  header against the team's key set (RS256, matching `iss` and `aud`). A
+  missing header or empty configuration refuses every request. Why: defense in
+  depth (A2): the edge decides, and the app re-verifies cryptographically.
 
 ## CMS architecture
 
