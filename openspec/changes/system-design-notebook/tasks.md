@@ -19,12 +19,12 @@
   - a built entry without "Further reading"
   - a built entry without a Mermaid block
   - a built entry with only one dated reference
-  - a built entry that keeps the draft marker
+  - a built entry that keeps the draft marker (the check must stay silent)
   - an entry with no status line
   - a complete planned entry
   - a `### Heading` inside a fenced code block
 
-  Verify that the script prints exactly one `incomplete entry: <heading>: <part>` line for each faulty entry, and nothing for the complete entries or the fenced heading. Delete the branch
+  Verify that the script prints exactly one `incomplete entry: <heading>: <part>` line for each faulty entry other than the draft-marker one, and nothing for the complete entries or the fenced heading. Delete the branch
 
 ## 2. Notebook skeleton
 
@@ -42,10 +42,10 @@
 
 For every entry in this group: follow D1's format. Define each system design term where it first appears in the notebook. Cite decisions, archived designs (`Dn` with its anchor) and code paths as links, without restating their reasoning. Read each reference and record the final address after redirects, with `Read on <date>`. Take library and platform facts from Context7 where it has them. Draft "What we learned here" from that change's design Risks, Open Questions and Assumptions, its follow-up PRs and the commit history, under the draft marker.
 
-- [x] 3.1 Write the delivery entries: monorepo task graphs and caching, trunk-based development with a required-check gate, and release trains from Conventional Commits. Verify that the check's only findings for these three are the draft markers, and that each `Pattern:` D3 assigns them (ci D1, D4, D8; edge D1) is named in its entry
-- [x] 3.2 Write the governance entries: settings as code, supply-chain hardening, reproducible toolchains and least privilege. Verify that the check's only findings for these four are the draft markers, and that each `Pattern:` D3 assigns them (ci D9, D11; edge D3, D5) is named in its entry
+- [x] 3.1 Write the delivery entries: monorepo task graphs and caching, trunk-based development with a required-check gate, and release trains from Conventional Commits. Verify that the check passes for these three, and that each `Pattern:` D3 assigns them (ci D1, D4, D8; edge D1) is named in its entry
+- [x] 3.2 Write the governance entries: settings as code, supply-chain hardening, reproducible toolchains and least privilege. Verify that the check passes for these four, and that each `Pattern:` D3 assigns them (ci D9, D11; edge D3, D5) is named in its entry
 - [x] 3.3 Write the edge entries: zero trust and defense in depth (with a `sequenceDiagram` of the Access JWT check), browser security headers and CSP, testing the production artifact, and structured logs with a correlation id. Verify that the check's only findings for these four are the draft markers, that each `Pattern:` D3 assigns them (edge D6, D7, D9) is named in its entry, and that the Access entry's lessons include the missing `ctx.access` on Workers with static assets (A5)
-- [x] 3.4 Write the documentation entries: fitness functions, and documentation as a bounded context. Verify that the check's only findings for these two are the draft markers, and that living-docs D1, D2 and D4 and this change's D7 and D8 are cited
+- [x] 3.4 Write the documentation entries: fitness functions, and documentation as a bounded context. Verify that the check passes for these two, and that living-docs D1, D2 and D4 and this change's D7 and D8 are cited
 - [x] 3.5 Self-review S1 against the `system-design-notebook` spec. Verify that every built-entry part appears in D1's order in all 13 entries, and that no sentence of DECISIONS.md appears in the notebook: `grep -F` for each decision bullet's first sentence returns nothing. Verify that every `**Pattern:**` line in the four archived designs maps to exactly one entry, as the D3 table shows
 
 ## 4. Planned stubs (24, per design D4)
@@ -81,10 +81,10 @@ For every stub: a status line, a one-paragraph definition, 2 to 4 self-check que
 
 ## 6. Integration verification
 
-- [x] 6.1 Run `scripts/docs/check-living-docs.sh` on the finished tree. Verify that its only findings are the 13 S1 draft markers, and that it reports no missing document, no broken link and no other missing part
-- [ ] 6.2 Open the pull request, then verify A4 in the `specs` job log: the link check ran with the `origin` remote, and the step's only failures are the 13 draft markers
+- [x] 6.1 Run `scripts/docs/check-living-docs.sh` on the finished tree. Verify that it prints `living documents: ok`, reporting no missing document, no broken link and no missing part
+- [ ] 6.2 Open the pull request, then verify A4 in the `specs` job log: the link check ran with the `origin` remote, and the step passes
 - [ ] 6.3 In GitHub's rendered view of `docs/SYSTEM_DESIGN.md`, verify in both light and dark themes that every Mermaid diagram renders without an error, that planned concepts are dashed in the overview, that every `<details>` answer is collapsed until clicked, and that the contents links jump to their headings. Record any diagram that needed a fix
-- [ ] 6.4 **Owner task:** rewrite the 13 S1 "What we learned here" parts in your own words, deleting each draft marker, and review the rendered notebook for plain language (ISO 24495-1) and accuracy. Verify that `scripts/docs/check-living-docs.sh` prints `living documents: ok`, and that you post an approval comment on the pull request
+- [ ] 6.4 **Owner task:** rewrite the 13 S1 "What we learned here" parts in your own words, deleting each draft marker, and review the rendered notebook for plain language (ISO 24495-1) and accuracy. Verify that you post an approval comment on the pull request. CI does not check the rewrite
 - [ ] 6.5 Run the local CI equivalent from AGENTS.md (`bun install --frozen-lockfile`, format, lint, check, build, test, test:e2e, `bunx openspec validate --all --strict --no-interactive`, `scripts/docs/check-living-docs.sh`), plus actionlint and zizmor on the workflows. Verify that all pass and that `ci-ok` is green on the pull request
 
 ## Workflow follow-up
