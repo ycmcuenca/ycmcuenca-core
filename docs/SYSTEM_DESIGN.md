@@ -1336,9 +1336,9 @@ flowchart LR
 - [living-docs D4](../openspec/changes/archive/2026-10-18-living-docs/design.md#d4-ci-check-presence-plus-a-diagram-block-in-the-specs-job):
   the pattern _structural fitness function_, the first version of
   [check-living-docs.sh](../scripts/docs/check-living-docs.sh).
-- [notebook D7](../openspec/changes/system-design-notebook/design.md#d7-entry-structure-check-awk-inside-the-existing-script):
+- [notebook D7](../openspec/changes/archive/2026-10-18-system-design-notebook/design.md#d7-entry-structure-check-awk-inside-the-existing-script):
   the entry-structure check for this notebook.
-- [notebook D8](../openspec/changes/system-design-notebook/design.md#d8-relative-link-check-remark-cli-and-remark-validate-links-pinned-as-root-dev-dependencies):
+- [notebook D8](../openspec/changes/archive/2026-10-18-system-design-notebook/design.md#d8-relative-link-check-remark-cli-and-remark-validate-links-pinned-as-root-dev-dependencies):
   the relative-link check, offline.
 
 **What we learned here**
@@ -1426,7 +1426,7 @@ flowchart LR
   the pattern _visual encoding of lifecycle state_.
 - [living-docs D3](../openspec/changes/archive/2026-10-18-living-docs/design.md#d3-citing-decisions-and-roadmap-state):
   decisions are cited by identifier, never restated.
-- [notebook D6](../openspec/changes/system-design-notebook/design.md#d6-links-between-the-notebook-and-the-other-documents):
+- [notebook D6](../openspec/changes/archive/2026-10-18-system-design-notebook/design.md#d6-links-between-the-notebook-and-the-other-documents):
   how this notebook and the other documents link to each other
   ([P8](DECISIONS.md#platform-and-scope), [P15](DECISIONS.md#platform-and-scope)).
 
