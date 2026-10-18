@@ -1,0 +1,24 @@
+{
+  // Workspace strictness (packages/tsconfig) plus the options a
+  // source-only TypeScript package needs: the consuming apps bundle this
+  // package through Vite, so it is checked here but never emitted on its own
+  // (design D10). `lib: dom` provides Response and Headers, which exist in
+  // both workerd and the Node test runner; `types: []` keeps host globals
+  // predictable.
+  "extends": "@ycmcuenca/tsconfig/base.json",
+  "compilerOptions": {
+    "target": "esnext",
+    "lib": ["esnext", "dom", "dom.iterable"],
+    "module": "esnext",
+    "moduleResolution": "bundler",
+    // Relative imports carry their extension so Node's ESM loader (which the
+    // apps' Vite configs use) can resolve this package's source (design D10).
+    "allowImportingTsExtensions": true,
+    "verbatimModuleSyntax": true,
+    "isolatedModules": true,
+    "skipLibCheck": true,
+    "noEmit": true,
+    "types": []
+  },
+  "include": ["src"]
+}
