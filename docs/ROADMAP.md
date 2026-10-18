@@ -34,7 +34,7 @@ a change to the changes that build on it.
 flowchart LR
     subgraph S1["S1 Foundation"]
         bootstrap["bootstrap-monorepo"]:::archived
-        ci["ci-release-pipeline"]:::merged
+        ci["ci-release-pipeline"]:::archived
         edge["edge-infrastructure"]:::planned
         docs["living-docs"]:::planned
     end
@@ -71,7 +71,7 @@ flowchart LR
 | Change                | Status   | What it delivers                                                                                                                                                                                                                                                                                                                             |
 | --------------------- | -------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `bootstrap-monorepo`  | archived | Bun + Turborepo workspace, `welcome` and `admin` as hello-world SvelteKit apps on the Workers adapter (local only), ESLint, Prettier, Lefthook + commitlint, Vitest, Chromium smoke tests on `wrangler dev`. PR #1, archived 2026-10-17.                                                                                                     |
-| `ci-release-pipeline` | merged   | PR CI with one `ci-ok` gate, release-please (one version per app), repository settings as code, SHA-pinned actions, Renovate, CodeQL. PR #2 merged; follow-up PR #5 open; archive pending.                                                                                                                                                   |
+| `ci-release-pipeline` | archived | PR CI with one `ci-ok` gate, release-please (one version per app), repository settings as code, SHA-pinned actions, Renovate, CodeQL. PR #2 merged, follow-up PR #5 merged, archived 2026-10-18.                                                                                                                                             |
 | `edge-infrastructure` | planned  | Cloudflare API token, a deploy workflow that consumes release-please's `paths_released`, both workers live on `workers.dev`, Cloudflare Access in front of `admin` (production and preview URLs), Workers Logs and traces (I9), security headers and CSP (I10). KV, R2 and Neon are created in S2 and S3 by the change that first uses them. |
 | `living-docs`         | planned  | Adopts this file and DECISIONS.md and adds ARCHITECTURE, DESIGN, PRODUCT and USER_JOURNEY, each with a Mermaid diagram. Revises the master architecture diagram: solid lines for what exists, dashed for what is planned.                                                                                                                    |
 
