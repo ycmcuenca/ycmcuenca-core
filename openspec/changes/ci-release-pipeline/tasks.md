@@ -78,4 +78,13 @@ The `/opsx-verify` findings addressed on PR #5, each in its own commit:
 
 Local checks before the push: `bun run format`, `bun run lint`, `bunx openspec validate --all --strict --no-interactive`, actionlint through the new reference, zizmor, shellcheck, the Renovate config validator, and `scripts/github/apply-settings.sh --check` (exit 0).
 
-After merge, record when Renovate next runs: the dashboard shows no `engines`/peer pins, `rhysd/actionlint` with a version, and no Node major outside Pending Approval (there should be none at all). Then re-run `/opsx-verify ci-release-pipeline`.
+## Re-verification follow-up (2026-10-18)
+
+A second `/opsx-verify` pass found two warnings and two suggestions; all are addressed, and PR #5 was rebase-merged before Renovate's window:
+
+- W1: PR #5 rebase-merged on 2026-10-18 (`main` now ends at `bae0e81`). The Renovate dashboard was re-run and reports no `pin dependency eslint` entry, `node >=24` with no update (the `<25` cap hides v26 - nothing waits for approval), `rhysd/actionlint 1.7.12@sha256:…`, and `.node-version` proposing the exact pin `v24.22.0` (S1). `@types/node` v26 and the `ubuntu` 26.04 proposal stay under Pending Approval (A3). The post-merge runs on `main` were green: `release-please` (39091878232) and `CI` (39091878171).
+- W2 (`46b624f`): the design notes match the implementation again - D7's tag+digest reference, D9's six steps and full rule-type comparison, D11's engines/peer exception, the explicit `chore` overrides and the Node cap, and A3's cap decision.
+- S1 (owner's decision): the `.node-version` exact pin is accepted; the README line is reworded when that PR lands.
+- S2 (`bae0e81`): `release-please.yml` gains a workflow-level `concurrency` group (`cancel-in-progress: false`), so runs queue instead of racing the release pull request; zizmor is clean under the default and pedantic personas.
+
+The checks run for this round: `bun run format`, `bun run lint`, `bunx openspec validate --all --strict --no-interactive`, actionlint 1.7.12, and zizmor 1.31.1 under both personas.
