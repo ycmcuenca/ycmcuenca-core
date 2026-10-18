@@ -35,4 +35,5 @@
 - Set this change's row in `docs/ROADMAP.md` to `in progress` when implementation starts, and to `merged` once the PR lands.
 - Commit through `/git` and ship through `/ship`. No release PR follows, because nothing under `apps/` changes.
 - Archive: set the row to `archived`. This is the first archive with living documents to sync. Review all five, and update any that this change's final state affects.
+- On archive, change the design citations in `.github/workflows/ci.yml` (the `Check living documents` step) and `scripts/docs/check-living-docs.sh` to `openspec/changes/archive/<date>-living-docs/design.md`.
 - Next change: `edge-infrastructure`. Its archive turns deployment, Access, observability and security headers solid in ARCHITECTURE.md.

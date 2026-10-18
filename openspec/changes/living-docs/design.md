@@ -59,7 +59,7 @@ Current state, observed on 2026-10-18:
 - **Journeys:** Mermaid `journey` tasks need a 1–5 score. Here the score means the experience the step is meant to give (5 = effortless). Today/planned is carried by a `(planned S<n>)` suffix on the task name and by the step table, not by the score.
 - **Pattern:** visual encoding of lifecycle state, so a reader sees at a glance how far the system has come.
 - **Alternatives:** _separate "current" and "target" diagrams_ (no styling tricks needed; two diagrams to keep in sync on every archive); _colour only_ (fails for colour-blind readers and in GitHub's dark theme, where the dashed stroke still reads).
-- **Failure modes:** _A diagram fails to render on GitHub_ (syntax error or unsupported feature). Mitigation: each diagram is checked in the PR's rendered view (task 5.2). The CI check only proves a block exists (see D4).
+- **Failure modes:** _A diagram fails to render on GitHub_ (syntax error or unsupported feature). Mitigation: each diagram is checked in the PR's rendered view (task 5.3). The CI check only proves a block exists (see D4).
 
 ### D3. Citing decisions and roadmap state
 
@@ -99,13 +99,13 @@ The README gains a `## Documentation` section after the opening paragraph: one l
 
 - **Documents describe a system that is mostly planned, and could read as promises** → every planned element names its sprint, and PRODUCT.md states that the roadmap, not the documents, is the plan of record.
 - **The archive sync becomes a chore and gets skipped** → fixed outlines (D1) keep each sync to known sections, and the CI check stops a document from silently disappearing.
-- **The owner's product intent is drafted by an agent** → PRODUCT.md and USER_JOURNEY.md wording is an explicit owner-review task (5.3) before merge.
+- **The owner's product intent is drafted by an agent** → PRODUCT.md and USER_JOURNEY.md wording is an explicit owner-review task (5.4) before merge.
 - **Mermaid features render differently on GitHub than in other viewers** → only `flowchart` and `journey`, checked on the PR's rendered view.
 
 ## Migration Plan
 
 1. Land the documents, `AGENTS.md`, the README section, the ROADMAP styles and the CI step on the change branch.
-2. CI runs on the PR. The new step passes, and its failure mode is checked on a throwaway commit (task 4.2).
+2. CI runs on the PR. The new step passes, and its failure mode is checked on a throwaway commit (task 5.2).
 3. The owner reviews the rendered documents on the PR and approves the product wording.
 4. Rebase-merge. No release follows, because nothing under `apps/` changed.
 
@@ -115,7 +115,7 @@ The README gains a `## Documentation` section after the opening paragraph: one l
 
 Deferrable: neither changes the specs or the task breakdown.
 
-- Which Mermaid version GitHub renders with. It doesn't matter as long as D2's diagram types render, which task 5.2 checks.
+- Which Mermaid version GitHub renders with. It doesn't matter as long as D2's diagram types render, which task 5.3 checks.
 - Which Claude Code sessions "can't read `AGENTS.md`". If the owner hits one, add a `CLAUDE.md` containing only `@AGENTS.md`.
 
 ## Assumptions for owner review
