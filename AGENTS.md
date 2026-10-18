@@ -71,6 +71,9 @@ CI also runs the `workflows` job (actionlint and zizmor) and the `commits` job
 - Pin every dependency to an exact version.
 - After you change an app's `wrangler.jsonc`, run `bun run gen` in that app and
   commit the changed `worker-configuration.d.ts`.
+- A change under `packages/edge` that must reach production carries a
+  `fix(<app>)` (or `feat(<app>)`) commit touching each affected app; the
+  README explains why ([Shipping shared-package changes](README.md#shipping-shared-package-changes)).
 - Write documents in plain language, following ISO 24495-1: short sentences,
   common words, one idea per paragraph, and each term defined where it first
   appears.
