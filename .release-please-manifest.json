@@ -1,4 +1,4 @@
 {
-  "apps/admin": "0.0.1",
-  "apps/welcome": "0.0.1"
+  "apps/admin": "0.1.0",
+  "apps/welcome": "0.1.0"
 }
