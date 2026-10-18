@@ -23,7 +23,7 @@ The `docs/` directory SHALL contain the five living documents `ARCHITECTURE.md`,
 #### Scenario: Purpose stated
 
 - **WHEN** a reader opens any living document
-- **THEN** its first paragraph states what the document covers and which other documents cover neighboring topics
+- **THEN** its opening paragraphs state what the document covers and which other documents cover neighboring topics
 
 ### Requirement: Built versus planned in the architecture diagram
 
