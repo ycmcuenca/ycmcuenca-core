@@ -48,6 +48,12 @@
       semanticCommitType: "fix",
     },
 
+    // Each tooling group below sets `semanticCommitType: "chore"` explicitly:
+    // some tooling packages (the shared ESLint config's, for example) sit in
+    // `dependencies`, where the `:semanticPrefixFixDepsChoreOthers` preset
+    // would otherwise commit them as `fix(deps)` and propose app patch
+    // releases (repository-governance spec: "Update commits signal release
+    // impact").
     // Cloudflare tooling builds the output but does not ship inside it, so it
     // stays the default `chore(deps)`.
     {
@@ -55,6 +61,7 @@
       groupName: "cloudflare",
       matchDatasources: ["npm"],
       matchPackageNames: ["wrangler", "@cloudflare/**"],
+      semanticCommitType: "chore",
     },
     {
       description: "Lint and format tooling: chore(deps), one pull request",
@@ -69,30 +76,35 @@
         "prettier",
         "prettier-plugin-*",
       ],
+      semanticCommitType: "chore",
     },
     {
       description: "Test tooling: chore(deps), one pull request",
       groupName: "test",
       matchDatasources: ["npm"],
       matchPackageNames: ["vitest", "@vitest/**", "@playwright/test"],
+      semanticCommitType: "chore",
     },
     {
       description: "Build tooling: chore(deps), one pull request",
       groupName: "build",
       matchDatasources: ["npm"],
       matchPackageNames: ["turbo", "vite", "typescript", "@types/**"],
+      semanticCommitType: "chore",
     },
     {
       description: "Commit tooling: chore(deps), one pull request",
       groupName: "commit-tooling",
       matchDatasources: ["npm"],
       matchPackageNames: ["@commitlint/**", "lefthook"],
+      semanticCommitType: "chore",
     },
     {
       description: "OpenSpec CLI: chore(deps)",
       groupName: "openspec",
       matchDatasources: ["npm"],
       matchPackageNames: ["@fission-ai/openspec"],
+      semanticCommitType: "chore",
     },
     // Every `uses:` reference in .github/workflows keeps its full-SHA pin
     // (helpers:pinGitHubActionDigests); grouping keeps that in one PR.
@@ -100,6 +112,7 @@
       description: "GitHub Actions: keep the SHA pins current, one pull request",
       groupName: "github-actions",
       matchManagers: ["github-actions"],
+      semanticCommitType: "chore",
     },
     // The toolchain pins the workflows read: Bun's `packageManager` field and
     // `.node-version` (A8's runner image is updated deliberately, by hand).
@@ -110,6 +123,7 @@
       groupName: "toolchain",
       matchManagers: ["bun", "nodenv"],
       matchDepNames: ["bun", "node"],
+      semanticCommitType: "chore",
     },
 
     // A3: major updates are reviewed on the dependency dashboard first;
@@ -143,6 +157,8 @@
   // Security advisories skip both the weekly schedule and the release-age
   // wait, and are committed as `fix(deps)`, so affected apps get a patch
   // release from the fix (repository-governance spec: "Vulnerability fix").
+  // Renovate appends these settings to the matching package rules with
+  // `force` (44.166.0), so they win over the tooling groups' `chore` above.
   vulnerabilityAlerts: {
     semanticCommitType: "fix",
   },
