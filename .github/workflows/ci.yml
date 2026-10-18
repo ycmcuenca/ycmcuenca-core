@@ -157,10 +157,12 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
-      # Official image pinned by digest: the documented `curl | bash` install
-      # is an unpinned supply-chain hop this change removes (D7).
+      # Official image pinned by tag and digest: the digest is what runs, the
+      # tag is what Renovate reads to propose version updates. The documented
+      # `curl | bash` install is an unpinned supply-chain hop this change
+      # removes (D7).
       - name: Lint workflows (actionlint)
-        uses: docker://rhysd/actionlint@sha256:b1934ee5f1c509618f2508e6eb47ee0d3520686341fec936f3b79331f9315667 # 1.7.12
+        uses: docker://rhysd/actionlint:1.7.12@sha256:b1934ee5f1c509618f2508e6eb47ee0d3520686341fec936f3b79331f9315667
       # SARIF upload is disabled: in SARIF mode zizmor always exits 0, which
       # would let findings pass; the action propagates the real exit code (D7).
       - name: Audit workflows (zizmor)
