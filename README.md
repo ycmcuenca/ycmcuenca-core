@@ -115,7 +115,8 @@ directory. No version is ever edited by hand.
 The settings this repository depends on are defined in committed files and
 applied by one idempotent script: rebase-only merging with merged branches
 deleted, Actions restricted to SHA-pinned references, Dependabot
-vulnerability alerts, CodeQL default setup, and the `main` ruleset
+vulnerability alerts, secret scanning and push protection, CodeQL default
+setup, and the `main` ruleset
 (`.github/rulesets/main.json`, `scripts/github/apply-settings.sh`).
 
 ```sh

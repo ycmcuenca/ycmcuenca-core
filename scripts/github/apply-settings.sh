@@ -7,8 +7,9 @@
 #   1. repository merge settings: rebase merging only, merged branches deleted
 #   2. Actions permissions: enabled, all actions allowed, SHA pinning required
 #   3. vulnerability alerts: on (Renovate turns them into fix(deps) PRs)
-#   4. CodeQL default setup: code scanning on, GitHub's default query suite
-#   5. the `main` ruleset, from .github/rulesets/main.json
+#   4. secret scanning and push protection: on (the extra modes stay off, A9)
+#   5. CodeQL default setup: code scanning on, GitHub's default query suite
+#   6. the `main` ruleset, from .github/rulesets/main.json
 #
 # Usage:
 #   scripts/github/apply-settings.sh           apply drift (idempotent)
@@ -143,7 +144,34 @@ if ! gh api "repos/$REPO/vulnerability-alerts" >/dev/null 2>&1; then
 fi
 handle_step "vulnerability alerts" "$vulnerability_detail" apply_vulnerability_alerts
 
-# --- 4. CodeQL default setup ------------------------------------------------
+# --- 4. Secret scanning and push protection --------------------------------
+# The repository is public, so credentials must never reach its history:
+# secret scanning finds them, push protection blocks them before they are
+# pushed. Only these two are managed (A9 keeps the non-provider patterns
+# and the validity checks off).
+
+apply_secret_scanning() {
+  gh api --method PATCH "repos/$REPO" --input - >/dev/null <<'JSON'
+{
+  "security_and_analysis": {
+    "secret_scanning": { "status": "enabled" },
+    "secret_scanning_push_protection": { "status": "enabled" }
+  }
+}
+JSON
+}
+
+secret_scanning_detail=""
+security_and_analysis_json="$(gh api "repos/$REPO" --jq '.security_and_analysis')"
+for feature in secret_scanning secret_scanning_push_protection; do
+  current="$(printf '%s' "$security_and_analysis_json" | jq -r ".${feature}.status // \"unknown\"")"
+  if [ "$current" != "enabled" ]; then
+    secret_scanning_detail="${secret_scanning_detail}${secret_scanning_detail:+; }$feature: $current -> enabled"
+  fi
+done
+handle_step "secret scanning and push protection" "$secret_scanning_detail" apply_secret_scanning
+
+# --- 5. CodeQL default setup ------------------------------------------------
 # Code scanning on, with GitHub's default query suite and its choice of
 # languages (D12). Not a required check: findings are triaged, not
 # merge-blocking.
@@ -167,7 +195,7 @@ else
 fi
 handle_step "code scanning default setup" "$code_scanning_detail" apply_code_scanning
 
-# --- 5. The `main` ruleset --------------------------------------------------
+# --- 6. The `main` ruleset --------------------------------------------------
 # Upsert by name: PUT when it exists, POST when it does not (D9). The
 # comparison keeps only the fields the committed file defines - and, per
 # rule, only the parameters the file sets - dropping everything the API adds
