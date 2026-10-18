@@ -41,16 +41,16 @@ flowchart TB
     subgraph github["GitHub"]
         direction LR
         repo["Repository, CI,<br/>release-please, Renovate,<br/>CodeQL"]:::built
-        deploy["Deploy workflow<br/>(edge-infrastructure)"]:::planned
+        deploy["Deploy workflow"]:::built
         backup["Nightly backup job<br/>(S3 data-backups)"]:::planned
     end
 
     subgraph cf["Cloudflare Workers (Free plan)"]
-        access["Cloudflare Access<br/>(edge-infrastructure)"]:::planned
+        access["Cloudflare Access"]:::built
         cache["Workers Cache<br/>(S2 public-rendering)"]:::planned
         welcome["welcome worker<br/>public site, placeholder page"]:::built
         admin["admin worker<br/>CMS, placeholder page"]:::built
-        edge["Security headers, CSP,<br/>logs and traces<br/>(edge-infrastructure)"]:::planned
+        edge["Security headers, CSP,<br/>logs and traces"]:::built
         kv[("KV publish snapshot<br/>(S2 revisions-publishing)")]:::planned
         r2[("R2 media bucket and<br/>Images binding<br/>(S3 media-uploads)")]:::planned
         cron["Cron reconciler<br/>(S4 scheduled-publishing)"]:::planned
@@ -60,15 +60,15 @@ flowchart TB
     neon[("Neon Postgres<br/>through Hyperdrive<br/>(S2 content-store)")]:::planned
 
     owner -->|"reviews and merges"| repo
-    repo -.->|"released apps"| deploy
-    deploy -.->|"deploys"| welcome & admin
+    repo -->|"released apps"| deploy
+    deploy -->|"deploys"| welcome & admin
     backup -.->|"reads with pg_dump (I8)"| neon
 
-    visitors -.->|"workers.dev<br/>(edge-infrastructure)"| welcome
+    visitors -->|"workers.dev"| welcome
     cache -.-|"in front of"| welcome
-    owner -.->|"signs in"| access
-    access -.-> admin
-    edge -.-> welcome & admin
+    owner -->|"signs in"| access
+    access --> admin
+    edge --> welcome & admin
 
     welcome -.->|"reads only (C5)"| kv
     welcome -.->|"serves images (M2, M4)"| r2
@@ -87,8 +87,15 @@ flowchart TB
 
 - Two SvelteKit apps, `welcome` and `admin`, each built for Cloudflare Workers
   ([P5](DECISIONS.md#platform-and-scope)). Each serves a placeholder page.
-- Neither app is deployed. They run on the owner's machine through `wrangler`,
-  the Workers command-line tool. They have no storage or service bindings.
+- Both apps are live on `*.ycmcuenca.workers.dev`
+  ([P4](DECISIONS.md#platform-and-scope)); locally they run through `wrangler`.
+  `welcome` is public; every `admin` address sits behind Cloudflare Access, and
+  the worker verifies the Access token itself
+  ([A1, A4, A5](DECISIONS.md#identity-and-access)).
+- Every response carries the browser security headers and a Content Security
+  Policy ([I10](DECISIONS.md#integrations-and-longevity)); Workers Logs and
+  traces record both workers ([I9](DECISIONS.md#integrations-and-longevity)).
+  Neither app has storage or service bindings yet.
 - The repository's delivery pipeline (see
   [How a change reaches users](#how-a-change-reaches-users)).
 
@@ -96,10 +103,6 @@ flowchart TB
 
 | Component                          | Planned in                | What it does                                                                                                                                                   | Decisions                                                                          |
 | ---------------------------------- | ------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------- |
-| Deploy workflow and `workers.dev`  | `edge-infrastructure`     | Deploys an app when its release is created. Serves both workers on `*.ycmcuenca.workers.dev`.                                                                  | [P4, P6](DECISIONS.md#platform-and-scope)                                          |
-| Cloudflare Access                  | `edge-infrastructure`     | Allows only the owner into every `admin` address. `admin` also checks the sign-in token itself.                                                                | [A1, A2](DECISIONS.md#identity-and-access)                                         |
-| Security headers and CSP           | `edge-infrastructure`     | Adds browser security headers, including a Content Security Policy, to both workers.                                                                           | [I10](DECISIONS.md#integrations-and-longevity)                                     |
-| Workers Logs and traces            | `edge-infrastructure`     | Records structured logs and traces from both workers, using Cloudflare's built-in tools.                                                                       | [I9](DECISIONS.md#integrations-and-longevity)                                      |
 | Neon Postgres and Hyperdrive       | S2 `content-store`        | Neon is the database and the source of truth. Hyperdrive lets a worker connect to it. Two database roles keep migration rights apart from runtime rights.      | [C4](DECISIONS.md#cms-architecture), [I6](DECISIONS.md#integrations-and-longevity) |
 | KV publish snapshot                | S2 `revisions-publishing` | KV is Cloudflare's key-value store. Publishing writes one key per entry (all locales) plus index keys. Every snapshot carries a version number.                | [C5, C6, C8](DECISIONS.md#cms-architecture)                                        |
 | Workers Cache                      | S2 `public-rendering`     | Caches `welcome` responses, tagged by entry, type and locale. `admin` purges tags after it writes KV.                                                          | [C10](DECISIONS.md#cms-architecture)                                               |
@@ -131,15 +134,15 @@ flowchart LR
     main["main<br/>rebase merge only"]:::built
     rp["release-please<br/>keeps one release PR open"]:::built
     release["Release PR merged:<br/>tags and GitHub Releases"]:::built
-    deploy["Deploy workflow<br/>(edge-infrastructure)"]:::planned
-    live["Apps live on workers.dev<br/>(edge-infrastructure)"]:::planned
+    deploy["Deploy workflow"]:::built
+    live["Apps live on workers.dev"]:::built
 
     dev --> hooks --> pr
     renovate --> pr
     pr --> verify & e2e & commits & specs & workflows
     verify & e2e & commits & specs & workflows --> gate
     gate --> main --> rp --> release
-    release -.-> deploy -.-> live
+    release --> deploy --> live
 
     classDef built fill:#d1fae5,stroke:#047857,color:#111827
     classDef planned fill:#f3f4f6,stroke:#6b7280,color:#111827,stroke-dasharray:5 5
@@ -161,8 +164,8 @@ Each step works like this:
 4. After each merge, `.github/workflows/release-please.yml` updates one release
    pull request. It proposes a new version for each app that changed. Merging
    that pull request creates the tags and GitHub Releases.
-5. Planned: a deploy workflow reads which apps were released and deploys them
-   to Cloudflare ([P6](DECISIONS.md#platform-and-scope)).
+5. A deploy workflow reads which apps were released and deploys each from its
+   release tag to Cloudflare ([P6](DECISIONS.md#platform-and-scope)).
 
 Three more parts run beside this flow. CodeQL scans the code. A committed script,
 `scripts/github/apply-settings.sh`, sets the repository settings and the
@@ -174,20 +177,22 @@ updates as pull requests that follow the same path.
 The repository is a Bun and Turborepo workspace. Each planned package follows
 the pattern of the existing ones: `@ycmcuenca/<name>` lives in `packages/<name>`.
 
-| Path                             | State                          | What it holds                                                                                          |
-| -------------------------------- | ------------------------------ | ------------------------------------------------------------------------------------------------------ |
-| `apps/welcome`                   | Exists                         | The public portfolio worker.                                                                           |
-| `apps/admin`                     | Exists                         | The CMS worker.                                                                                        |
-| `packages/tsconfig`              | Exists                         | Shared TypeScript settings.                                                                            |
-| `packages/eslint-config`         | Exists                         | Shared lint rules.                                                                                     |
-| `openspec/`                      | Exists                         | Specs, active changes and archived changes ([P7](DECISIONS.md#platform-and-scope)).                    |
-| `docs/`                          | Exists                         | The living documents and the decision log.                                                             |
-| `scripts/github`, `scripts/docs` | Exist                          | The repository-settings script and the living-documents check.                                         |
-| `.github/`                       | Exists                         | Workflows and the `main` ruleset.                                                                      |
-| `packages/cms-core`              | Planned: S2 `content-model`    | Pure TypeScript: content types, publish rules and the ports ([C1, C2](DECISIONS.md#cms-architecture)). |
-| `packages/db`                    | Planned: S2 `content-store`    | The Neon adapter and database migrations.                                                              |
-| `packages/cms-render`            | Planned: S2 `public-rendering` | The Svelte blocks that `welcome` and the admin preview both use.                                       |
-| `packages/ui`                    | Planned: S2 `admin-editor`     | Shared interface components ([Q2](DECISIONS.md#quality)).                                              |
+| Path                                   | State                          | What it holds                                                                                                                                                                  |
+| -------------------------------------- | ------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `apps/welcome`                         | Exists                         | The public portfolio worker.                                                                                                                                                   |
+| `apps/admin`                           | Exists                         | The CMS worker.                                                                                                                                                                |
+| `packages/tsconfig`                    | Exists                         | Shared TypeScript settings.                                                                                                                                                    |
+| `packages/eslint-config`               | Exists                         | Shared lint rules.                                                                                                                                                             |
+| `packages/edge`                        | Exists                         | The logger, error handler, security headers and Access guard shared by both apps ([A5](DECISIONS.md#identity-and-access), [I9, I10](DECISIONS.md#integrations-and-longevity)). |
+| `openspec/`                            | Exists                         | Specs, active changes and archived changes ([P7](DECISIONS.md#platform-and-scope)).                                                                                            |
+| `docs/`                                | Exists                         | The living documents and the decision log.                                                                                                                                     |
+| `scripts/github`, `scripts/cloudflare` | Exist                          | The repository-settings script and the Cloudflare Access reconciler.                                                                                                           |
+| `scripts/deploy`, `scripts/docs`       | Exist                          | The deploy smoke check and the living-documents check.                                                                                                                         |
+| `.github/`                             | Exists                         | Workflows and the `main` ruleset.                                                                                                                                              |
+| `packages/cms-core`                    | Planned: S2 `content-model`    | Pure TypeScript: content types, publish rules and the ports ([C1, C2](DECISIONS.md#cms-architecture)).                                                                         |
+| `packages/db`                          | Planned: S2 `content-store`    | The Neon adapter and database migrations.                                                                                                                                      |
+| `packages/cms-render`                  | Planned: S2 `public-rendering` | The Svelte blocks that `welcome` and the admin preview both use.                                                                                                               |
+| `packages/ui`                          | Planned: S2 `admin-editor`     | Shared interface components ([Q2](DECISIONS.md#quality)).                                                                                                                      |
 
 Satellite projects will own their databases and connect only through published
 contracts ([I7](DECISIONS.md#integrations-and-longevity)). A separate
@@ -228,5 +233,5 @@ hold copies that Neon can rebuild ([C4](DECISIONS.md#cms-architecture)).
 When a change is archived, update this document in the same branch
 (`openspec/config.yaml` lists the rule). Turn the diagram elements that the
 change built from dashed to solid, and keep the label of any element that is
-still planned. The archive of `edge-infrastructure` is the first to do this: it
-turns the deployment, Access, security headers and logging elements solid.
+still planned. The archive of `edge-infrastructure` was the first to do this: it
+turned the deployment, Access, security headers and logging elements solid.

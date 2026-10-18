@@ -30,7 +30,7 @@ touch.
 journey
     title A recruiter reviews the portfolio
     section Arrive
-      Open site (planned S1): 5: Recruiter
+      Open site (today): 5: Recruiter
       Pick language (planned S4): 4: Recruiter
     section Judge
       Read projects (planned S6): 4: Recruiter
@@ -38,12 +38,12 @@ journey
       Send message (planned S3): 4: Recruiter
 ```
 
-| Step                                    | Status       | Capability                                |
-| --------------------------------------- | ------------ | ----------------------------------------- |
-| Open the site                           | planned (S1) | `edge-infrastructure`: the site goes live |
-| Choose a language                       | planned (S4) | `content-localization`                    |
-| Read the owner's projects               | planned (S6) | `portfolio-projects`                      |
-| Send a message through the contact form | planned (S3) | `contact-inbox`                           |
+| Step                                    | Status       | Capability                                           |
+| --------------------------------------- | ------------ | ---------------------------------------------------- |
+| Open the site                           | today        | `welcome` is live at `welcome.ycmcuenca.workers.dev` |
+| Choose a language                       | planned (S4) | `content-localization`                               |
+| Read the owner's projects               | planned (S6) | `portfolio-projects`                                 |
+| Send a message through the contact form | planned (S3) | `contact-inbox`                                      |
 
 ## Prospective client
 
@@ -54,7 +54,7 @@ it.
 journey
     title A prospective client considers hiring the owner
     section Arrive
-      Open site (planned S1): 5: Client
+      Open site (today): 5: Client
     section Judge
       Read projects (planned S6): 4: Client
       See images (planned S3): 4: Client
@@ -62,12 +62,12 @@ journey
       Send inquiry (planned S3): 4: Client
 ```
 
-| Step                                     | Status       | Capability                                |
-| ---------------------------------------- | ------------ | ----------------------------------------- |
-| Open the site                            | planned (S1) | `edge-infrastructure`: the site goes live |
-| Read about past projects                 | planned (S6) | `portfolio-projects`                      |
-| Look at images of the work               | planned (S3) | `media-uploads`                           |
-| Send an inquiry through the contact form | planned (S3) | `contact-inbox`                           |
+| Step                                     | Status       | Capability                                           |
+| ---------------------------------------- | ------------ | ---------------------------------------------------- |
+| Open the site                            | today        | `welcome` is live at `welcome.ycmcuenca.workers.dev` |
+| Read about past projects                 | planned (S6) | `portfolio-projects`                                 |
+| Look at images of the work               | planned (S3) | `media-uploads`                                      |
+| Send an inquiry through the contact form | planned (S3) | `contact-inbox`                                      |
 
 ## Developer peer
 
@@ -83,16 +83,16 @@ journey
       Read decisions (today): 4: Peer
       Follow a change (today): 3: Peer
     section See the result
-      Visit live site (planned S1): 5: Peer
+      Visit live site (today): 5: Peer
 ```
 
-| Step                                     | Status       | Capability                                              |
-| ---------------------------------------- | ------------ | ------------------------------------------------------- |
-| Open the repository on GitHub            | today        | The repository is public.                               |
-| Read the README and the documents        | today        | [README](../README.md) and the files in `docs/`.        |
-| Read the decisions and the roadmap       | today        | [DECISIONS.md](DECISIONS.md), [ROADMAP.md](ROADMAP.md). |
-| Follow a change from proposal to archive | today        | The `openspec/` directory.                              |
-| Visit the live site                      | planned (S1) | `edge-infrastructure`: the site goes live               |
+| Step                                     | Status | Capability                                              |
+| ---------------------------------------- | ------ | ------------------------------------------------------- |
+| Open the repository on GitHub            | today  | The repository is public.                               |
+| Read the README and the documents        | today  | [README](../README.md) and the files in `docs/`.        |
+| Read the decisions and the roadmap       | today  | [DECISIONS.md](DECISIONS.md), [ROADMAP.md](ROADMAP.md). |
+| Follow a change from proposal to archive | today  | The `openspec/` directory.                              |
+| Visit the live site                      | today  | `welcome` is live at `welcome.ycmcuenca.workers.dev`    |
 
 ## Owner: write, preview, publish, live
 
@@ -103,7 +103,7 @@ editor ([A1](DECISIONS.md#identity-and-access)).
 journey
     title The owner publishes an entry
     section Write
-      Sign in (planned S1): 5: Owner
+      Sign in (today): 5: Owner
       Write in English (planned S2): 4: Owner
       Add images (planned S3): 3: Owner
       Translate (planned S4): 3: Owner
@@ -116,16 +116,16 @@ journey
       See it live (planned S2): 5: Owner, Visitor
 ```
 
-| Step                              | Status       | Capability                               |
-| --------------------------------- | ------------ | ---------------------------------------- |
-| Sign in to `admin` through Access | planned (S1) | `edge-infrastructure`: Cloudflare Access |
-| Write the entry in English        | planned (S2) | `admin-editor`, `content-model`          |
-| Add images                        | planned (S3) | `media-uploads`                          |
-| Fill in Filipino and Esperanto    | planned (S4) | `content-localization`                   |
-| Preview the draft inside `admin`  | planned (S4) | `draft-preview`                          |
-| Publish now                       | planned (S2) | `revisions-publishing`                   |
-| Schedule a later time             | planned (S4) | `scheduled-publishing`                   |
-| See the page on the public site   | planned (S2) | `public-rendering`                       |
+| Step                              | Status       | Capability                        |
+| --------------------------------- | ------------ | --------------------------------- |
+| Sign in to `admin` through Access | today        | Cloudflare Access guards `admin`. |
+| Write the entry in English        | planned (S2) | `admin-editor`, `content-model`   |
+| Add images                        | planned (S3) | `media-uploads`                   |
+| Fill in Filipino and Esperanto    | planned (S4) | `content-localization`            |
+| Preview the draft inside `admin`  | planned (S4) | `draft-preview`                   |
+| Publish now                       | planned (S2) | `revisions-publishing`            |
+| Schedule a later time             | planned (S4) | `scheduled-publishing`            |
+| See the page on the public site   | planned (S2) | `public-rendering`                |
 
 English must be ready before any publish, and a locale that is not ready stays
 hidden ([L3](DECISIONS.md#localization)). The first end-to-end publish happens

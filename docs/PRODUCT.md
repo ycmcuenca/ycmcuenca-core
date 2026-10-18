@@ -29,7 +29,9 @@ owner. It has three jobs:
 The owner builds the CMS by hand on purpose, to learn how such a system works.
 Everything else uses managed services ([P1](DECISIONS.md#platform-and-scope)).
 
-Today both apps show a placeholder page and nothing is deployed.
+Today both apps show a placeholder page. Both are live on `workers.dev`:
+`welcome` is public, and `admin` sits behind Cloudflare Access
+([A1](DECISIONS.md#identity-and-access)).
 
 ## Who it is for
 
@@ -74,9 +76,9 @@ flowchart LR
 ```
 
 In the diagram, a solid box exists today and a dashed box is planned. The
-white boxes are people and their goals. The site itself is planned, so the lines
-from goals to site areas are dashed. The repository is already public, so that
-line is solid.
+white boxes are people and their goals. The repository is already public, so
+that line is solid. The public site is live, but its project pages and the
+contact form are planned, so the lines from goals to those boxes are dashed.
 
 ## The only editor
 
