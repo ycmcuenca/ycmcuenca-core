@@ -15,9 +15,9 @@ How to use this log:
   alternatives. This log records only the outcome and a short why.
 - Decisions made inside a change are not repeated here. See
   `openspec/changes/archive/2026-10-17-bootstrap-monorepo/design.md` for the
-  workspace tooling and `openspec/changes/ci-release-pipeline/design.md` (moves
-  to the archive when it is archived) for CI, releases, repository governance
-  and Renovate.
+  workspace tooling and
+  `openspec/changes/archive/2026-10-18-ci-release-pipeline/design.md` for CI,
+  releases, repository governance and Renovate.
 - If this file grows past about 300 lines, split it into one file per decision
   under `docs/adr/` (MADR format).
 
