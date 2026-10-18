@@ -146,6 +146,11 @@ jobs:
         run: bun install --frozen-lockfile
       - name: Validate specs
         run: bunx openspec validate --all --strict --no-interactive
+      # The living documents guard the same planning artifacts and need no
+      # install or build, so they share this job rather than adding one
+      # (design D4 in openspec/changes/living-docs/design.md).
+      - name: Check living documents
+        run: scripts/docs/check-living-docs.sh
 
   # CI audits itself, so this job cannot silently stop working (D7).
   workflows:
