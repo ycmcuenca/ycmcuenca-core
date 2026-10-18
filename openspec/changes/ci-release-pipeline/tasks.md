@@ -56,6 +56,26 @@
 
 ## Workflow follow-up
 
-- The first release PR appears with the first `feat`/`fix` commit under `apps/`. Approve its workflow run, rebase-merge it, and verify the `welcome-v…`/`admin-v…` tags and GitHub Releases exist with matching changelog notes (release-management "Merging a release pull request publishes releases"). The first Renovate PRs follow the Monday schedule.
+- Scenarios that need real history; record the outcome when each happens:
+  - release-management "Tag naming", "Both apps changed", "Release pull request kept current", "Release pull request passes the same gate" and "Release published": the first release PR (approve its workflow run, rebase-merge it, verify the `welcome-v…`/`admin-v…` tags and GitHub Releases with matching changelog notes).
+  - repository-governance "Stale branch blocks merge": the first time two pull requests are open at once.
+- The first Renovate PRs follow the Monday schedule.
 - Commit through `/git` and ship through `/ship`. Archiving syncs the specs, and the archive guidance reports there are no living docs yet.
 - Next change: `edge-infrastructure`, which adds the deploy workflow that consumes `paths_released`.
+
+## Verification follow-up (2026-10-18)
+
+The `/opsx-verify` findings addressed on PR #5, each in its own commit:
+
+- W1 (`18e8749`): engine and peer ranges stay unpinned (`rangeStrategy: "auto"`, Renovate's `:pinAllExceptPeerDependencies` recipe), and Node is capped below 25 until 26 is LTS. The dashboard evidence (a `>=24 -> v26.12.0` node upgrade under "Awaiting Schedule", outside A3's approval) is what this fixes; the lookup dry run's resolved config shows both rules.
+- W2 (`296f1c7`): each tooling group sets `semanticCommitType: "chore"` explicitly, so packages sitting in `dependencies` (the shared ESLint config's) stop proposing app patch releases; `svelte-runtime` keeps `fix(deps)`. Renovate merges package rules in order (later wins; user rules come after presets), so these override `:semanticPrefixFixDepsChoreOthers`; the resolved config in the dry run shows the group types. `vulnerabilityAlerts` still wins over the groups through Renovate's appended forced rule (`init/vulnerability.ts`, 44.166.0), so a tooling security fix stays `fix(deps)`.
+- W3 (`38b1255`): the actionlint container keeps its digest and gains the `1.7.12` tag the dry run reads back as `currentValue` with the same digest; actionlint and zizmor pass on the new reference locally.
+- W4 (`d2b849b`): the settings script compares and applies secret scanning and push protection; the extra scanning modes stay off (A9). README updated. `--check` reports it `unchanged` and exits 0, and the PATCH body was exercised against the live repository.
+- W5 (`5c57025`): ruleset drift now includes rule types added outside the committed file. Verified end to end on the live ruleset: an extra `creation` rule made `--check` exit 1 naming the ruleset, the script's re-run restored the committed rules, and `--check` exits 0 again. (GitHub rejects `commit_message_pattern`, `max_file_path_length` and `branch_name_pattern` with "Invalid rule" for this repository ruleset; the test used `creation`, which is inert on `main`. Done through the API - no signed-in GitHub session for the browser panels, same as 5.6.)
+- S1 (`4156d02`): the runner-image comment now says Renovate proposes it with majors behind dashboard approval; the dry run confirms the `ubuntu 24.04 -> 26.04` proposal.
+- S2 (`b256588`): ci-checks "Pinned references" allows `docker://` images pinned by `sha256` digest with the version in the tag.
+- S3 (`7a22f8a`): the vulnerability-alerts probe treats only a 404 as "off" and aborts on anything else (204, simulated 404 and a simulated network failure all exercised).
+
+Local checks before the push: `bun run format`, `bun run lint`, `bunx openspec validate --all --strict --no-interactive`, actionlint through the new reference, zizmor, shellcheck, the Renovate config validator, and `scripts/github/apply-settings.sh --check` (exit 0).
+
+After merge, record when Renovate next runs: the dashboard shows no `engines`/peer pins, `rhysd/actionlint` with a version, and no Node major outside Pending Approval (there should be none at all). Then re-run `/opsx-verify ci-release-pipeline`.
