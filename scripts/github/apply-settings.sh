@@ -5,7 +5,9 @@
 # openspec/changes/archive/2026-10-18-ci-release-pipeline/design.md):
 #
 #   1. repository merge settings: rebase merging only, merged branches deleted
-#   2. Actions permissions: enabled, all actions allowed, SHA pinning required
+#   2. Actions permissions: enabled, all actions allowed, SHA pinning required;
+#      the default workflow token is read-only and may create pull requests
+#      (release-please needs that for its release pull request)
 #   3. vulnerability alerts: on (Renovate turns them into fix(deps) PRs)
 #   4. secret scanning and push protection: on (the extra modes stay off, A9)
 #   5. CodeQL default setup: code scanning on, GitHub's default query suite
@@ -130,6 +132,31 @@ for field in enabled allowed_actions sha_pinning_required; do
   fi
 done
 handle_step "actions permissions" "$actions_detail" apply_actions_permissions
+
+# The token every workflow starts from: read-only, and allowed to create pull
+# requests, which release-please needs for its release pull request. The first
+# release needed the gate enabled by hand before that request could open; the
+# script now manages it.
+
+apply_workflow_permissions() {
+  gh api --method PUT "repos/$REPO/actions/permissions/workflow" \
+    -f default_workflow_permissions=read \
+    -F can_approve_pull_request_reviews=true >/dev/null
+}
+
+workflow_detail=""
+workflow_json="$(gh api "repos/$REPO/actions/permissions/workflow")"
+for field in default_workflow_permissions can_approve_pull_request_reviews; do
+  case "$field" in
+    default_workflow_permissions) desired="read" ;;
+    *) desired="true" ;;
+  esac
+  current="$(printf '%s' "$workflow_json" | jq -r ".$field")"
+  if [ "$current" != "$desired" ]; then
+    workflow_detail="${workflow_detail}${workflow_detail:+; }$field: $current -> $desired"
+  fi
+done
+handle_step "workflow permissions" "$workflow_detail" apply_workflow_permissions
 
 # --- 3. Vulnerability alerts ------------------------------------------------
 # Dependabot vulnerability alerts feed Renovate's `vulnerabilityAlerts` (D11);

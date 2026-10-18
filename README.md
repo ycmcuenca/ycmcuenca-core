@@ -218,10 +218,11 @@ without such a commit waits for the next app release.
 
 The settings this repository depends on are defined in committed files and
 applied by one idempotent script: rebase-only merging with merged branches
-deleted, Actions restricted to SHA-pinned references, Dependabot
-vulnerability alerts, secret scanning and push protection, CodeQL default
-setup, the `main` ruleset, and the `production` environment the deploy uses
-(`.github/rulesets/main.json`, `scripts/github/apply-settings.sh`).
+deleted, Actions restricted to SHA-pinned references with a read-only default
+workflow token that may create pull requests (release-please's release PR),
+Dependabot vulnerability alerts, secret scanning and push protection, CodeQL
+default setup, the `main` ruleset, and the `production` environment the deploy
+uses (`.github/rulesets/main.json`, `scripts/github/apply-settings.sh`).
 
 ```sh
 scripts/github/apply-settings.sh --check   # report drift, change nothing
