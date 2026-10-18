@@ -9,8 +9,8 @@ sessions. Read both before proposing an OpenSpec change, and update the
 change's row here when it moves to a new status.
 
 The other living documents are [ARCHITECTURE.md](ARCHITECTURE.md),
-[DESIGN.md](DESIGN.md), [PRODUCT.md](PRODUCT.md) and
-[USER_JOURNEY.md](USER_JOURNEY.md).
+[DESIGN.md](DESIGN.md), [PRODUCT.md](PRODUCT.md),
+[SYSTEM_DESIGN.md](SYSTEM_DESIGN.md) and [USER_JOURNEY.md](USER_JOURNEY.md).
 
 - **Pace:** 8–12 hours a week, mostly agent-driven work with human review. A
   sprint takes one to two weeks, so this roadmap has no dates.
@@ -41,6 +41,7 @@ flowchart LR
         ci["ci-release-pipeline"]:::archived
         edge["edge-infrastructure"]:::archived
         docs["living-docs"]:::archived
+        notebook["system-design-notebook"]:::inProgress
     end
     subgraph S2["S2 Publish path"]
         s2["content store, content model,<br/>revisions + projector,<br/>public rendering, admin editor"]:::planned
@@ -59,7 +60,7 @@ flowchart LR
     end
 
     bootstrap --> ci --> edge
-    bootstrap --> docs
+    bootstrap --> docs --> notebook
     edge --> s2 --> s3 --> s4 --> s5 --> s6
 
     classDef archived fill:#d1fae5,stroke:#047857,color:#111827
@@ -74,22 +75,32 @@ flowchart LR
 **Goal:** a gated, hardened repository whose two workers are live on
 `*.ycmcuenca.workers.dev`, with the living documents in place.
 
-| Change                | Status   | What it delivers                                                                                                                                                                                                                                                                                                                                                                                                                        |
-| --------------------- | -------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `bootstrap-monorepo`  | archived | Bun + Turborepo workspace, `welcome` and `admin` as hello-world SvelteKit apps on the Workers adapter (local only), ESLint, Prettier, Lefthook + commitlint, Vitest, Chromium smoke tests on `wrangler dev`. PR #1, archived 2026-10-17.                                                                                                                                                                                                |
-| `ci-release-pipeline` | archived | PR CI with one `ci-ok` gate, release-please (one version per app), repository settings as code, SHA-pinned actions, Renovate, CodeQL. PR #2 merged, follow-up PR #5 merged, archived 2026-10-18.                                                                                                                                                                                                                                        |
-| `edge-infrastructure` | archived | Cloudflare API token, a deploy workflow that consumes release-please's `paths_released`, both workers live on `workers.dev`, Cloudflare Access in front of `admin` (production and preview URLs), Workers Logs and traces (I9), security headers and CSP (I10). KV, R2 and Neon are created in S2 and S3 by the change that first uses them. PR #9 merged, release PR #10 deployed 0.1.0, follow-up PR #11 merged, archived 2026-10-18. |
-| `living-docs`         | archived | Adopts this file and DECISIONS.md and adds ARCHITECTURE, DESIGN, PRODUCT and USER_JOURNEY, each with a Mermaid diagram, plus AGENTS.md, a README documentation index and a CI check that the documents exist. Revises the master architecture diagram: solid lines for what exists, dashed for what is planned. PR #8, archived 2026-10-18.                                                                                             |
+| Change                   | Status      | What it delivers                                                                                                                                                                                                                                                                                                                                                                                                                        |
+| ------------------------ | ----------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `bootstrap-monorepo`     | archived    | Bun + Turborepo workspace, `welcome` and `admin` as hello-world SvelteKit apps on the Workers adapter (local only), ESLint, Prettier, Lefthook + commitlint, Vitest, Chromium smoke tests on `wrangler dev`. PR #1, archived 2026-10-17.                                                                                                                                                                                                |
+| `ci-release-pipeline`    | archived    | PR CI with one `ci-ok` gate, release-please (one version per app), repository settings as code, SHA-pinned actions, Renovate, CodeQL. PR #2 merged, follow-up PR #5 merged, archived 2026-10-18.                                                                                                                                                                                                                                        |
+| `edge-infrastructure`    | archived    | Cloudflare API token, a deploy workflow that consumes release-please's `paths_released`, both workers live on `workers.dev`, Cloudflare Access in front of `admin` (production and preview URLs), Workers Logs and traces (I9), security headers and CSP (I10). KV, R2 and Neon are created in S2 and S3 by the change that first uses them. PR #9 merged, release PR #10 deployed 0.1.0, follow-up PR #11 merged, archived 2026-10-18. |
+| `living-docs`            | archived    | Adopts this file and DECISIONS.md and adds ARCHITECTURE, DESIGN, PRODUCT and USER_JOURNEY, each with a Mermaid diagram, plus AGENTS.md, a README documentation index and a CI check that the documents exist. Revises the master architecture diagram: solid lines for what exists, dashed for what is planned. PR #8, archived 2026-10-18.                                                                                             |
+| `system-design-notebook` | in progress | Adds SYSTEM_DESIGN.md, a sixth living document: a study notebook of the system design concepts each sprint applies, with full S1 entries, planned stubs for S2 to S6 and dated references. Links it from ROADMAP, ARCHITECTURE and DECISIONS, and extends the living-documents check to entry structure and relative links. Added to S1 after the sprint's other changes were archived.                                                 |
 
 **Exit criteria:** `main` changes only through checked PRs; a merged release
-PR deploys the released app; `admin` is reachable only through Access; all five
+PR deploys the released app; `admin` is reachable only through Access; all six
 living documents exist.
 
-**Learning concepts:** monorepo task graphs and caching, trunk-based
-development with a required-check gate, release trains from Conventional
-Commits, settings as code (desired state plus an idempotent reconciler),
-supply-chain hardening (SHA pinning, least privilege, workflow auditing),
-zero-trust access at the edge.
+**Learning concepts:**
+[monorepo task graphs and caching](SYSTEM_DESIGN.md#monorepo-task-graphs-and-caching),
+[trunk-based development with a required-check gate](SYSTEM_DESIGN.md#trunk-based-development-with-a-required-check-gate),
+[release trains from Conventional Commits](SYSTEM_DESIGN.md#release-trains-from-conventional-commits),
+[settings as code](SYSTEM_DESIGN.md#settings-as-code),
+[supply-chain hardening](SYSTEM_DESIGN.md#supply-chain-hardening),
+[reproducible toolchains](SYSTEM_DESIGN.md#reproducible-toolchains),
+[least privilege](SYSTEM_DESIGN.md#least-privilege),
+[zero trust and defense in depth](SYSTEM_DESIGN.md#zero-trust-and-defense-in-depth),
+[browser security headers and CSP](SYSTEM_DESIGN.md#browser-security-headers-and-csp),
+[testing the production artifact](SYSTEM_DESIGN.md#testing-the-production-artifact),
+[structured logs with a correlation id](SYSTEM_DESIGN.md#structured-logs-with-a-correlation-id),
+[fitness functions](SYSTEM_DESIGN.md#fitness-functions)
+and [documentation as a bounded context](SYSTEM_DESIGN.md#documentation-as-a-bounded-context).
 
 ## Sprint 2: Publish path
 
@@ -116,10 +127,14 @@ Candidate changes (tentative names):
 with no database binding on `welcome`; editing creates a new revision and never
 overwrites one; a publish purges exactly the affected cached pages.
 
-**Learning concepts:** hexagonal architecture (ports and adapters), CQRS-lite
-read projections, event-sourcing-lite append-only revisions, schema versioning
-with upcasters, versioned contracts and tolerant readers, cache invalidation
-by tag, branch-per-PR database testing.
+**Learning concepts:**
+[hexagonal architecture (ports and adapters)](SYSTEM_DESIGN.md#hexagonal-architecture-ports-and-adapters),
+[CQRS-lite read projections](SYSTEM_DESIGN.md#cqrs-lite-read-projections),
+[event-sourcing-lite append-only revisions](SYSTEM_DESIGN.md#event-sourcing-lite-append-only-revisions),
+[schema versioning with upcasters](SYSTEM_DESIGN.md#schema-versioning-with-upcasters),
+[versioned contracts and tolerant readers](SYSTEM_DESIGN.md#versioned-contracts-and-tolerant-readers),
+[cache invalidation by tag](SYSTEM_DESIGN.md#cache-invalidation-by-tag)
+and [branch-per-PR database testing](SYSTEM_DESIGN.md#branch-per-pr-database-testing).
 
 ## Sprint 3: Media, inbox and backups
 
@@ -139,9 +154,11 @@ Candidate changes (tentative names):
 message appears in the inbox and spam is rejected; a backup restores into a
 Neon branch with matching row counts.
 
-**Learning concepts:** content-addressed storage, upload protocols and
-integrity checks, abuse prevention, backup and restore as a tested process
-(RPO and RTO).
+**Learning concepts:**
+[content-addressed storage](SYSTEM_DESIGN.md#content-addressed-storage),
+[upload protocols and integrity checks](SYSTEM_DESIGN.md#upload-protocols-and-integrity-checks),
+[abuse prevention](SYSTEM_DESIGN.md#abuse-prevention)
+and [backup and restore as a tested process](SYSTEM_DESIGN.md#backup-and-restore-as-a-tested-process) (RPO and RTO).
 
 ## Sprint 4: Scheduling, preview and localization
 
@@ -157,9 +174,12 @@ reading Neon, W2), `content-localization` (per-field localization, per-locale
 a draft is visible only through `admin`; an untranslated entry is hidden in
 that locale and English must be ready before any publish.
 
-**Learning concepts:** reconciliation loops and at-most-once claims,
-eventual consistency and its SLOs, time handling in UTC, internationalization
-versus localization, read-your-writes for previews.
+**Learning concepts:**
+[reconciliation loops and at-most-once claims](SYSTEM_DESIGN.md#reconciliation-loops-and-at-most-once-claims),
+[eventual consistency and its SLOs](SYSTEM_DESIGN.md#eventual-consistency-and-its-slos),
+[time handling in UTC](SYSTEM_DESIGN.md#time-handling-in-utc),
+[internationalization versus localization](SYSTEM_DESIGN.md#internationalization-versus-localization)
+and [read-your-writes for previews](SYSTEM_DESIGN.md#read-your-writes-for-previews).
 
 ## Sprint 5: Brand
 
@@ -175,9 +195,12 @@ CI, Q3).
 render with correct glyphs; accessibility and performance budgets pass in CI;
 page views are visible in Web Analytics.
 
-**Learning concepts:** design tokens and theming, accessibility as a
-requirement, font subsetting and loading, performance budgets,
-privacy-preserving analytics.
+**Learning concepts:**
+[design tokens and theming](SYSTEM_DESIGN.md#design-tokens-and-theming),
+[accessibility as a requirement](SYSTEM_DESIGN.md#accessibility-as-a-requirement),
+[font subsetting and loading](SYSTEM_DESIGN.md#font-subsetting-and-loading),
+[performance budgets](SYSTEM_DESIGN.md#performance-budgets)
+and [privacy-preserving analytics](SYSTEM_DESIGN.md#privacy-preserving-analytics).
 
 ## Sprint 6: Content and 3D
 
@@ -191,8 +214,10 @@ content type and the pages that list them), `threlte-scenes` (Threlte 3D on
 published in English at least; the 3D scenes stay within the Workers Free
 limits and degrade gracefully.
 
-**Learning concepts:** content modelling against real content, progressive
-enhancement, performance budgets for 3D on the web.
+**Learning concepts:**
+[content modelling against real content](SYSTEM_DESIGN.md#content-modelling-against-real-content),
+[progressive enhancement](SYSTEM_DESIGN.md#progressive-enhancement)
+and [performance budgets for 3D on the web](SYSTEM_DESIGN.md#performance-budgets-for-3d-on-the-web).
 
 ## After Sprint 6
 
@@ -206,6 +231,9 @@ the metrics dashboard and versioned internal packages.
 - **Monthly:** compare usage in the Cloudflare dashboard with the Free limits
   (P3). Any limit at 70% or more for 3 days triggers the Workers Paid review.
 - **Quarterly:** run the backup restore drill (I8).
+- **Quarterly:** open every external link in
+  [SYSTEM_DESIGN.md](SYSTEM_DESIGN.md) by hand, replace dead ones and update
+  the dates of the sources you re-read.
 
 ## How versions relate to sprints
 

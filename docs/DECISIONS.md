@@ -47,15 +47,19 @@ marked _(audit)_ came from the stack audit on the same day (see
 - **P5 Two core workers.** `welcome` (public portfolio) and `admin` (CMS).
 - **P6 Deploy with GitHub Actions and Wrangler**, driven by release-please's
   released paths (`edge-infrastructure`).
+  Concept: [release trains](SYSTEM_DESIGN.md#release-trains-from-conventional-commits).
 - **P7 Spec-driven development with OpenSpec**, rooted at `openspec/` in the
   repository root. One change is one capability and one PR.
 - **P8 Five living documents** in `docs/` (ARCHITECTURE, DESIGN, PRODUCT,
   ROADMAP, USER_JOURNEY), each with a Mermaid diagram, synced when a change is
   archived. The master architecture diagram uses solid lines for what exists
   and dashed lines for what is planned.
+  **Superseded by P15** for the number of documents.
+  Concept: [documentation as a bounded context](SYSTEM_DESIGN.md#documentation-as-a-bounded-context).
 - **P9 Sprints are the plan; versions follow.** One semantic version per app,
   Conventional Commits and release-please. **Superseded by P13** for the number
   of sprints.
+  Concept: [release trains](SYSTEM_DESIGN.md#release-trains-from-conventional-commits).
 - **P10 Long-lived and flexible.** The system must stay maintainable over a
   career; prefer boring tools with clear upgrade seams and avoid
   over-engineering.
@@ -75,15 +79,24 @@ marked _(audit)_ came from the stack audit on the same day (see
   that app's release and the deploy carries the package change along. Without
   such a commit the change waits for the next app release. Why: only apps are
   versioned and deployed (P6); packages are internal.
+  Concept: [release trains](SYSTEM_DESIGN.md#release-trains-from-conventional-commits).
+- **P15 Six living documents.** Supersedes P8 for the number of documents.
+  `docs/SYSTEM_DESIGN.md` joins the five as a study notebook of the system
+  design concepts each sprint applies. P8's diagram conventions and sync rule
+  still apply. Why: the learning goal (P1) needs a place that explains
+  concepts, and DECISIONS records only outcomes.
+  Concept: [documentation as a bounded context](SYSTEM_DESIGN.md#documentation-as-a-bounded-context).
 
 ## Identity and access
 
 - **A1 Cloudflare Access first.** The owner is the only core user; `admin` sits
   behind Access.
+  Concept: [zero trust and defense in depth](SYSTEM_DESIGN.md#zero-trust-and-defense-in-depth).
 - **A2 Access on every admin URL.** Both production and preview URLs of
   `admin` are behind Access, and the worker also verifies the Access JWT's
   `aud` itself. Any local dev bypass must be impossible to enable in
   production.
+  Concept: [zero trust and defense in depth](SYSTEM_DESIGN.md#zero-trust-and-defense-in-depth).
 - **A3 `apps/auth` only when needed.** A Better Auth-based `apps/auth` (not
   OpenAuth) is built only when the first satellite needs public sign-ups.
 - **A4 Worker-level Access applications.** One application follows `admin` to
@@ -91,11 +104,13 @@ marked _(audit)_ came from the stack audit on the same day (see
   covers its preview URLs only, so production `welcome` stays public. Why: the
   per-Worker scope follows a Worker across `workers.dev` and a future custom
   domain, with no hostname list to keep in sync.
+  Concepts: [zero trust and defense in depth](SYSTEM_DESIGN.md#zero-trust-and-defense-in-depth) and [settings as code](SYSTEM_DESIGN.md#settings-as-code).
 - **A5 The worker re-verifies Access.** Workers with Static Assets do not
   expose `ctx.access`, so `admin` verifies the `Cf-Access-Jwt-Assertion`
   header against the team's key set (RS256, matching `iss` and `aud`). A
   missing header or empty configuration refuses every request. Why: defense in
   depth (A2): the edge decides, and the app re-verifies cryptographically.
+  Concept: [zero trust and defense in depth](SYSTEM_DESIGN.md#zero-trust-and-defense-in-depth).
 
 ## CMS architecture
 
@@ -104,20 +119,25 @@ marked _(audit)_ came from the stack audit on the same day (see
   `@ycmcuenca/db` (Neon), KV, R2 and Access. `@ycmcuenca/cms-render` is a
   shared Svelte block registry used by `welcome` and the admin preview;
   `@ycmcuenca/ui` holds shared UI.
+  Concept: [hexagonal architecture](SYSTEM_DESIGN.md#hexagonal-architecture-ports-and-adapters).
 - **C2 Code-first content types** in `cms-core`, built from field, block and
   type layers. The admin edits them with forms and a Markdown editor.
+  Concept: [content modelling](SYSTEM_DESIGN.md#content-modelling-against-real-content).
 - **C3 Append-only revisions.** `entries` plus append-only `revisions`, each
   with a `schema_v`; old revisions are read through upcasters covered by
   fixture tests. Further tables: `media`, `inbox`, `redirects`. Publishing
   moves a pointer to a revision.
+  Concepts: [append-only revisions](SYSTEM_DESIGN.md#event-sourcing-lite-append-only-revisions) and [upcasters](SYSTEM_DESIGN.md#schema-versioning-with-upcasters).
 - **C4 Neon is the source of truth; KV and R2 are projections.** Anything in KV
   or R2 can be rebuilt from Neon. A failed projection leaves a dirty flag that
   the cron reconciler retries. _(audit)_ Neon Postgres is kept over Cloudflare
   D1: real Postgres is the more transferable skill and satellites can reuse
   it; Neon's weak free backups are covered by I8.
+  Concept: [CQRS-lite read projections](SYSTEM_DESIGN.md#cqrs-lite-read-projections).
 - **C5 Publish-snapshot read path (CQRS-lite).** Publishing writes a snapshot
   to KV; `welcome` reads only KV and has no database binding. This is a
   projection written at publish time, not cache-aside.
+  Concept: [CQRS-lite read projections](SYSTEM_DESIGN.md#cqrs-lite-read-projections).
 - **C6 One KV key per entry**, holding all locales, plus per-type index keys,
   which keeps writes under the free 1,000 per day.
 - **C7 Every service owns its own database.** Portfolio projects are a CMS
@@ -126,6 +146,7 @@ marked _(audit)_ came from the stack audit on the same day (see
   a `snapshot_v`; `cms-core` owns its Zod schema; `welcome` reads the current
   and the previous version (tolerant reader) and the reconciler re-projects old
   snapshots. The two workers can then deploy in either order.
+  Concept: [versioned contracts and tolerant readers](SYSTEM_DESIGN.md#versioned-contracts-and-tolerant-readers).
 - **C9 Markdown is rendered at publish** _(audit)_. The projector stores
   sanitized HTML per locale in the snapshot, so `welcome` only renders
   templates. The change that builds it verifies that a long article renders
@@ -135,6 +156,7 @@ marked _(audit)_ came from the stack audit on the same day (see
   tags per entry, type and locale. Each Worker's cache is private, so `welcome`
   exposes an RPC entrypoint that `admin` calls through a service binding to
   purge tags after the projector writes KV.
+  Concept: [cache invalidation by tag](SYSTEM_DESIGN.md#cache-invalidation-by-tag).
 
 ## Publishing workflow
 
@@ -142,12 +164,15 @@ marked _(audit)_ came from the stack audit on the same day (see
   each with an atomic conditional `UPDATE`, and re-projects dirty snapshots.
   Target: about two minutes from due time to live. Times are stored in UTC.
   Each tick must fit the 10 ms CPU limit, so it works in small batches.
+  Concepts: [reconciliation loops](SYSTEM_DESIGN.md#reconciliation-loops-and-at-most-once-claims) and [time in UTC](SYSTEM_DESIGN.md#time-handling-in-utc).
 - **W2 Draft previews are owner-only**, inside `admin` behind Access, reading
   Neon directly.
+  Concept: [read-your-writes](SYSTEM_DESIGN.md#read-your-writes-for-previews).
 
 ## Localization
 
 - **L1 Locales `en`, `fil`, `eo`.** The admin UI is English only.
+  Concept: [internationalization versus localization](SYSTEM_DESIGN.md#internationalization-versus-localization).
 - **L2 Per-field localization.** Each field is shared or localized; each locale
   has a `ready` flag; one revision chain holds all locales.
 - **L3 One publish covers all locales**, and English must be ready before
@@ -156,12 +181,14 @@ marked _(audit)_ came from the stack audit on the same day (see
 - **L5 Paraglide JS for UI strings only**; content localization lives in the
   CMS.
 - **L6 Fonts must cover Latin Extended-A** for Esperanto.
+  Concept: [font subsetting and loading](SYSTEM_DESIGN.md#font-subsetting-and-loading).
 
 ## Media
 
 - **M1 R2 layout.** `public/<sha256>-<width>.webp` for served derivatives and
   `originals/<sha256>.<ext>` for originals, which are private, kept and never
   routed.
+  Concept: [content-addressed storage](SYSTEM_DESIGN.md#content-addressed-storage).
 - **M2 Processing pipeline.** The browser computes the SHA-256 and R2 checks
   it; derivatives are EXIF-free WebP at 640, 1280 and 2048 px plus a BlurHash,
   served through a `welcome` route. **Superseded by M4** for where derivatives
@@ -169,6 +196,7 @@ marked _(audit)_ came from the stack audit on the same day (see
 - **M3 Three-step upload protocol:** create, then parts, then complete.
   Single-part first; large files move to R2 multipart through the binding later
   with no client change.
+  Concept: [upload protocols](SYSTEM_DESIGN.md#upload-protocols-and-integrity-checks).
 - **M4 Derivatives from the Images binding** _(audit)_. Supersedes M2, which
   left open where derivatives are produced; encoding them inside a Worker
   cannot fit 10 ms of CPU. At upload,
@@ -181,10 +209,12 @@ marked _(audit)_ came from the stack audit on the same day (see
 
 - **I1 Contact form into the CMS inbox** until email exists, protected by
   Turnstile and rate limiting.
+  Concept: [abuse prevention](SYSTEM_DESIGN.md#abuse-prevention).
 - **I2 OpenAPI and Orval only when something outside this repo consumes the
   admin API.** Until then, SvelteKit form actions with Zod.
 - **I3 Analytics: Cloudflare Web Analytics beacon first**; a custom metrics
   dashboard later.
+  Concept: [privacy-preserving analytics](SYSTEM_DESIGN.md#privacy-preserving-analytics).
 - **I4 Email arrives with the custom domain:** Email Routing, Resend with Gmail
   send-as, and contact-form email notifications.
 - **I5 Longevity guards.** A `cms export` command (NDJSON) as an exit path, a
@@ -196,24 +226,30 @@ marked _(audit)_ came from the stack audit on the same day (see
   last 6 hours. A scheduled GitHub Actions job writes `pg_dump` and
   `cms export` output to a private R2 bucket, kept 30 days, with a quarterly
   restore drill into a Neon branch.
+  Concept: [backup and restore](SYSTEM_DESIGN.md#backup-and-restore-as-a-tested-process).
 - **I9 Observability with Cloudflare's built-in tools** _(audit)_. Workers Logs
   and traces enabled on both workers, structured JSON logs with a request id,
   and a heartbeat log line per cron tick. No third-party error tracker.
+  Concept: [structured logs](SYSTEM_DESIGN.md#structured-logs-with-a-correlation-id).
 - **I10 Security headers from day one** _(audit)_. HSTS, a Content Security
   Policy (SvelteKit's `csp` config with nonces or hashes), `frame-ancestors`
   and `Referrer-Policy` on both workers, starting in `edge-infrastructure`.
+  Concept: [security headers and CSP](SYSTEM_DESIGN.md#browser-security-headers-and-csp).
 
 ## Quality
 
 - **Q1 Database tests on a Neon branch per PR** _(audit)_. CI creates a
   throwaway Neon branch, migrates it, runs the integration tests and deletes
   it. This needs a Neon API key secret, so these tests do not run on fork PRs.
+  Concept: [branch-per-PR database testing](SYSTEM_DESIGN.md#branch-per-pr-database-testing).
 - **Q2 UI in two steps** _(audit)_. Tailwind and shadcn-svelte arrive in
   `@ycmcuenca/ui` with the first admin UI (S2); the brand sprint later adds
   tokens, typography and the `welcome` visual design on top.
+  Concept: [design tokens](SYSTEM_DESIGN.md#design-tokens-and-theming).
 - **Q3 Accessibility and performance budgets** _(audit)_. WCAG 2.2 AA checks
   (axe in the Playwright suite) and Lighthouse budgets in CI, from the brand
   sprint on.
+  Concepts: [accessibility](SYSTEM_DESIGN.md#accessibility-as-a-requirement) and [performance budgets](SYSTEM_DESIGN.md#performance-budgets).
 - **Q4 SEO basics with public rendering** _(audit)_. Canonical URLs, `hreflang`
   for the three locales, `sitemap.xml` and an RSS/Atom feed generated from the
   KV indexes.

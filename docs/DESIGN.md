@@ -1,6 +1,8 @@
 # Design
 
-This document describes how the platform is meant to look and feel. It covers
+This document describes how the platform is meant to look and feel: visual and
+user-experience design. System design concepts, such as caching or access
+control, are covered by [SYSTEM_DESIGN.md](SYSTEM_DESIGN.md) instead. It covers
 the design principles, the accessibility target and the characters the fonts
 must cover. It also covers how shared design values are layered, what the apps
 look like today and which choices are still open.

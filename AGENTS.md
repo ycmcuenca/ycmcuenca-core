@@ -26,13 +26,14 @@ Read these before you propose or change anything:
 
 Read the one that matches your task.
 
-| Document                                | Read it when you need to know                                  |
-| --------------------------------------- | -------------------------------------------------------------- |
-| [ARCHITECTURE.md](docs/ARCHITECTURE.md) | How the parts connect, and what exists versus what is planned. |
-| [PRODUCT.md](docs/PRODUCT.md)           | Who the platform is for, and what it leaves out.               |
-| [USER_JOURNEY.md](docs/USER_JOURNEY.md) | What each kind of person does, step by step.                   |
-| [DESIGN.md](docs/DESIGN.md)             | How the apps should look, and which choices are open.          |
-| [ROADMAP.md](docs/ROADMAP.md)           | When each part arrives.                                        |
+| Document                                  | Read it when you need to know                                  |
+| ----------------------------------------- | -------------------------------------------------------------- |
+| [ARCHITECTURE.md](docs/ARCHITECTURE.md)   | How the parts connect, and what exists versus what is planned. |
+| [PRODUCT.md](docs/PRODUCT.md)             | Who the platform is for, and what it leaves out.               |
+| [USER_JOURNEY.md](docs/USER_JOURNEY.md)   | What each kind of person does, step by step.                   |
+| [DESIGN.md](docs/DESIGN.md)               | How the apps should look, and which choices are open.          |
+| [SYSTEM_DESIGN.md](docs/SYSTEM_DESIGN.md) | What a system design concept means, and where it is applied.   |
+| [ROADMAP.md](docs/ROADMAP.md)             | When each part arrives.                                        |
 
 The archive guidance in `openspec/config.yaml` says when to update them.
 
