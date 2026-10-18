@@ -47,6 +47,17 @@
       matchPackageNames: ["svelte", "@sveltejs/**"],
       semanticCommitType: "fix",
     },
+    // `jose` ships inside `apps/admin`'s deployed output (as a direct
+    // dependency and as an `@ycmcuenca/edge` peer), so an update is a
+    // `fix(deps)` commit that gives `admin` a patch release (design D10,
+    // assumption A10).
+    {
+      description: "Edge runtime libraries: fix(deps), so touched apps get a patch release",
+      groupName: "edge-runtime",
+      matchDatasources: ["npm"],
+      matchPackageNames: ["jose"],
+      semanticCommitType: "fix",
+    },
 
     // Each tooling group below sets `semanticCommitType: "chore"` explicitly:
     // some tooling packages (the shared ESLint config's, for example) sit in
