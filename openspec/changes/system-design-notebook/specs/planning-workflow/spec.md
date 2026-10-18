@@ -30,7 +30,7 @@ Archiving a change SHALL turn into built entries the notebook entries for the co
 #### Scenario: Lessons left for the owner
 
 - **WHEN** the archiving agent drafts "what we learned here"
-- **THEN** the draft is marked as awaiting the owner's rewrite, and the owner rewrites it in review before the archive merges
+- **THEN** the draft is marked as awaiting the owner's rewrite, and the owner rewrites it in review. CI does not check the rewrite
 
 ### Requirement: Design patterns link to the notebook
 

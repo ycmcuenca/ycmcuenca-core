@@ -77,7 +77,7 @@ check_notebook_entries() {
           if (!has_diagram) report("diagram")
           if (!has["trade-offs"]) report("trade-offs")
           if (!has["how this repository applies it"]) report("how this repository applies it")
-          if (!has["what we learned here"] || has_draft) report("what we learned here")
+          if (!has["what we learned here"]) report("what we learned here")
         }
         if (!has["check yourself"]) report("check yourself")
         if (status == "built" && !has_answer) report("answers")
@@ -89,7 +89,7 @@ check_notebook_entries() {
       heading = title
       status = ""
       split("", has)
-      has_diagram = has_answer = has_draft = references = 0
+      has_diagram = has_answer = references = 0
     }
 
     /^```/ {
@@ -111,7 +111,6 @@ check_notebook_entries() {
     /^\*\*What we learned here\*\*$/ { has["what we learned here"] = 1 }
     /^\*\*Check yourself\*\*$/ { has["check yourself"] = 1 }
     /^\*\*Further reading\*\*$/ { has["further reading"] = 1 }
-    /^> Draft: awaiting the owner.s rewrite\.$/ { has_draft = 1 }
     /<details><summary>Answer<\/summary>/ { has_answer = 1 }
     /Read on [0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]\.$/ { references++ }
 

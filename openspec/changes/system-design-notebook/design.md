@@ -175,7 +175,7 @@ P8 gains "**Superseded by P15** for the number of documents", following the log'
   - each label that status requires exists
   - a built entry has at least one ` ```mermaid ` block and one `<details>`
   - the dated reference lines number 2 to 5
-  - a built entry has no draft marker
+  - a built entry has a "What we learned here" part. Whether it still carries the draft marker is not checked (D11)
 - **Failure output:** one line per missing part, in the script's existing style: `incomplete entry: <heading>: <part>`. For example, `incomplete entry: Settings as code: further reading`. All failures are reported before the script exits non-zero, as today.
 - **Pattern:** a structural fitness function ([fitness functions](../../../docs/SYSTEM_DESIGN.md#fitness-functions)), the same as living-docs D4. The notebook's own "Fitness functions" entry cites it.
 - **Alternatives:**
@@ -231,7 +231,7 @@ P8 gains "**Superseded by P15** for the number of documents", following the log'
   - the archived designs' Risks, Open Questions and Assumptions
   - the follow-up PRs: #5 after `ci-release-pipeline`, #11 after `edge-infrastructure`
   - the commit history
-- Each S1 lesson carries the draft marker. The structure check therefore fails until the owner rewrites all 13. This is intended: the PR cannot merge with lessons the owner has not made their own.
+- Each S1 lesson carries the draft marker. CI does not check the marker (owner decision, 2026-10-18): the owner's rewrite is confirmed by an approval comment on the PR (task 6.4), not by a failing check. The marker stays as a convention, so a reader can tell a draft from a rewritten lesson.
 - **Alternative:** leave the S1 lessons empty for the owner. Rejected because the owner chose "agent drafts, owner edits".
 
 ## Risks / Trade-offs
@@ -247,8 +247,8 @@ P8 gains "**Superseded by P15** for the number of documents", following the log'
 ## Migration Plan
 
 1. On the change branch: add the dependencies, extend the script, then write the notebook, then add the links in the other documents, the config rules and P15.
-2. CI runs on the PR. The extended step must pass. Its failure modes are proven on throwaway commits (tasks).
-3. The owner rewrites the 13 S1 lessons, which removes the draft markers, and reviews the rendered notebook.
+2. CI runs on the PR. The extended step must pass, draft markers included. Its failure modes are proven on throwaway commits (tasks).
+3. The owner rewrites the 13 S1 lessons, which removes the draft markers, reviews the rendered notebook and approves the PR.
 4. Rebase-merge. No release follows, because nothing under `apps/` changes.
 
 **Rollback:** revert the PR. The check script, dependencies and documents return to their previous state together. Nothing outside the repository changes.
@@ -269,6 +269,6 @@ Deferrable: none of these changes the specs or the task breakdown.
 - **A4** `actions/checkout` keeps the `origin` remote with `persist-credentials: false`, so the link check runs in CI without extra steps. Task 6.2 verifies it in the PR's CI run.
 - **A5** Each quarter's manual external-link check goes in ROADMAP's "Recurring checks", beside the restore drill.
 - **A6** About 25 decisions in DECISIONS.md get a concept link. A decision gets one only when its notebook entry exists in this change, as a full entry or a stub.
-- **A7** The CI check enforces the draft marker, so this PR cannot merge until the owner rewrites the S1 lessons (D11).
+- **A7** CI does not enforce the draft marker. The owner's rewrite of the S1 lessons is confirmed by an approval comment on the PR (D11).
 - **A8** Code is cited by file path only, never by line number (D6).
 - **A9** S1's exit criteria in ROADMAP become "all six living documents exist".

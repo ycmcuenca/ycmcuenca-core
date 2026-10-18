@@ -19,7 +19,7 @@ The platform is built partly to learn system design (P1), and ROADMAP.md lists t
 - **`docs/DESIGN.md`**: its opening states that it covers visual design, and that SYSTEM_DESIGN.md covers system design concepts.
 - **`docs/USER_JOURNEY.md`** and **`docs/PRODUCT.md`**: the developer peer's journey gains a "study the concepts" step, and PRODUCT.md names the notebook as one of the things that serve developer peers.
 - **`openspec/config.yaml`**:
-  - The archive guidance adds the notebook to the documents to review, and asks for the change's concept entries to be written or completed. The agent drafts "What we learned here" and the owner rewrites it.
+  - The archive guidance adds the notebook to the documents to review, and asks for the change's concept entries to be written or completed. The agent drafts "What we learned here" and the owner rewrites it in review. CI does not check the rewrite.
   - The design rule asks each `Pattern:` in a `design.md` to link to its notebook entry, adding a stub when the concept is new.
 - **CI** (`scripts/docs/check-living-docs.sh`, same `specs` job step):
   - It checks six documents instead of five.
@@ -34,6 +34,7 @@ Out of scope:
 - Spec-driven development (OpenSpec) as a concept entry. The owner left it out of the S1 list.
 - Splitting the notebook into `docs/system-design/`. The notebook carries its own rule: split at about 3,000 lines.
 - Splitting DECISIONS.md into `docs/adr/`, which keeps its own 300-line trigger even though the concept links bring it closer.
+- Checking by CI that the owner has rewritten the drafted lessons. The owner confirms the rewrite with an approval comment on the pull request.
 - Plain-language linting (for example Vale). ISO 24495-1 is checked in review, as it is for every other document.
 - Translating the notebook. It is English only, like the other documents.
 - Changing any app, package or deployed system.

@@ -47,10 +47,10 @@ Every CI run SHALL check each concept entry in `docs/SYSTEM_DESIGN.md`. An entry
 - **WHEN** an entry's further reading has fewer than two references that end with a `Read on YYYY-MM-DD` date
 - **THEN** the check fails and names that entry and "further reading"
 
-#### Scenario: Draft lesson left in place
+#### Scenario: Draft lesson does not fail the check
 
 - **WHEN** a built entry's "what we learned here" still carries the marker that it awaits the owner's rewrite
-- **THEN** the check fails and names that entry and "what we learned here"
+- **THEN** the check passes for that entry, because the owner's rewrite is confirmed in review, not by CI
 
 #### Scenario: Planned entry is complete
 
