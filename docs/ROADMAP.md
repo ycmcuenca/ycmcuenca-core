@@ -8,6 +8,10 @@ This file and [DECISIONS.md](DECISIONS.md) carry the planning context between
 sessions. Read both before proposing an OpenSpec change, and update the
 change's row here when it moves to a new status.
 
+The other living documents are [ARCHITECTURE.md](ARCHITECTURE.md),
+[DESIGN.md](DESIGN.md), [PRODUCT.md](PRODUCT.md) and
+[USER_JOURNEY.md](USER_JOURNEY.md).
+
 - **Pace:** 8–12 hours a week, mostly agent-driven work with human review. A
   sprint takes one to two weeks, so this roadmap has no dates.
 - **Unit of work:** one OpenSpec change is one capability, one pull request.
@@ -35,8 +39,8 @@ flowchart LR
     subgraph S1["S1 Foundation"]
         bootstrap["bootstrap-monorepo"]:::archived
         ci["ci-release-pipeline"]:::archived
-        edge["edge-infrastructure"]:::planned
-        docs["living-docs"]:::planned
+        edge["edge-infrastructure"]:::proposed
+        docs["living-docs"]:::inProgress
     end
     subgraph S2["S2 Publish path"]
         s2["content store, content model,<br/>revisions + projector,<br/>public rendering, admin editor"]:::planned
@@ -58,9 +62,11 @@ flowchart LR
     bootstrap --> docs
     edge --> s2 --> s3 --> s4 --> s5 --> s6
 
-    classDef archived fill:#d1fae5,stroke:#047857
-    classDef merged fill:#dbeafe,stroke:#1d4ed8
-    classDef planned fill:#f3f4f6,stroke:#6b7280,stroke-dasharray:5 5
+    classDef archived fill:#d1fae5,stroke:#047857,color:#111827
+    classDef merged fill:#dbeafe,stroke:#1d4ed8,color:#111827
+    classDef inProgress fill:#fef3c7,stroke:#b45309,color:#111827
+    classDef proposed fill:#ede9fe,stroke:#6d28d9,color:#111827
+    classDef planned fill:#f3f4f6,stroke:#6b7280,color:#111827,stroke-dasharray:5 5
 ```
 
 ## Sprint 1: Foundation
@@ -68,12 +74,12 @@ flowchart LR
 **Goal:** a gated, hardened repository whose two workers are live on
 `*.ycmcuenca.workers.dev`, with the living documents in place.
 
-| Change                | Status   | What it delivers                                                                                                                                                                                                                                                                                                                             |
-| --------------------- | -------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `bootstrap-monorepo`  | archived | Bun + Turborepo workspace, `welcome` and `admin` as hello-world SvelteKit apps on the Workers adapter (local only), ESLint, Prettier, Lefthook + commitlint, Vitest, Chromium smoke tests on `wrangler dev`. PR #1, archived 2026-10-17.                                                                                                     |
-| `ci-release-pipeline` | archived | PR CI with one `ci-ok` gate, release-please (one version per app), repository settings as code, SHA-pinned actions, Renovate, CodeQL. PR #2 merged, follow-up PR #5 merged, archived 2026-10-18.                                                                                                                                             |
-| `edge-infrastructure` | planned  | Cloudflare API token, a deploy workflow that consumes release-please's `paths_released`, both workers live on `workers.dev`, Cloudflare Access in front of `admin` (production and preview URLs), Workers Logs and traces (I9), security headers and CSP (I10). KV, R2 and Neon are created in S2 and S3 by the change that first uses them. |
-| `living-docs`         | planned  | Adopts this file and DECISIONS.md and adds ARCHITECTURE, DESIGN, PRODUCT and USER_JOURNEY, each with a Mermaid diagram. Revises the master architecture diagram: solid lines for what exists, dashed for what is planned.                                                                                                                    |
+| Change                | Status      | What it delivers                                                                                                                                                                                                                                                                                                                             |
+| --------------------- | ----------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `bootstrap-monorepo`  | archived    | Bun + Turborepo workspace, `welcome` and `admin` as hello-world SvelteKit apps on the Workers adapter (local only), ESLint, Prettier, Lefthook + commitlint, Vitest, Chromium smoke tests on `wrangler dev`. PR #1, archived 2026-10-17.                                                                                                     |
+| `ci-release-pipeline` | archived    | PR CI with one `ci-ok` gate, release-please (one version per app), repository settings as code, SHA-pinned actions, Renovate, CodeQL. PR #2 merged, follow-up PR #5 merged, archived 2026-10-18.                                                                                                                                             |
+| `edge-infrastructure` | proposed    | Cloudflare API token, a deploy workflow that consumes release-please's `paths_released`, both workers live on `workers.dev`, Cloudflare Access in front of `admin` (production and preview URLs), Workers Logs and traces (I9), security headers and CSP (I10). KV, R2 and Neon are created in S2 and S3 by the change that first uses them. |
+| `living-docs`         | in progress | Adopts this file and DECISIONS.md and adds ARCHITECTURE, DESIGN, PRODUCT and USER_JOURNEY, each with a Mermaid diagram. Revises the master architecture diagram: solid lines for what exists, dashed for what is planned.                                                                                                                    |
 
 **Exit criteria:** `main` changes only through checked PRs; a merged release
 PR deploys the released app; `admin` is reachable only through Access; all five
