@@ -21,6 +21,7 @@
     "@sveltejs/kit": "3.1.0",
     "@sveltejs/vite-plugin-svelte": "7.3.1",
     "@types/node": "24.9.2",
+    "@ycmcuenca/edge": "workspace:*",
     "@ycmcuenca/eslint-config": "workspace:*",
     "@ycmcuenca/tsconfig": "workspace:*",
     "svelte": "5.57.2",

@@ -2,14 +2,12 @@
 // for information about these interfaces
 declare global {
   namespace App {
-    interface Platform {
-      env: Env;
-      ctx: ExecutionContext;
-      caches: CacheStorage;
-      cf?: IncomingRequestCfProperties;
+    interface Error {
+      // The request id the error page shows; `handleError` sets it from the
+      // request's Ray ID (design D9).
+      requestId: string;
     }
 
-    // interface Error {}
     // interface Locals {}
     // interface PageData {}
     // interface PageState {}
