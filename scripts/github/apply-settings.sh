@@ -268,7 +268,7 @@ handle_step "$RULESET_NAME ruleset" "$ruleset_detail" apply_ruleset
 # --- 7. The `production` environment ----------------------------------------
 # The deploy job runs in this environment, so the Cloudflare credentials are
 # scoped to it and only `main` may use them (design D3 in
-# openspec/changes/edge-infrastructure/design.md). The environment is
+# openspec/changes/archive/2026-10-18-edge-infrastructure/design.md). The environment is
 # upserted, never recreated, and its branch policies converge to exactly
 # `main`. A missing credential can only be reported by name - the script
 # cannot set the secret's value - so it counts as drift under --check and

@@ -1,5 +1,5 @@
 // Cloudflare Workers configuration for `admin` (design D4 in
-// openspec/changes/edge-infrastructure/design.md). The worker name is what
+// openspec/changes/archive/2026-10-18-edge-infrastructure/design.md). The worker name is what
 // serves admin.ycmcuenca.workers.dev once deployed.
 {
   "$schema": "./node_modules/wrangler/config-schema.json",
