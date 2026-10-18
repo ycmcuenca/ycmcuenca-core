@@ -2,7 +2,7 @@
 #
 # Checks that the five living documents exist and that each one holds at least
 # one Mermaid diagram block (design D4 in
-# openspec/changes/living-docs/design.md).
+# openspec/changes/archive/2026-10-18-living-docs/design.md).
 #
 # Usage:
 #   scripts/docs/check-living-docs.sh
