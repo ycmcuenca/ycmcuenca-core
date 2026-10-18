@@ -73,7 +73,7 @@ An entry is a `###` heading inside a `## Sprint <n>: <name>` section, followed b
 - **Code blocks:** every fenced block names its language (`mermaid`, `sh`, `text`), because `markdown/fenced-code-language` requires it.
 - **Reference line:** `- [Title](https://…), author or publisher. Read on YYYY-MM-DD.` The check counts lines that end with `Read on YYYY-MM-DD.`
 - **Draft marker:** an agent-drafted "What we learned here" starts with the line `> Draft: awaiting the owner's rewrite.` The owner deletes the line when they rewrite the part.
-- **Pattern:** a fixed "card" template ([documentation as a bounded context](../../../docs/SYSTEM_DESIGN.md#documentation-as-a-bounded-context)), so a reader builds a habit of where to look, and so a script can check completeness.
+- **Pattern:** a fixed "card" template ([documentation as a bounded context](../../../../docs/SYSTEM_DESIGN.md#documentation-as-a-bounded-context)), so a reader builds a habit of where to look, and so a script can check completeness.
 - **Why bold labels:** GitHub's outline then lists only sprints and concepts. Seven `####` sub-headings in each of 37 entries would add more than 200 outline items. Most would get suffixed anchors such as `#trade-offs-12`, which nobody can cite.
 - **Alternatives:**
   - `####` sub-headings. Each part can be linked, but the outline gets noisy and the anchors are unstable.
@@ -92,7 +92,7 @@ An entry is a `###` heading inside a `## Sprint <n>: <name>` section, followed b
 5. **`## Sprint 1: Foundation` … `## Sprint 6: Content and 3D`:** the same names as ROADMAP. Each opens with a `**Study path:**` paragraph, then its entries.
 6. **Keeping this document current:** the archive rule (D9), the references policy (D10) and the size rule (split at about 3,000 lines into `docs/system-design/`).
 
-- **Pattern:** the same "one owner per topic, fixed outline" approach as living-docs design D1 ([documentation as a bounded context](../../../docs/SYSTEM_DESIGN.md#documentation-as-a-bounded-context)).
+- **Pattern:** the same "one owner per topic, fixed outline" approach as living-docs design D1 ([documentation as a bounded context](../../../../docs/SYSTEM_DESIGN.md#documentation-as-a-bounded-context)).
 - **Alternative:** a glossary section for terms. It was rejected because the spec asks that each term be defined where it first appears. A glossary would be a second home for the same definitions.
 
 ### D3. The Sprint 1 inventory: 13 full entries
@@ -115,7 +115,7 @@ Every `Pattern:` line maps to exactly one entry. The "applied here" column lists
 | Fitness functions                                  | A structural fitness function (living-docs D4); this change's checks (D7, D8)                               | living-docs D4; this change's D7, D8; `scripts/docs/check-living-docs.sh`                                             | Thoughtworks Technology Radar, "Architectural fitness function"; Ford, Parsons and Kua, _Building Evolutionary Architectures_ (book)                           |
 | Documentation as a bounded context                 | Single source of truth; visual encoding of lifecycle state (living-docs D1, D2)                             | P8 and its successor; living-docs D1 to D3; this change's D6                                                          | Fowler, "BoundedContext"; Diátaxis (diataxis.fr); C4 model (c4model.com); ISO 24495-1:2023                                                                     |
 
-- **Pattern:** "one concept, one home" ([documentation as a bounded context](../../../docs/SYSTEM_DESIGN.md#documentation-as-a-bounded-context)). Each `Pattern:` maps to exactly one entry, so the design rule (D9) has one link target.
+- **Pattern:** "one concept, one home" ([documentation as a bounded context](../../../../docs/SYSTEM_DESIGN.md#documentation-as-a-bounded-context)). Each `Pattern:` maps to exactly one entry, so the design rule (D9) has one link target.
 - **Alternatives:** one entry per `Pattern:` line, which gives 14 or more thin entries that repeat each other (settings as code appears twice). Or ROADMAP's 6 only, which leaves 8 named patterns unexplained.
 - **Failure mode:** a reference turns out to be weak once read in full, for example a page that only promotes a product. Mitigation: the writer replaces it with another source of the D10 kinds and records it in the PR.
 
@@ -162,7 +162,7 @@ Stub references come from the same sources as D10, chosen when the stub is writt
 
 P8 gains "**Superseded by P15** for the number of documents", following the log's rule. Its text is not otherwise edited.
 
-- **Pattern:** bidirectional links, with each fact kept in one home ([documentation as a bounded context](../../../docs/SYSTEM_DESIGN.md#documentation-as-a-bounded-context)). A link replaces a copy.
+- **Pattern:** bidirectional links, with each fact kept in one home ([documentation as a bounded context](../../../../docs/SYSTEM_DESIGN.md#documentation-as-a-bounded-context)). A link replaces a copy.
 - **Failure modes:**
   - A renamed notebook heading breaks every link into it. Mitigation: the link check (D8) fails and names each broken line.
   - DECISIONS.md grows from 259 lines to about 290, close to its own 300-line split trigger. This is accepted, and listed under Risks.
@@ -177,7 +177,7 @@ P8 gains "**Superseded by P15** for the number of documents", following the log'
   - the dated reference lines number 2 to 5
   - a built entry has a "What we learned here" part. Whether it still carries the draft marker is not checked (D11)
 - **Failure output:** one line per missing part, in the script's existing style: `incomplete entry: <heading>: <part>`. For example, `incomplete entry: Settings as code: further reading`. All failures are reported before the script exits non-zero, as today.
-- **Pattern:** a structural fitness function ([fitness functions](../../../docs/SYSTEM_DESIGN.md#fitness-functions)), the same as living-docs D4. The notebook's own "Fitness functions" entry cites it.
+- **Pattern:** a structural fitness function ([fitness functions](../../../../docs/SYSTEM_DESIGN.md#fitness-functions)), the same as living-docs D4. The notebook's own "Fitness functions" entry cites it.
 - **Alternatives:**
   - A TypeScript script run by Bun, with unit tests. Better tested, but it would be the first TypeScript under `scripts/`. All four existing scripts are bash.
   - A remark lint plugin. Would reuse the Markdown parser, but adds a custom plugin to maintain.
@@ -189,7 +189,7 @@ P8 gains "**Superseded by P15** for the number of documents", following the log'
 
 - `package.json` gains `remark-cli` `12.0.1` and `remark-validate-links` `13.1.0`, both pinned exactly.
 - The script runs `bunx remark --use remark-validate-links --no-config --no-ignore --no-stdout --frail --quiet --no-color docs AGENTS.md README.md`. Any warning fails the run, and each warning names the file, line and link.
-- **Pattern:** a fitness function for documentation integrity ([fitness functions](../../../docs/SYSTEM_DESIGN.md#fitness-functions)), run offline, so it gives no false alarms from the network.
+- **Pattern:** a fitness function for documentation integrity ([fitness functions](../../../../docs/SYSTEM_DESIGN.md#fitness-functions)), run offline, so it gives no false alarms from the network.
 - **Why this tool:**
   - `bun install` installs it, so the local CI command needs nothing extra. This keeps the developer-workspace promise that every tool is a dev dependency.
   - It uses GitHub's own anchor rules (`github-slugger`).

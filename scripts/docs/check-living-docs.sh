@@ -4,7 +4,7 @@
 #   - each of the six exists and holds at least one Mermaid diagram block
 #     (design D4 in openspec/changes/archive/2026-10-18-living-docs/design.md)
 #   - each concept entry in docs/SYSTEM_DESIGN.md has the parts its status
-#     requires (design D7 in openspec/changes/system-design-notebook/design.md)
+#     requires (design D7 in openspec/changes/archive/2026-10-18-system-design-notebook/design.md)
 #   - each relative link and heading anchor in docs/, AGENTS.md and README.md
 #     resolves (design D8 in the same file)
 #
