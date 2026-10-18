@@ -149,6 +149,8 @@ jobs:
       # The living documents guard the same planning artifacts and need no
       # install or build, so they share this job rather than adding one
       # (design D4 in openspec/changes/archive/2026-10-18-living-docs/design.md).
+      # The same step checks the notebook's entries and the relative links
+      # (design D7 and D8 in openspec/changes/system-design-notebook/design.md).
       - name: Check living documents
         run: scripts/docs/check-living-docs.sh
 
