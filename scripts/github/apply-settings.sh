@@ -132,16 +132,25 @@ handle_step "actions permissions" "$actions_detail" apply_actions_permissions
 # --- 3. Vulnerability alerts ------------------------------------------------
 # Dependabot vulnerability alerts feed Renovate's `vulnerabilityAlerts` (D11);
 # Dependabot's own security updates stay off. The endpoint answers 204 when
-# the alerts are on and 404 when they are off.
+# the alerts are on and 404 when they are off. gh prints the response status
+# line even for the 404; anything that is neither 204 nor 404 - a network or
+# auth failure - is an error, never "off".
 
 apply_vulnerability_alerts() {
   gh api --method PUT "repos/$REPO/vulnerability-alerts" >/dev/null
 }
 
 vulnerability_detail=""
-if ! gh api "repos/$REPO/vulnerability-alerts" >/dev/null 2>&1; then
-  vulnerability_detail="disabled"
-fi
+vuln_probe="$(gh api -i "repos/$REPO/vulnerability-alerts" 2>&1 || true)"
+vuln_status="$(printf '%s\n' "$vuln_probe" | awk '/^HTTP\// { print $2; exit }')"
+case "$vuln_status" in
+  204) ;;
+  404) vulnerability_detail="disabled" ;;
+  *)
+    die "vulnerability alerts check failed (HTTP '${vuln_status:-no response}')" \
+      "only a 404 means the alerts are off, so this is an error"
+    ;;
+esac
 handle_step "vulnerability alerts" "$vulnerability_detail" apply_vulnerability_alerts
 
 # --- 4. Secret scanning and push protection --------------------------------
