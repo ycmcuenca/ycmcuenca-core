@@ -1,0 +1,36 @@
+[
+  {
+    "name": "admin",
+    "type": "self_hosted",
+    "destinations": [
+      {
+        "type": "worker",
+        "worker_id": "<WORKER_TAG>"
+      }
+    ],
+    "allowed_idps": ["<ONETIMEPIN_IDP_ID>"],
+    "policies": [
+      {
+        "id": "<OWNER_ONLY_POLICY_ID>",
+        "precedence": 1
+      }
+    ]
+  },
+  {
+    "name": "welcome",
+    "type": "self_hosted",
+    "destinations": [
+      {
+        "type": "preview_worker",
+        "worker_id": "<WORKER_TAG>"
+      }
+    ],
+    "allowed_idps": ["<ONETIMEPIN_IDP_ID>"],
+    "policies": [
+      {
+        "id": "<OWNER_ONLY_POLICY_ID>",
+        "precedence": 1
+      }
+    ]
+  }
+]
