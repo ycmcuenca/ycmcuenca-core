@@ -39,9 +39,9 @@
 - [x] 5.2 Write `scripts/github/apply-settings.sh` (commented, `set -euo pipefail`, admin `gh` auth check, per-setting compare-then-apply with `unchanged` / `updated` output, `--check` mode that exits non-zero on drift without writing), and verify `shellcheck scripts/github/apply-settings.sh` passes and `--check` against the current repository reports every setting as drifted while changing nothing (re-read the settings via `gh api` to confirm)
 - [x] 5.3 **Owner task:** after the PR's `ci-ok` is green and named exactly `ci-ok` (2.11), run `scripts/github/apply-settings.sh`. Verify that a second run prints only `unchanged`, and that `--check` exits 0
 - [x] 5.4 Verify the applied settings through the API: rebase-only merge with branch deletion on; `actions/permissions` shows `sha_pinning_required: true`; `vulnerability-alerts` returns 204; `security_and_analysis` and `code-scanning/default-setup` show alerts enabled and CodeQL `configured` (record the languages it chose); `rulesets` shows the `main` ruleset active with no bypass actors. Also confirm the PR's own workflow runs still start with SHA pinning enforced (including the digest-pinned actionlint image)
-- [ ] 5.5 Verify enforcement: a direct `git push origin HEAD:main` of a throwaway commit is rejected by the ruleset (then delete the local throwaway commit); the PR's merge menu offers only "Rebase and merge"; and `gh api repos/ycmcuenca/ycmcuenca-core/rulesets/<id>` shows `strict_required_status_checks_policy: true` (the stale-branch behavior is observed the first time two PRs are open at once, and recorded in the README if it differs)
+- [x] 5.5 Verify enforcement: a direct `git push origin HEAD:main` of a throwaway commit is rejected by the ruleset (then delete the local throwaway commit); the PR's merge menu offers only "Rebase and merge"; and `gh api repos/ycmcuenca/ycmcuenca-core/rulesets/<id>` shows `strict_required_status_checks_policy: true` (the stale-branch behavior is observed the first time two PRs are open at once, and recorded in the README if it differs)
 - [x] 5.6 Verify drift correction: change `delete_branch_on_merge` to false in the GitHub UI, confirm `--check` exits non-zero naming that setting, re-run the script, and confirm it reports `updated` and the setting is restored
-- [ ] 5.7 **Owner task:** install the Mend Renovate app on `ycmcuenca/ycmcuenca-core` only, confirm the app's permissions include "Dependabot alerts: read", and verify that within one hour Renovate creates the Dependency Dashboard issue without config errors
+- [x] 5.7 **Owner task:** install the Mend Renovate app on `ycmcuenca/ycmcuenca-core` only, confirm the app's permissions include "Dependabot alerts: read", and verify that within one hour Renovate creates the Dependency Dashboard issue without config errors
 
 ## 6. Documentation
 
@@ -50,8 +50,8 @@
 ## 7. Integration verification
 
 - [x] 7.1 Run the full local equivalent of CI (`bun install --frozen-lockfile`, `bun run format`, `bun run lint`, `bun run check`, `bun run build`, `bun run test`, `bun run test:e2e`, `bunx openspec validate --all --strict --no-interactive`, actionlint, zizmor) and verify all pass
-- [ ] 7.2 Verify on the PR that every job is green and `ci-ok` succeeds, then rebase-merge the PR under the active ruleset and verify the `push` run on `main` is green
-- [ ] 7.3 Verify release-please's first run on `main` succeeds and opens no release PR (this change touches no files under `apps/`), and that the Actions secrets list is still empty (`gh secret list`)
+- [x] 7.2 Verify on the PR that every job is green and `ci-ok` succeeds, then rebase-merge the PR under the active ruleset and verify the `push` run on `main` is green
+- [x] 7.3 Verify release-please's first run on `main` succeeds and opens no release PR (this change touches no files under `apps/`), and that the Actions secrets list is still empty (`gh secret list`)
 - [x] 7.4 Run `openspec validate ci-release-pipeline --strict` and verify it passes
 
 ## Workflow follow-up
