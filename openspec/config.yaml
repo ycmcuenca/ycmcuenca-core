@@ -14,7 +14,7 @@ context: |
 
   Locales are English (en), Filipino (fil) and Esperanto (eo). English content
   must exist before anything is published. The roadmap runs in sprints from S1
-  (foundation) through S5 (content and 3D).
+  (foundation) through S6 (content and 3D).
 
   The learning goal shapes trade-offs: the CMS is hand-built on purpose, while
   everything else stays on managed services. Prefer boring, widely adopted
