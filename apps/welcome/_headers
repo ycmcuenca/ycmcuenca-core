@@ -1,0 +1,8 @@
+# The baseline security headers for static assets, which are served without
+# the worker (design D8; security-headers spec). A unit test keeps this file
+# equal to `baselineSecurityHeaders` from `@ycmcuenca/edge`.
+/*
+  Strict-Transport-Security: max-age=63072000; includeSubDomains
+  X-Content-Type-Options: nosniff
+  Referrer-Policy: strict-origin-when-cross-origin
+  Permissions-Policy: camera=(), microphone=(), geolocation=()
