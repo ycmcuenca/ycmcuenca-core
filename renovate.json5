@@ -27,6 +27,15 @@
   automerge: false,
 
   packageRules: [
+    // Keep engine ranges (node's `>=24`) and peer ranges (`^10.13.0`) in
+    // their original style: pinning replaces a compatibility range with one
+    // exact version, and for node it also hid the major from A3's approval
+    // rule. This is Renovate's own `:pinAllExceptPeerDependencies` recipe.
+    {
+      matchDepTypes: ["engines", "peerDependencies"],
+      rangeStrategy: "auto",
+    },
+
     // The runtime libraries that end up in each app's deployed output. An
     // update here changes what users run, so it is committed as `fix(deps)`
     // and the apps it touches are proposed for a patch release
@@ -122,6 +131,12 @@
       description: "TypeScript stays below 7 until svelte-check supports it (A3)",
       matchPackageNames: ["typescript"],
       allowedVersions: "<7",
+    },
+    {
+      description: "Node stays below 25 until Node 26 is LTS (README)",
+      matchManagers: ["bun", "nodenv"],
+      matchDepNames: ["node"],
+      allowedVersions: "<25",
     },
   ],
 
