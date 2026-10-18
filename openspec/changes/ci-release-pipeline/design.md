@@ -104,7 +104,7 @@ Current state, observed on 2026-10-18:
 
 ### D7. Workflow linting and auditing
 
-- **actionlint 1.7.12** runs from the official `rhysd/actionlint` container image, **pinned by digest** (`docker://rhysd/actionlint@sha256:…`). The documented download script pipes `curl` from the project's `main` branch into `bash`, an unpinned supply-chain hop this change is trying to remove.
+- **actionlint 1.7.12** runs from the official `rhysd/actionlint` container image, **pinned by digest with the version in the tag** (`docker://rhysd/actionlint:1.7.12@sha256:…`): the digest is what runs — and what `sha_pinning_required` accepts — while the tag is what Renovate reads to propose updates. The documented download script pipes `curl` from the project's `main` branch into `bash`, an unpinned supply-chain hop this change is trying to remove.
 - **zizmor** runs through `zizmorcore/zizmor-action@<sha> # v0.7.1` with SARIF upload **disabled** (in SARIF mode zizmor always exits 0), so findings fail the job. The default persona applies, with the default `unpinned-uses` policy (hash-pin everything). No `zizmor.yml` is needed unless a finding has to be deliberately accepted, in which case it is accepted with an inline, justified ignore.
 - **Failure modes:** it's unverified whether GitHub's `sha_pinning_required` setting also governs `docker://` image references, and whether zizmor flags a digest-pinned image. Both are verification tasks; if either behaves unexpectedly, stop and ask the owner. The exact zizmor-action input that disables SARIF is also confirmed against its `action.yml` during apply.
 
@@ -136,8 +136,9 @@ Current state, observed on 2026-10-18:
   1. `PATCH /repos/{repo}`: `allow_rebase_merge: true`, `allow_squash_merge: false`, `allow_merge_commit: false`, `delete_branch_on_merge: true`.
   2. `PUT /repos/{repo}/actions/permissions`: `enabled: true`, `allowed_actions: all`, `sha_pinning_required: true`.
   3. `PUT /repos/{repo}/vulnerability-alerts`. The dependency graph is always on for public repos (verified by reading `security_and_analysis` afterwards).
-  4. `PATCH /repos/{repo}/code-scanning/default-setup`: `state: configured`, `query_suite: default`.
-  5. Ruleset upsert by name (`main`): `PUT` if it exists, otherwise `POST`.
+  4. `PATCH /repos/{repo}` with `security_and_analysis`: `secret_scanning` and `secret_scanning_push_protection` set to `enabled`. Only these two are managed, so the extra scanning modes stay off (A9).
+  5. `PATCH /repos/{repo}/code-scanning/default-setup`: `state: configured`, `query_suite: default`.
+  6. Ruleset upsert by name (`main`): `PUT` if it exists, otherwise `POST`. The drift comparison ignores the fields the API adds, but compares the sorted list of rule types in full, so a rule added on the repository outside the committed file counts as drift.
 
   Each step compares the current value with the desired value and prints `unchanged` or `updated`. That's what makes a re-run report no changes.
 
@@ -158,7 +159,7 @@ Current state, observed on 2026-10-18:
 `renovate.json5` at the root (JSON5, so every rule carries a comment):
 
 - `extends: ["config:best-practices", ":semanticCommits"]`. `semanticCommits` is forced on because the repo requires Conventional Commits, rather than relying on auto-detection.
-- `schedule: ["* 0-5 * * 1"]` with `timezone` (A2). `dependencyDashboard: true`. `rangeStrategy: "pin"`. No `automerge` anywhere.
+- `schedule: ["* 0-5 * * 1"]` with `timezone` (A2). `dependencyDashboard: true`. `rangeStrategy: "pin"`, except for `engines` and `peerDependencies`, which stay `auto` (Renovate's own `:pinAllExceptPeerDependencies` recipe) so library manifests keep their declared ranges. No `automerge` anywhere.
 - **Groups:**
   - `svelte-runtime`: `svelte`, `@sveltejs/**`
   - `cloudflare`: `wrangler`, `@cloudflare/**`
@@ -169,8 +170,8 @@ Current state, observed on 2026-10-18:
   - `openspec`: `@fission-ai/openspec`
   - `github-actions` (manager)
   - toolchain: Bun's `packageManager`, `.node-version`
-- **Commit types** (per the owner's decision): the `svelte-runtime` group gets `semanticCommitType: "fix"` (it's bundled into deployed output, so changed apps get a patch release). `vulnerabilityAlerts` also gets `semanticCommitType: "fix"`. Everything else defaults to `chore(deps)`.
-- **Major updates** need approval on Renovate's dependency dashboard (`dependencyDashboardApproval: true` for `matchUpdateTypes: ["major"]`). The known incompatibilities are disabled until their blockers lift (A3): `vitest`/`@vitest/**` `allowedVersions: "<5"`, `typescript` `"<7"`. Node majors go through the dashboard approval.
+- **Commit types** (per the owner's decision): the `svelte-runtime` group gets `semanticCommitType: "fix"` (it's bundled into deployed output, so changed apps get a patch release). The tooling groups set `semanticCommitType: "chore"` **explicitly**, overriding the presets' `:semanticPrefixFixDepsChoreOthers`, which would commit packages sitting in `dependencies` as `fix(deps)` — the shared ESLint config does — and propose app patch releases. `vulnerabilityAlerts` gets `semanticCommitType: "fix"`, and it still wins over the groups: Renovate appends its vulnerability rules after the user rules, with `force` (presets first, user rules last, later rules win).
+- **Major updates** need approval on Renovate's dependency dashboard (`dependencyDashboardApproval: true` for `matchUpdateTypes: ["major"]`). The known incompatibilities stay pinned below their next major until their blockers lift (A3): `vitest`/`@vitest/**` `allowedVersions: "<5"`, `typescript` `"<7"`, and Node `"<25"` (owner decision, 2026-10-18) until Node 26 is LTS; other majors need dashboard approval.
 - **Pattern:** batched, scheduled, human-approved dependency flow, with security fixes taking a fast lane.
 - **Alternatives:** Dependabot (weaker grouping and Bun support; rejected). Self-hosted Renovate (secrets and upkeep; rejected).
 - **Failure modes:** _Config typo silently ignored:_ the Mend app reports config errors on its dependency dashboard and in PRs; the tasks also validate once locally with `renovate-config-validator` at the pinned version. _Updates the `packageManager` field can't handle:_ unverified for Bun, so it's a verification task. _Mend app missing "Dependabot alerts: read":_ security PRs never appear (owner task with explicit verification).
@@ -216,7 +217,7 @@ Deferrable: none of these change the specs or the task breakdown.
 
 - **A1** The aggregate check is named `ci-ok`.
 - **A2** (confirmed by the owner) Renovate runs Mondays 00:00–05:59 `Asia/Manila`.
-- **A3** Major updates require dashboard approval. Vitest stays below 5 and TypeScript below 7 until the blockers in the README lift. Node majors also go through the dashboard.
+- **A3** Major updates require dashboard approval. Vitest stays below 5 and TypeScript below 7 until the blockers in the README lift. Node stays below 25 (`allowedVersions: "<25"`) until Node 26 is LTS (owner decision, 2026-10-18).
 - **A4** release-please's default changelog sections (Features, Bug Fixes, Performance Improvements, Reverts). Dependency fixes show under Bug Fixes.
 - **A5** `bootstrap-sha` is current `main` (`2f69ec2`). The first release PR includes only commits after it.
 - **A6** The OpenSpec CLI is pinned at 1.14.3 in the repo, and contributors use `bunx openspec`. Your Homebrew 1.14.1 may differ until you upgrade it.
