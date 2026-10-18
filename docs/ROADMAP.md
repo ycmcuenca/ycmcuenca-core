@@ -31,7 +31,7 @@ The other living documents are [ARCHITECTURE.md](ARCHITECTURE.md),
 
 ## Overview
 
-Solid boxes exist or are under way; dashed boxes are planned. Arrows point from
+Solid boxes have an OpenSpec change; dashed boxes are planned. Arrows point from
 a change to the changes that build on it.
 
 ```mermaid
@@ -39,7 +39,7 @@ flowchart LR
     subgraph S1["S1 Foundation"]
         bootstrap["bootstrap-monorepo"]:::archived
         ci["ci-release-pipeline"]:::archived
-        edge["edge-infrastructure"]:::proposed
+        edge["edge-infrastructure"]:::planned
         docs["living-docs"]:::inProgress
     end
     subgraph S2["S2 Publish path"]
@@ -78,8 +78,8 @@ flowchart LR
 | --------------------- | ----------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `bootstrap-monorepo`  | archived    | Bun + Turborepo workspace, `welcome` and `admin` as hello-world SvelteKit apps on the Workers adapter (local only), ESLint, Prettier, Lefthook + commitlint, Vitest, Chromium smoke tests on `wrangler dev`. PR #1, archived 2026-10-17.                                                                                                     |
 | `ci-release-pipeline` | archived    | PR CI with one `ci-ok` gate, release-please (one version per app), repository settings as code, SHA-pinned actions, Renovate, CodeQL. PR #2 merged, follow-up PR #5 merged, archived 2026-10-18.                                                                                                                                             |
-| `edge-infrastructure` | proposed    | Cloudflare API token, a deploy workflow that consumes release-please's `paths_released`, both workers live on `workers.dev`, Cloudflare Access in front of `admin` (production and preview URLs), Workers Logs and traces (I9), security headers and CSP (I10). KV, R2 and Neon are created in S2 and S3 by the change that first uses them. |
-| `living-docs`         | in progress | Adopts this file and DECISIONS.md and adds ARCHITECTURE, DESIGN, PRODUCT and USER_JOURNEY, each with a Mermaid diagram. Revises the master architecture diagram: solid lines for what exists, dashed for what is planned.                                                                                                                    |
+| `edge-infrastructure` | planned     | Cloudflare API token, a deploy workflow that consumes release-please's `paths_released`, both workers live on `workers.dev`, Cloudflare Access in front of `admin` (production and preview URLs), Workers Logs and traces (I9), security headers and CSP (I10). KV, R2 and Neon are created in S2 and S3 by the change that first uses them. |
+| `living-docs`         | in progress | Adopts this file and DECISIONS.md and adds ARCHITECTURE, DESIGN, PRODUCT and USER_JOURNEY, each with a Mermaid diagram, plus AGENTS.md, a README documentation index and a CI check that the documents exist. Revises the master architecture diagram: solid lines for what exists, dashed for what is planned.                              |
 
 **Exit criteria:** `main` changes only through checked PRs; a merged release
 PR deploys the released app; `admin` is reachable only through Access; all five
