@@ -40,8 +40,10 @@ The archive guidance in `openspec/config.yaml` says when to update them.
 
 - Work happens as OpenSpec changes: one change is one capability and one pull
   request ([P7](docs/DECISIONS.md#platform-and-scope)).
-- The commands are `/opsx-propose`, `/opsx-apply` and `/opsx-archive`. Their
-  files live in `.claude/commands/opsx/` and `.opencode/commands/`.
+- In OpenCode the commands are `/opsx-propose`, `/opsx-apply` and
+  `/opsx-archive`. In Claude Code they are `/opsx:propose`, `/opsx:apply` and
+  `/opsx:archive`. Their files live in `.opencode/commands/` and
+  `.claude/commands/opsx/`.
 - Run the OpenSpec CLI through `bunx openspec`. The repository pins its version.
 - The [README](README.md) explains how changes land, how releases work and how
   repository settings are applied.
@@ -58,16 +60,39 @@ bun install --frozen-lockfile && bun run format && bun run lint && bun run check
   && scripts/docs/check-living-docs.sh
 ```
 
+CI also runs the `workflows` job (actionlint and zizmor) and the `commits` job
+(commitlint over the pull request's commits). See `.github/workflows/ci.yml`.
+
 ## Conventions
 
 - Write commit messages as Conventional Commits. Release versions come from
   them.
 - Merge only by rebase. The `main` ruleset allows nothing else.
 - Pin every dependency to an exact version.
-- In code comments, cite the design decision that explains the choice, for
-  example `design D4`.
 - After you change an app's `wrangler.jsonc`, run `bun run gen` in that app and
   commit the changed `worker-configuration.d.ts`.
 - Write documents in plain language, following ISO 24495-1: short sentences,
   common words, one idea per paragraph, and each term defined where it first
   appears.
+
+## Clean Code
+
+Apply the rules of Robert C. Martin's _Clean Code_ to all code in the
+repository: TypeScript, Svelte and shell scripts.
+
+- **Names:** use names that reveal intent and are easy to say. Avoid
+  abbreviations and encodings.
+- **Functions:** keep them small. Each does one thing, at one level of
+  abstraction, with as few arguments as possible.
+- **Comments:** explain why, never what. Cite the design decision that explains
+  a choice, for example `design D4`. Delete a comment that restates the code.
+- **No duplication, no dead code:** express each idea once. Delete unused and
+  commented-out code. Version control keeps it.
+- **Errors:** fail with a clear error. Do not return or pass `null` to signal a
+  problem. Wrap third-party APIs at the boundary.
+- **Design:** give each module one reason to change. Depend on abstractions,
+  and prefer composition to inheritance (SOLID).
+- **Tests:** keep them fast, independent, repeatable, self-validating and
+  written with the code. Test one concept at a time.
+- **Boy Scout rule:** leave code cleaner than you found it, but only within the
+  scope of the change. Keep formatting consistent; Prettier decides.
