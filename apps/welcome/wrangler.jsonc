@@ -1,7 +1,6 @@
-// Cloudflare Workers configuration for `welcome` (design D4).
-// The worker name is what will serve welcome.ycmcuenca.workers.dev once
-// `edge-infrastructure` deploys; nothing is deployed in this change, and there
-// are deliberately no bindings, routes or workers_dev settings yet.
+// Cloudflare Workers configuration for `welcome` (design D4 in
+// openspec/changes/edge-infrastructure/design.md). The worker name is what
+// serves welcome.ycmcuenca.workers.dev once deployed.
 {
   "$schema": "./node_modules/wrangler/config-schema.json",
 
@@ -21,4 +20,22 @@
   // nodejs_als provides AsyncLocalStorage, which this ecosystem expects;
   // `nodejs_compat` waits until a library actually needs it (A5).
   "compatibility_flags": ["nodejs_als"],
+
+  // Serve on welcome.ycmcuenca.workers.dev and give every version a preview
+  // URL; there is no route or custom domain (D4, P4).
+  "workers_dev": true,
+  "preview_urls": true,
+
+  // Workers Logs with invocation logs and traces at full sampling (D4, I9).
+  // A 404 writes no application log line, so the Free plan's log volume stays
+  // proportional to real traffic.
+  "observability": {
+    "enabled": true,
+    "logs": {
+      "enabled": true,
+      "invocation_logs": true,
+      "head_sampling_rate": 1,
+    },
+    "traces": { "enabled": true, "head_sampling_rate": 1 },
+  },
 }
