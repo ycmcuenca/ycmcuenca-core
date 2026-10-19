@@ -44,7 +44,7 @@ flowchart LR
         notebook["system-design-notebook"]:::archived
     end
     subgraph S2["S2 Publish path"]
-        s2["content store, content model,<br/>revisions + projector,<br/>public rendering, admin editor"]:::planned
+        s2["content-model, content-store,<br/>revisions-publishing, public-rendering,<br/>admin-editor, edge-cache"]:::proposed
     end
     subgraph S3["S3 Media, inbox, backups"]
         s3["media uploads, contact inbox,<br/>data backups"]:::planned
@@ -107,21 +107,18 @@ and [documentation as a bounded context](SYSTEM_DESIGN.md#documentation-as-a-bou
 **Goal:** a walking skeleton. The owner writes and publishes an English entry in
 `admin`, and `welcome` serves it from a published snapshot.
 
-Candidate changes (tentative names):
+The changes are built in this order, each on the one before it (owner
+decision). `edge-cache` was split out of `public-rendering`, because caching
+needs a hand-written entry around SvelteKit's worker.
 
-- `content-store`: Neon, Hyperdrive and Drizzle in `@ycmcuenca/db`, two Neon
-  roles (I6), integration tests on a Neon branch per PR (Q1). Settles the
-  Drizzle version (Q5).
-- `content-model`: code-first field, block and type layers in
-  `@ycmcuenca/cms-core` (C2).
-- `revisions-publishing`: append-only revisions, pointer moves, the KV publish
-  projector with a versioned snapshot (C8) and Markdown rendered at publish
-  (C9).
-- `public-rendering`: `welcome` reads KV through `@ycmcuenca/cms-render`,
-  behind Workers Cache with tag purges over a service binding (C10), plus SEO
-  basics (Q4).
-- `admin-editor`: forms and the Markdown editor, with Tailwind and
-  shadcn-svelte arriving in `@ycmcuenca/ui` (Q2).
+| Change                 | Status   | What it delivers                                                                                                                                                                                                                                             |
+| ---------------------- | -------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `content-model`        | proposed | `@ycmcuenca/cms-core`: field, block and type layers (C2), the English-only `article` type with a block-list body, validation with field errors, safe Markdown rendering with a 32 KB limit (C9), the versioned snapshot contract (C8) and form descriptions. |
+| `content-store`        | proposed | `@ycmcuenca/db` on Drizzle 0.45.4 (Q5), append-only revisions enforced by privileges, two roles (I6), migrations in the deploy, Hyperdrive with caching disabled, a local Postgres 18 container, and Neon branches in a separate CI project (Q1, amended).   |
+| `revisions-publishing` | proposed | Publish, unpublish and roll back as pointer moves, the KV projector with an index rebuilt from Neon (C4 to C6), automatic publish times, and a visible dirty state with a manual retry until W1.                                                             |
+| `public-rendering`     | proposed | `@ycmcuenca/cms-render`, `welcome` reading KV only (C5) at `/en/articles/{slug}` with an article list, a tolerant reader, SEO basics (Q4), and a two-worker end-to-end test of the publish path.                                                             |
+| `admin-editor`         | proposed | `@ycmcuenca/ui` with Tailwind and shadcn-svelte (Q2), the entry list, forms generated from the type definition, a textarea editor with a server-rendered preview, and the first production publish.                                                          |
+| `edge-cache`           | proposed | Workers Cache in front of `welcome` through a wrapper entry with a cached `Site` entrypoint, slug-based cache tags, purge over a service binding after every projection (C10), and a 60-second edge lifetime with stale-while-revalidate.                    |
 
 **Exit criteria:** publishing an English entry makes it visible on `welcome`
 with no database binding on `welcome`; editing creates a new revision and never
