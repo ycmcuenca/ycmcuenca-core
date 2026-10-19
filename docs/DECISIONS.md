@@ -121,12 +121,18 @@ marked _(audit)_ came from the stack audit on the same day (see
   `@ycmcuenca/ui` holds shared UI.
   Concept: [hexagonal architecture](SYSTEM_DESIGN.md#hexagonal-architecture-ports-and-adapters).
 - **C2 Code-first content types** in `cms-core`, built from field, block and
-  type layers. The admin edits them with forms and a Markdown editor.
+  type layers. The admin edits them with forms and a Markdown editor. The
+  first and only type is `article`: a title, a slug and a summary field, and a
+  body that is an ordered list of blocks. Sprint 2 has one block type,
+  `markdown`. A body holds at most 200 blocks, and its Markdown is at most
+  32,768 bytes counted in UTF-8 across those blocks.
   Concept: [content modelling](SYSTEM_DESIGN.md#content-modelling-against-real-content).
 - **C3 Append-only revisions.** `entries` plus append-only `revisions`, each
   with a `schema_v`; old revisions are read through upcasters covered by
-  fixture tests. Further tables: `media`, `inbox`, `redirects`. Publishing
-  moves a pointer to a revision.
+  fixture tests. Sprint 2 stores English-only content at `schema_v` 1 and
+  ships no upcaster; the first one, version 1 to 2 with per-locale fields
+  (L2), arrives in S4 with localization. Further tables: `media`, `inbox`,
+  `redirects`. Publishing moves a pointer to a revision.
   Concepts: [append-only revisions](SYSTEM_DESIGN.md#event-sourcing-lite-append-only-revisions) and [upcasters](SYSTEM_DESIGN.md#schema-versioning-with-upcasters).
 - **C4 Neon is the source of truth; KV and R2 are projections.** Anything in KV
   or R2 can be rebuilt from Neon. A failed projection leaves a dirty flag that
