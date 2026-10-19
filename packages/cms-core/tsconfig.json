@@ -1,0 +1,23 @@
+{
+  // A source-only TypeScript package like @ycmcuenca/edge: the consuming apps
+  // bundle this package through Vite, so it is checked here but never emitted
+  // on its own (design D1). `lib: esnext` alone, because the core is pure
+  // TypeScript with no DOM dependency; `types: []` keeps host globals
+  // predictable and the few it needs are declared in src/ambient.d.ts.
+  "extends": "@ycmcuenca/tsconfig/base.json",
+  "compilerOptions": {
+    "target": "esnext",
+    "lib": ["esnext"],
+    "module": "esnext",
+    "moduleResolution": "bundler",
+    // Relative imports carry their extension so Node's ESM loader (which the
+    // apps' Vite configs use) can resolve this package's source (design D1).
+    "allowImportingTsExtensions": true,
+    "verbatimModuleSyntax": true,
+    "isolatedModules": true,
+    "skipLibCheck": true,
+    "noEmit": true,
+    "types": []
+  },
+  "include": ["src"]
+}
