@@ -58,6 +58,18 @@
       matchPackageNames: ["jose"],
       semanticCommitType: "fix",
     },
+    // `zod` and `markdown-it` ship inside the deployed output of every app
+    // that uses `@ycmcuenca/cms-core`, so an update is a `fix(deps)` commit
+    // that gives the touched apps a patch release, like the `svelte-runtime`
+    // and `edge-runtime` groups. They are ordinary runtime dependencies
+    // (design D1 in openspec/changes/content-model/design.md).
+    {
+      description: "CMS runtime libraries: fix(deps), so touched apps get a patch release",
+      groupName: "cms-runtime",
+      matchDatasources: ["npm"],
+      matchPackageNames: ["zod", "markdown-it"],
+      semanticCommitType: "fix",
+    },
 
     // Each tooling group below sets `semanticCommitType: "chore"` explicitly:
     // some tooling packages (the shared ESLint config's, for example) sit in
