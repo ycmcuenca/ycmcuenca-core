@@ -17,14 +17,24 @@
 
   // The date pins the runtime's behavior so it never changes under the app.
   "compatibility_date": "2026-10-17",
-  // nodejs_als provides AsyncLocalStorage, which this ecosystem expects;
-  // `nodejs_compat` waits until a library actually needs it (A5).
-  "compatibility_flags": ["nodejs_als"],
+  // nodejs_als provides AsyncLocalStorage, which this ecosystem expects.
+  // nodejs_compat is what node-postgres needs to reach the database through
+  // Hyperdrive (design D5).
+  "compatibility_flags": ["nodejs_als", "nodejs_compat"],
 
   // Serve on admin.ycmcuenca.workers.dev and give every version a preview
   // URL; there is no route or custom domain (D4, P4).
   "workers_dev": true,
   "preview_urls": true,
+
+  // The database connection (design D5). The id is a public identifier, not a
+  // secret: it is useless without the account's credentials. The placeholder
+  // of 32 zeros is replaced by the real Hyperdrive id in the owner's setup
+  // (task 6.3); the connection string lives only in that configuration, never
+  // here.
+  "hyperdrive": [
+    { "binding": "HYPERDRIVE", "id": "00000000000000000000000000000000" },
+  ],
 
   // Workers Logs with invocation logs and traces at full sampling (D4, I9).
   // A refusal writes one warning line and a 404 no application line, so the
