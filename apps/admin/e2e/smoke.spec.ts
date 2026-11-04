@@ -63,6 +63,8 @@ test("signed-in request shows the app heading, the D8 headers and no CSP violati
   const response = await page.goto("/");
   expect(response?.status()).toBe(200);
   await expect(page.getByRole("heading", { level: 1 })).toHaveText("Admin");
+  // The prepared database is empty, so the home page says so (design D11).
+  await expect(page.getByText("0 entries")).toBeVisible();
   // The announcer element only mounts once SvelteKit's client has hydrated,
   // and the template that carries its inline style is parsed before that, so
   // by now every violation the page causes has been reported.

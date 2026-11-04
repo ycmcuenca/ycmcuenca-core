@@ -22,7 +22,7 @@
 
 - [x] 3.1 Update `apps/admin/wrangler.jsonc` per design D5 (`nodejs_compat` added with an updated comment, `hyperdrive` binding with a placeholder id of 32 zeros until task 6.3), add `@ycmcuenca/db: workspace:*` to `apps/admin/package.json`, and run `bun run gen` in `apps/admin`. Verify `worker-configuration.d.ts` types `HYPERDRIVE: Hyperdrive`, and `bun run check` and `bun run build` pass
 - [x] 3.2 Extend `apps/admin/src/lib/trust-config.test.ts` (or a new `binding-config.test.ts` beside it): the `HYPERDRIVE` binding id is 32 hex characters, and no `localConnectionString` is committed. Verify the test passes, and fails when a `localConnectionString` is added (then remove it)
-- [ ] 3.3 Add `apps/admin/src/lib/server/database.ts` (`withDatabase`), `apps/admin/src/routes/+page.server.ts` and the entry count in `+page.svelte` per design D11. Extend `apps/admin/e2e/smoke.spec.ts` to assert "0 entries" after the heading. Verify `bun run test:e2e` passes with the container prepared and the variable from `.env` exported, and that inserting an entry with `psql` and reloading shows "1 entry" immediately (spec "Read after save", locally without Hyperdrive caching)
+- [x] 3.3 Add `apps/admin/src/lib/server/database.ts` (`withDatabase`), `apps/admin/src/routes/+page.server.ts` and the entry count in `+page.svelte` per design D11. Extend `apps/admin/e2e/smoke.spec.ts` to assert "0 entries" after the heading. Verify `bun run test:e2e` passes with the container prepared and the variable from `.env` exported, and that inserting an entry with `psql` and reloading shows "1 entry" immediately (spec "Read after save", locally without Hyperdrive caching)
 
 ## 4. CI
 
