@@ -1,0 +1,34 @@
+# The local Postgres for development and integration tests (design D6). The
+# image is pinned by digest so every contributor and CI job runs the exact
+# server; the major version (18) matches Neon's. `postgres:18` currently
+# resolves to 18.6 (resolved 2026-10-19 with `docker buildx imagetools inspect
+# postgres:18`).
+#
+#   docker compose up -d --wait postgres
+#
+# The port is 54329 on the loopback interface, so it never clashes with a
+# Postgres already listening on 5432. `POSTGRES_PASSWORD` comes from the
+# git-ignored `.env` (see `.env.example`).
+services:
+  postgres:
+    image: postgres:18.6@sha256:74935e72241653ca55e0414067e6d8763aceb8a810eb51b452253ec3dcfc4336
+    environment:
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env}
+      # The development database the migrator URL points at; the image creates
+      # it on first start. `db:prepare` creates the test database.
+      POSTGRES_DB: cms
+    ports:
+      - "127.0.0.1:54329:5432"
+    # Postgres 18 keeps its data under /var/lib/postgresql (not the older
+    # /var/lib/postgresql/data), which is the image's declared volume.
+    volumes:
+      - postgres-data:/var/lib/postgresql
+    # `docker compose up -d --wait` blocks until this passes.
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 2s
+      timeout: 5s
+      retries: 30
+
+volumes:
+  postgres-data: {}
