@@ -1,0 +1,30 @@
+{
+  "name": "@ycmcuenca/db",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "check": "tsc --noEmit",
+    "lint": "eslint .",
+    "test": "vitest run",
+    "test:integration": "vitest run --config vitest.integration.config.ts",
+    "db:generate": "drizzle-kit generate"
+  },
+  "dependencies": {
+    "@ycmcuenca/cms-core": "workspace:*",
+    "drizzle-orm": "0.45.4",
+    "pg": "8.23.1"
+  },
+  "devDependencies": {
+    "@types/node": "24.9.2",
+    "@types/pg": "8.23.1",
+    "@ycmcuenca/eslint-config": "workspace:*",
+    "@ycmcuenca/tsconfig": "workspace:*",
+    "drizzle-kit": "0.31.11",
+    "typescript": "6.0.3",
+    "vitest": "4.1.12"
+  }
+}
