@@ -1,0 +1,324 @@
+// The repository functions for entries and their append-only revisions
+// (design D2, D4). Every write validates with the content model and stores
+// through its versioned contract; every read goes through the versioned
+// reader, so nothing half-understood reaches a caller.
+import {
+  readStoredContent,
+  schemaVersion,
+  storedContent,
+  validateArticle,
+} from "@ycmcuenca/cms-core";
+import type { ArticleErrors, StoredContent } from "@ycmcuenca/cms-core";
+import { article } from "@ycmcuenca/cms-core";
+import { and, asc, count, eq, sql } from "drizzle-orm";
+import type { Database } from "./client.ts";
+import { entries, revisions } from "./schema.ts";
+
+/** A stored entry: its address and when it was created. */
+export interface Entry {
+  readonly id: string;
+  readonly type: string;
+  readonly slug: string;
+  readonly createdAt: Date;
+}
+
+/** A stored revision: its position, and its content through the reader. */
+export interface Revision {
+  readonly id: string;
+  readonly entryId: string;
+  readonly number: number;
+  readonly createdAt: Date;
+  readonly stored: StoredContent;
+}
+
+/** What a write returns when the content model refused the input. */
+export interface StoreFailure {
+  readonly ok: false;
+  readonly errors: ArticleErrors;
+}
+
+/** The result of creating an entry and its first revision. */
+export type CreateEntryResult =
+  | { readonly ok: true; readonly entry: Entry; readonly revision: Revision }
+  | StoreFailure;
+
+/** The result of appending a revision. */
+export type AppendRevisionResult =
+  { readonly ok: true; readonly revision: Revision } | StoreFailure;
+
+/** Creating an entry failed because its slug is already used by its type. */
+export class DuplicateSlugError extends Error {
+  /** The slug that was already taken. */
+  readonly slug: string;
+
+  constructor(slug: string) {
+    super(`An ${article.name} already uses the slug "${slug}".`);
+    this.name = "DuplicateSlugError";
+    this.slug = slug;
+  }
+}
+
+/**
+ * Two saves raced to add the same revision number. The unique constraint
+ * caught it; with one owner this should never happen (design D2).
+ */
+export class ConcurrentRevisionError extends Error {
+  /** The entry the racing save touched. */
+  readonly entryId: string;
+
+  constructor(entryId: string) {
+    super(
+      `Another save added a revision to entry ${entryId} at the same time; retry.`,
+    );
+    this.name = "ConcurrentRevisionError";
+    this.entryId = entryId;
+  }
+}
+
+/** An operation named an entry that is not stored. */
+export class MissingEntryError extends Error {
+  /** The entry id that matched no row. */
+  readonly entryId: string;
+
+  constructor(entryId: string) {
+    super(`No entry has the id ${entryId}.`);
+    this.name = "MissingEntryError";
+    this.entryId = entryId;
+  }
+}
+
+/**
+ * Creates an entry and its first revision in one transaction (design D2), so
+ * both exist or neither does. Validation errors are returned; a taken slug
+ * throws.
+ */
+export async function createEntry(
+  database: Database,
+  input: unknown,
+): Promise<CreateEntryResult> {
+  const validated = validateArticle(input);
+  if (!validated.ok) {
+    return { ok: false, errors: validated.errors };
+  }
+  const stored = storedContent.parse({
+    schema_v: schemaVersion,
+    content: validated.content,
+  });
+  const slug = validated.content.slug;
+  try {
+    return await database.transaction(async (transaction) => {
+      const entry = only(
+        await transaction
+          .insert(entries)
+          .values({ type: article.name, slug })
+          .returning(),
+      );
+      const revision = only(
+        await transaction
+          .insert(revisions)
+          .values({
+            entryId: entry.id,
+            number: 1,
+            schemaV: stored.schema_v,
+            content: stored.content,
+          })
+          .returning(),
+      );
+      return {
+        ok: true,
+        entry: toEntry(entry),
+        revision: toRevision(revision),
+      };
+    });
+  } catch (error) {
+    if (isUniqueViolation(error, "entries_type_slug_unique")) {
+      throw new DuplicateSlugError(slug);
+    }
+    throw error;
+  }
+}
+
+/**
+ * Appends a revision numbered one higher than the entry's latest (design D2).
+ * The number is computed and inserted in one transaction; the unique
+ * constraint turns a concurrent duplicate into an error, never an overwrite.
+ */
+export async function appendRevision(
+  database: Database,
+  entryId: string,
+  input: unknown,
+): Promise<AppendRevisionResult> {
+  const validated = validateArticle(input);
+  if (!validated.ok) {
+    return { ok: false, errors: validated.errors };
+  }
+  const stored = storedContent.parse({
+    schema_v: schemaVersion,
+    content: validated.content,
+  });
+  try {
+    return await database.transaction(async (transaction) => {
+      const next = await transaction
+        .select({
+          value: sql<number>`coalesce(max(${revisions.number}), 0) + 1`,
+        })
+        .from(revisions)
+        .where(eq(revisions.entryId, entryId));
+      const revision = only(
+        await transaction
+          .insert(revisions)
+          .values({
+            entryId,
+            number: next[0]?.value ?? 1,
+            schemaV: stored.schema_v,
+            content: stored.content,
+          })
+          .returning(),
+      );
+      return { ok: true, revision: toRevision(revision) };
+    });
+  } catch (error) {
+    if (isUniqueViolation(error, "revisions_entry_number_unique")) {
+      throw new ConcurrentRevisionError(entryId);
+    }
+    throw error;
+  }
+}
+
+/** Finds an entry by its type and slug, or `undefined` when none exists. */
+export async function findEntry(
+  database: Database,
+  type: string,
+  slug: string,
+): Promise<Entry | undefined> {
+  const rows = await database
+    .select()
+    .from(entries)
+    .where(and(eq(entries.type, type), eq(entries.slug, slug)));
+  return rows[0] ? toEntry(rows[0]) : undefined;
+}
+
+/** Lists every entry, oldest first. */
+export async function listEntries(database: Database): Promise<Entry[]> {
+  const rows = await database
+    .select()
+    .from(entries)
+    .orderBy(asc(entries.createdAt), asc(entries.slug));
+  return rows.map(toEntry);
+}
+
+/** Counts every entry: the proof the binding and the role work (design D11). */
+export async function countEntries(database: Database): Promise<number> {
+  const rows = await database.select({ value: count() }).from(entries);
+  return Number(rows[0]?.value ?? 0);
+}
+
+/** Lists an entry's revisions, lowest number first. */
+export async function listRevisions(
+  database: Database,
+  entryId: string,
+): Promise<Revision[]> {
+  const rows = await database
+    .select()
+    .from(revisions)
+    .where(eq(revisions.entryId, entryId))
+    .orderBy(asc(revisions.number));
+  return rows.map(toRevision);
+}
+
+/** Reads one revision by its entry and number, or `undefined`. */
+export async function getRevision(
+  database: Database,
+  entryId: string,
+  number: number,
+): Promise<Revision | undefined> {
+  const rows = await database
+    .select()
+    .from(revisions)
+    .where(and(eq(revisions.entryId, entryId), eq(revisions.number, number)));
+  return rows[0] ? toRevision(rows[0]) : undefined;
+}
+
+/**
+ * Moves an entry's slug (design D2: the slug lives on the entry so it can be
+ * unique per type). Throws `MissingEntryError` when no entry has that id.
+ */
+export async function updateSlug(
+  database: Database,
+  entryId: string,
+  slug: string,
+): Promise<Entry> {
+  try {
+    const rows = await database
+      .update(entries)
+      .set({ slug })
+      .where(eq(entries.id, entryId))
+      .returning();
+    const row = rows[0];
+    if (!row) {
+      throw new MissingEntryError(entryId);
+    }
+    return toEntry(row);
+  } catch (error) {
+    if (isUniqueViolation(error, "entries_type_slug_unique")) {
+      throw new DuplicateSlugError(slug);
+    }
+    throw error;
+  }
+}
+
+/** The shape Drizzle returns for an `entries` row. */
+type EntryRow = typeof entries.$inferSelect;
+/** The shape Drizzle returns for a `revisions` row. */
+type RevisionRow = typeof revisions.$inferSelect;
+
+function toEntry(row: EntryRow): Entry {
+  return {
+    id: row.id,
+    type: row.type,
+    slug: row.slug,
+    createdAt: row.createdAt,
+  };
+}
+
+function toRevision(row: RevisionRow): Revision {
+  return {
+    id: row.id,
+    entryId: row.entryId,
+    number: row.number,
+    createdAt: row.createdAt,
+    stored: readStoredContent({ schema_v: row.schemaV, content: row.content }),
+  };
+}
+
+// The one row a `returning()` insert must produce.
+function only<T>(rows: readonly T[]): T {
+  const row = rows[0];
+  if (row === undefined) {
+    throw new Error("The database returned no row for a single-row write.");
+  }
+  return row;
+}
+
+// A Postgres unique-violation (SQLSTATE 23505) on the named constraint.
+// Drizzle wraps the driver's error, so the walk follows `cause` to the pg
+// error that carries the code and constraint.
+function isUniqueViolation(error: unknown, constraint: string): boolean {
+  let current: unknown = error;
+  for (
+    let depth = 0;
+    depth < 5 && current !== null && typeof current === "object";
+    depth += 1
+  ) {
+    const candidate = current as {
+      code?: unknown;
+      constraint?: unknown;
+      cause?: unknown;
+    };
+    if (candidate.code === "23505" && candidate.constraint === constraint) {
+      return true;
+    }
+    current = candidate.cause;
+  }
+  return false;
+}

@@ -46,6 +46,7 @@ A reference such as `ci D9` points to decision D9 in an archived change's
   - [Versioned contracts and tolerant readers](#versioned-contracts-and-tolerant-readers)
   - [Cache invalidation by tag](#cache-invalidation-by-tag)
   - [Branch-per-PR database testing](#branch-per-pr-database-testing)
+  - [Expand and contract migrations](#expand-and-contract-migrations)
 - [Sprint 3: Media, inbox and backups](#sprint-3-media-inbox-and-backups)
   - [Content-addressed storage](#content-addressed-storage)
   - [Upload protocols and integrity checks](#upload-protocols-and-integrity-checks)
@@ -132,6 +133,7 @@ flowchart LR
         contracts["Versioned contracts<br/>and tolerant readers"]:::planned
         tags["Cache invalidation by tag"]:::planned
         branches["Branch-per-PR<br/>database testing"]:::planned
+        expand["Expand and contract<br/>migrations"]:::planned
     end
     subgraph S3["S3 Media, inbox and backups"]
         direction TB
@@ -1483,8 +1485,9 @@ they are the write and read sides of publishing. Next,
 [schema versioning with upcasters](#schema-versioning-with-upcasters) and
 [versioned contracts](#versioned-contracts-and-tolerant-readers), which keep
 old data readable. Finish with
-[cache invalidation by tag](#cache-invalidation-by-tag) and
-[branch-per-PR database testing](#branch-per-pr-database-testing). After the
+[cache invalidation by tag](#cache-invalidation-by-tag),
+[branch-per-PR database testing](#branch-per-pr-database-testing) and
+[expand and contract migrations](#expand-and-contract-migrations). After the
 sprint, each entry is completed when its change is archived.
 
 ### Hexagonal architecture (ports and adapters)
@@ -1779,6 +1782,49 @@ database, which is migrated, tested against and then deleted.
   Neon documentation. Read on 2026-10-18.
 - [Evolutionary Database Design](https://martinfowler.com/articles/evodb.html),
   Pramod Sadalage and Martin Fowler. Read on 2026-10-18.
+
+### Expand and contract migrations
+
+**Status:** planned (S2)
+
+**What it is**
+
+A live database serves the old and the new version of an application at the
+same time: the worker that is running during a deploy, and the one being
+released. A single migration that renames or removes a column breaks the old
+version instantly. Expand and contract splits the change into steps. First
+expand: add the new column beside the old one, and write to both, so both
+versions work. Then, only after no released version reads the old shape,
+contract: remove the old column. Each step is backward-compatible, so any
+deploy can be rolled back without touching the data.
+
+**Check yourself**
+
+1. Why is one migration that renames a column unsafe during a deploy?
+
+   <details><summary>Answer</summary>
+
+   The previous version still reads the old name, and the release runs the
+   migration before the new worker is up, so there is a window where the old
+   worker queries a column that no longer exists.
+
+   </details>
+
+2. What makes "contract" safe to postpone?
+
+   <details><summary>Answer</summary>
+
+   Nothing reads the old shape any more, so removing it cannot break a running
+   version. The expand step already made the data available in the new shape.
+
+   </details>
+
+**Further reading**
+
+- [ParallelChange](https://martinfowler.com/bliki/ParallelChange.html), Danilo
+  Sato, on martinfowler.com. Read on 2026-10-19.
+- [Evolutionary Database Design](https://martinfowler.com/articles/evodb.html),
+  Pramod Sadalage and Martin Fowler. Read on 2026-10-19.
 
 ## Sprint 3: Media, inbox and backups
 

@@ -29,17 +29,33 @@
       "outputs": [],
     },
 
-    // End-to-end tests start a real server, so they are never cached.
+    // End-to-end tests start a real server, so they are never cached. The
+    // Hyperdrive local connection string reaches `wrangler dev` so `admin`
+    // can reach the local database (design D5, D6).
     "test:e2e": {
       "dependsOn": ["build"],
       "cache": false,
       "outputs": ["playwright-report/**", "test-results/**"],
+      "passThroughEnv": [
+        "CLOUDFLARE_HYPERDRIVE_LOCAL_CONNECTION_STRING_HYPERDRIVE",
+      ],
+    },
+
+    // Database integration tests change the database named by
+    // `DATABASE_URL_TEST`, so they are never cached and that variable reaches
+    // the task (design D6).
+    "test:integration": {
+      "cache": false,
+      "passThroughEnv": ["DATABASE_URL_TEST"],
     },
 
     // Dev servers run until stopped, so they are persistent and never cached.
     "dev": {
       "cache": false,
       "persistent": true,
+      "passThroughEnv": [
+        "CLOUDFLARE_HYPERDRIVE_LOCAL_CONNECTION_STRING_HYPERDRIVE",
+      ],
     },
 
     // Repository-wide `lint` and `format` run directly from the root scripts

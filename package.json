@@ -17,8 +17,11 @@
     "format": "prettier --check .",
     "format:write": "prettier --write .",
     "test": "turbo run test",
+    "test:integration": "turbo run test:integration",
     "test:e2e": "turbo run test:e2e",
     "dev": "turbo run dev",
+    "db:up": "docker compose up -d --wait postgres",
+    "db:prepare": "bun packages/db/scripts/prepare.ts",
     "prepare": "lefthook install"
   },
   "devDependencies": {
