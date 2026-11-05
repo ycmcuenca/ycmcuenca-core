@@ -45,8 +45,8 @@
 
 ## 7. Documentation and integration check
 
-- [ ] 7.1 Add the README "Database" section per design D10, and link `packages/db/README.md` from it. Verify every command shown runs as written on a fresh clone (`cp .env.example .env`, `bun run db:up`, `bun run db:prepare`, `bun run test:integration`, `bun run dev` showing the entry count), and `scripts/docs/check-living-docs.sh` passes
-- [ ] 7.2 Run the local CI equivalent from `AGENTS.md` plus `bun run test:integration`, actionlint, zizmor and shellcheck. Verify all pass, `bunx openspec validate content-store --strict` passes, and `ci-ok` is green on the pull request
+- [x] 7.1 Add the README "Database" section per design D10, and link `packages/db/README.md` from it. Verify every command shown runs as written on a fresh clone (`cp .env.example .env`, `bun run db:up`, `bun run db:prepare`, `bun run test:integration`, `bun run dev` showing the entry count), and `scripts/docs/check-living-docs.sh` passes
+- [x] 7.2 Run the local CI equivalent from `AGENTS.md` plus `bun run test:integration`, actionlint, zizmor and shellcheck. Verify all pass, `bunx openspec validate content-store --strict` passes, and `ci-ok` is green on the pull request
 
 ## Workflow follow-up
 
