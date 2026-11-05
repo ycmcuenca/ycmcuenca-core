@@ -50,15 +50,18 @@ bunx lefthook install
 
 ## Everyday commands
 
-| Command            | What it does                                                                                                                    |
-| ------------------ | ------------------------------------------------------------------------------------------------------------------------------- |
-| `bun run dev`      | Starts both apps: welcome on <http://localhost:5173>, admin on <http://localhost:5174>.                                         |
-| `bun run build`    | Builds every app for Workers; output lands in `apps/*/.svelte-kit/cloudflare`.                                                  |
-| `bun run check`    | Type-checks every app (svelte-check in strict mode; warnings fail the task).                                                    |
-| `bun run lint`     | Lints the whole repository (JavaScript, TypeScript, Svelte, JSON, YAML, Markdown) with the shared ESLint config.                |
-| `bun run format`   | Checks formatting with Prettier. `bun run format:write` fixes it.                                                               |
-| `bun run test`     | Runs unit tests (Vitest).                                                                                                       |
-| `bun run test:e2e` | Builds, then runs each app's Playwright smoke test in Chromium against `wrangler dev` — the same workerd runtime as production. |
+| Command                    | What it does                                                                                                                    |
+| -------------------------- | ------------------------------------------------------------------------------------------------------------------------------- |
+| `bun run dev`              | Starts both apps: welcome on <http://localhost:5173>, admin on <http://localhost:5174>.                                         |
+| `bun run build`            | Builds every app for Workers; output lands in `apps/*/.svelte-kit/cloudflare`.                                                  |
+| `bun run check`            | Type-checks every app (svelte-check in strict mode; warnings fail the task).                                                    |
+| `bun run lint`             | Lints the whole repository (JavaScript, TypeScript, Svelte, JSON, YAML, Markdown) with the shared ESLint config.                |
+| `bun run format`           | Checks formatting with Prettier. `bun run format:write` fixes it.                                                               |
+| `bun run test`             | Runs unit tests (Vitest).                                                                                                       |
+| `bun run test:e2e`         | Builds, then runs each app's Playwright smoke test in Chromium against `wrangler dev` — the same workerd runtime as production. |
+| `bun run test:integration` | Runs the database integration tests against the local Postgres container (see [Database](#database)).                           |
+| `bun run db:up`            | Starts the local Postgres 18 container.                                                                                         |
+| `bun run db:prepare`       | Creates the test database, the runtime role and the schema, and checks the runtime's privileges.                                |
 
 Member tasks (`build`, `check`, `test`, `test:e2e`, `dev`) run through
 Turborepo, so unchanged inputs are not rebuilt; the repository-wide tools
@@ -76,6 +79,125 @@ bunx playwright install chromium
 After changing an app's `wrangler.jsonc`, refresh its generated types with
 `bun run gen` inside that app and commit the changed
 `worker-configuration.d.ts`.
+
+## Database
+
+`admin` stores the owner's content in Postgres: `entries`, each with
+append-only `revisions`. Locally that is a container defined by `compose.yaml`,
+and the tests use the same container. No command in this section reaches a
+hosted database.
+
+Docker is a prerequisite: Docker Desktop, OrbStack or Podman. With Podman, use
+`podman compose` wherever the commands below say `docker compose`. The image is
+Postgres 18, the major version the Neon projects run in production, and
+Renovate keeps it current. If Neon moves to a new major, move the image with
+it.
+
+### Set up the local database
+
+1. Copy the example environment file and replace every placeholder with a
+   local value:
+
+   ```sh
+   cp .env.example .env
+   ```
+
+   `.env` is git-ignored, and this repository is public, so never commit it.
+
+2. Start the container. It listens on `127.0.0.1:54329`, so a Postgres already
+   using 5432 is left alone:
+
+   ```sh
+   bun run db:up
+   ```
+
+3. Create the integration-test database, the `cms_runtime` role and the
+   schema:
+
+   ```sh
+   bun run db:prepare
+   ```
+
+   It applies only the migrations that are still pending, so run it again
+   after a schema change.
+
+4. Load `.env` into your shell before a Turborepo task that needs the database.
+   Turborepo does not read `.env`, and `admin`'s dev server stops with "no
+   local hyperdrive connection string" without the Hyperdrive variable:
+
+   ```sh
+   set -a; . ./.env; set +a
+   ```
+
+5. Start the apps and open <http://localhost:5174>. The page shows how many
+   entries are stored, read through the local Hyperdrive binding as
+   `cms_runtime`:
+
+   ```sh
+   bun run dev
+   ```
+
+6. Run the integration tests against the container:
+
+   ```sh
+   bun run test:integration
+   ```
+
+`docker compose down` stops the container and keeps its data.
+`docker compose down -v` also drops the volume, which is the way back to an
+empty database.
+
+### Migration rules
+
+The schema, the migrations and the repository functions live in
+[`packages/db`](packages/db/README.md), whose README explains the grant model
+and the steps for adding a migration. Three rules apply to every migration:
+
+- **Forward-only.** Never edit or delete a migration that has been merged.
+  Correct a mistake with a new migration.
+- **Expand, then contract.** Add columns as nullable or with a default. Remove
+  a column or a table only in a later release, after no released `admin` reads
+  it, so a rollback deploy stays safe.
+- **One concern per migration.**
+
+`bun run db:prepare` applies migrations through
+`packages/db/scripts/migrate.ts`, the one entry point used locally, in CI and
+by the deploy. It ends by checking `cms_runtime`'s privileges, so a missing or
+an extra right fails the command.
+
+### Production (owner)
+
+Production and CI each use their own Neon project, both on Postgres 18. CI
+creates a throwaway branch per pull request, runs the migrations and the
+integration tests on it, and deletes it afterwards. A pull request from a fork
+cannot reach that project's key, so the `database` job refuses it instead of
+skipping it.
+
+The credentials are not in the repository. Set them once:
+
+| Name                   | Kind     | Where                    |
+| ---------------------- | -------- | ------------------------ |
+| `NEON_MIGRATOR_URL`    | secret   | `production` environment |
+| `NEON_CI_API_KEY`      | secret   | repository               |
+| `NEON_CI_PROJECT_ID`   | variable | repository               |
+| `CLOUDFLARE_API_TOKEN` | secret   | `production` environment |
+
+`scripts/github/apply-settings.sh --check` reports a missing one as drift.
+
+The first production run, in order:
+
+1. Run the migrations with the owner role's unpooled connection string:
+   `DATABASE_URL=<owner unpooled URL> bun packages/db/scripts/migrate.ts`.
+   Then set `cms_runtime`'s login password once, in the Neon SQL editor.
+2. Create the Hyperdrive configuration with the `cms_runtime` unpooled
+   connection string and `--caching-disabled`, so a save is visible to the next
+   read. The id is not a secret; commit it in `apps/admin/wrangler.jsonc` and
+   run `bun run gen` in `apps/admin`.
+3. Set `NEON_MIGRATOR_URL` with
+   `gh secret set NEON_MIGRATOR_URL --env production`.
+
+From then on the deploy applies the migrations and checks the privileges before
+it uploads `admin`.
 
 ## Commits
 
