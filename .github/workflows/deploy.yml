@@ -19,6 +19,9 @@ on:
       CLOUDFLARE_API_TOKEN:
         description: The Workers Scripts Edit token from task 4.5 (D3).
         required: true
+      NEON_MIGRATOR_URL:
+        description: The database owner role's URL, which migrates before an admin upload (D9).
+        required: false # Welcome deploys need no database.
   workflow_dispatch:
     inputs:
       app:
@@ -101,6 +104,17 @@ jobs:
         env:
           APP: ${{ inputs.app }}
         run: bunx turbo run check test build --filter="$APP"
+
+      # An `admin` deploy applies the released tag's pending migrations and
+      # then the privilege check, so schema drift stops the deploy before
+      # anything is uploaded (D9). A rollback tag has no pending migration, so
+      # it applies nothing and the older worker deploys (spec, "Rollback
+      # deploy"). `welcome` runs neither step and touches no database.
+      - name: Apply the database migrations
+        if: inputs.app == 'admin'
+        env:
+          DATABASE_URL: ${{ secrets.NEON_MIGRATOR_URL }}
+        run: bun packages/db/scripts/migrate.ts
 
       - name: Deploy with Wrangler
         working-directory: apps/${{ inputs.app }}
