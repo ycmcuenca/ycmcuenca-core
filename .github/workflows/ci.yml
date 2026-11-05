@@ -68,6 +68,32 @@ jobs:
     runs-on: ubuntu-24.04
     permissions:
       contents: read
+    # The suite drives a real `admin` against a real database (design D8 in
+    # openspec/changes/content-store/design.md): the same image and digest
+    # `compose.yaml` pins, on the service's own port. `e2e-only` is not a
+    # secret — the container lives only as long as this job and only the runner
+    # can reach it.
+    services:
+      postgres:
+        image: postgres:18.6@sha256:74935e72241653ca55e0414067e6d8763aceb8a810eb51b452253ec3dcfc4336
+        env:
+          POSTGRES_PASSWORD: e2e-only
+          POSTGRES_DB: cms
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 2s
+          --health-timeout 5s
+          --health-retries 30
+    # The two migrator URLs and the runtime login reach `db:prepare`;
+    # `wrangler dev` gets the Hyperdrive local variable from the job's
+    # environment, exactly as D6 describes for a workstation (D8).
+    env:
+      DATABASE_URL: postgres://postgres:e2e-only@127.0.0.1:5432/cms
+      DATABASE_URL_TEST: postgres://postgres:e2e-only@127.0.0.1:5432/cms_test
+      RUNTIME_ROLE_PASSWORD: e2e-runtime-role-password
+      CLOUDFLARE_HYPERDRIVE_LOCAL_CONNECTION_STRING_HYPERDRIVE: postgres://cms_runtime:e2e-runtime-role-password@127.0.0.1:5432/cms
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -79,6 +105,11 @@ jobs:
           node-version-file: .node-version
       - name: install
         run: bun install --frozen-lockfile
+      # Creates the test database, applies both migrations and seeds the
+      # runtime login, so the schema under the e2e run is the one a deploy
+      # would create (D8).
+      - name: Prepare the database
+        run: bun run db:prepare
       - name: Cache Playwright browsers
         id: playwright-cache
         uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
@@ -177,12 +208,82 @@ jobs:
         with:
           advanced-security: "false"
 
+  # A throwaway branch in the database project that only CI may reach (design
+  # D7 in openspec/changes/content-store/design.md): migrations, the privilege
+  # check and the integration tests run against it, and it is deleted whether
+  # they pass or fail. Fork pull requests receive no secrets, so the first step
+  # fails them instead of skipping, which keeps an untested migration out.
+  database:
+    name: database
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+    steps:
+      # The secret arrives through `env`, never through `${{ }}` in `run:`
+      # (D7). Its absence is the fork case: GitHub withholds the repository's
+      # secrets from a fork pull request, so this is the only signal the job
+      # gets. `ci-ok` counts the failure as a failure, never as a skip.
+      - name: Require the CI database credential
+        env:
+          NEON_CI_API_KEY: ${{ secrets.NEON_CI_API_KEY }}
+        run: |
+          if [ -z "$NEON_CI_API_KEY" ]; then
+            echo "Pull requests from forks are not accepted; see README."
+            exit 1
+          fi
+      # A branch whose delete step fails anyway is removed by Neon after this
+      # timestamp, so a failed cleanup cannot leave a compute running (D7).
+      - name: Set the branch expiry
+        id: expiry
+        run: echo "expires_at=$(date -u -d '+1 hour' +%Y-%m-%dT%H:%M:%SZ)" >> "$GITHUB_OUTPUT"
+      # A name per attempt, so a re-run never reuses a branch the previous
+      # attempt left behind (D7).
+      - name: Create the CI database branch
+        id: branch
+        uses: neondatabase/create-branch-action@fb620d43d4c565abaf088b848a4e28e5c4ea4d9c # v6
+        with:
+          project_id: ${{ vars.NEON_CI_PROJECT_ID }}
+          api_key: ${{ secrets.NEON_CI_API_KEY }}
+          branch_name: ci-${{ github.run_id }}-${{ github.run_attempt }}
+          expires_at: ${{ steps.expiry.outputs.expires_at }}
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false # Later steps cannot reuse the token (D2).
+      # No version input: setup-bun reads `packageManager` from package.json (D3).
+      - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version-file: .node-version
+      - name: install
+        run: bun install --frozen-lockfile
+      # `db_url` is the branch's project owner role, the migrator every other
+      # run of `migrate.ts` uses (A2). The step also ends with the privilege
+      # check, so drift fails here before the tests (D7).
+      - name: Migrate and check privileges
+        env:
+          DATABASE_URL: ${{ steps.branch.outputs.db_url }}
+        run: bun packages/db/scripts/migrate.ts
+      - name: test:integration
+        env:
+          DATABASE_URL_TEST: ${{ steps.branch.outputs.db_url }}
+        run: bun run test:integration
+      # `always()` runs this after a failed migration or test too, which is the
+      # point; the `outcome` guard keeps it from failing the fork case, where
+      # no branch was ever created (D7).
+      - name: Delete the CI database branch
+        if: always() && steps.branch.outcome == 'success'
+        uses: neondatabase/delete-branch-action@4468d825d5a88ef4012f1705a82f02ec3072f776 # v3
+        with:
+          project_id: ${{ vars.NEON_CI_PROJECT_ID }}
+          api_key: ${{ secrets.NEON_CI_API_KEY }}
+          branch: ci-${{ github.run_id }}-${{ github.run_attempt }}
+
   # The single required check the ruleset pins, so jobs can be added or
   # renamed without touching branch protection (D1, D9). It fails on
   # `failure`, `cancelled`, and any skip other than `commits` on a push (D1).
   ci-ok:
     name: ci-ok
-    needs: [verify, e2e, commits, specs, workflows]
+    needs: [verify, e2e, database, commits, specs, workflows]
     # Run even when a needed job failed, so the failure gets an aggregate
     # result on the commit (D1).
     if: always()
@@ -192,6 +293,7 @@ jobs:
       # script (D1).
       VERIFY_RESULT: ${{ needs.verify.result }}
       E2E_RESULT: ${{ needs.e2e.result }}
+      DATABASE_RESULT: ${{ needs.database.result }}
       COMMITS_RESULT: ${{ needs.commits.result }}
       SPECS_RESULT: ${{ needs.specs.result }}
       WORKFLOWS_RESULT: ${{ needs.workflows.result }}
@@ -225,6 +327,7 @@ jobs:
           }
           check_result verify "$VERIFY_RESULT"
           check_result e2e "$E2E_RESULT"
+          check_result database "$DATABASE_RESULT"
           check_result commits "$COMMITS_RESULT"
           check_result specs "$SPECS_RESULT"
           check_result workflows "$WORKFLOWS_RESULT"

@@ -26,11 +26,11 @@
 
 ## 4. CI
 
-- [ ] 4.1 Read `action.yml` of `neondatabase/create-branch-action` (latest v6) and `neondatabase/delete-branch-action` (latest v3) at the commits their tags point to (`gh api repos/neondatabase/<action>/git/ref/tags/<tag>`). Record the SHAs, whether an expiry input exists, and which role `db_url` uses when `role` is omitted (assumption A2) in the design's facts table. Verify the recorded inputs match what job `database` uses in task 4.2
-- [ ] 4.2 Add job `database` to `.github/workflows/ci.yml` per design D7, and add it to `ci-ok`'s `needs`, environment block and `check_result` calls. Verify actionlint 1.7.12 and `uvx zizmor@1.31.1 .github/workflows` report nothing, and that a local dry run of step 1's script with an empty `NEON_CI_API_KEY` prints the fork message and exits 1
+- [x] 4.1 Read `action.yml` of `neondatabase/create-branch-action` (latest v6) and `neondatabase/delete-branch-action` (latest v3) at the commits their tags point to (`gh api repos/neondatabase/<action>/git/ref/tags/<tag>`). Record the SHAs, whether an expiry input exists, and which role `db_url` uses when `role` is omitted (assumption A2) in the design's facts table. Verify the recorded inputs match what job `database` uses in task 4.2
+- [x] 4.2 Add job `database` to `.github/workflows/ci.yml` per design D7, and add it to `ci-ok`'s `needs`, environment block and `check_result` calls. Verify actionlint 1.7.12 and `uvx zizmor@1.31.1 .github/workflows` report nothing, and that a local dry run of step 1's script with an empty `NEON_CI_API_KEY` prints the fork message and exits 1
 - [ ] 4.3 **Owner task:** set the repository secret `NEON_CI_API_KEY` (`gh secret set NEON_CI_API_KEY`) and the variable `NEON_CI_PROJECT_ID` (`gh variable set NEON_CI_PROJECT_ID`). Verify the `database` job passes on this change's pull request, and that the Neon console lists no `ci-*` branch after the run
-- [ ] 4.4 Add the Postgres service container and the `db:prepare` step to job `e2e` per design D8. Verify actionlint and zizmor report nothing (or a reasoned, scoped ignore is recorded), and the `e2e` job passes on the pull request
-- [ ] 4.5 Extend `scripts/github/apply-settings.sh` per design D10 (step 7 reports `NEON_MIGRATOR_URL`; new step 8 reports `NEON_CI_API_KEY` and `NEON_CI_PROJECT_ID`) and update its header comment. Verify `shellcheck` passes and `--check` names each missing item as drift without changing anything
+- [x] 4.4 Add the Postgres service container and the `db:prepare` step to job `e2e` per design D8. Verify actionlint and zizmor report nothing (or a reasoned, scoped ignore is recorded), and the `e2e` job passes on the pull request
+- [x] 4.5 Extend `scripts/github/apply-settings.sh` per design D10 (step 7 reports `NEON_MIGRATOR_URL`; new step 8 reports `NEON_CI_API_KEY` and `NEON_CI_PROJECT_ID`) and update its header comment. Verify `shellcheck` passes and `--check` names each missing item as drift without changing anything
 
 ## 5. Deploy
 

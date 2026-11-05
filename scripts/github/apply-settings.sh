@@ -14,6 +14,10 @@
 #   6. the `main` ruleset, from .github/rulesets/main.json
 #   7. the `production` environment: custom branch policy limited to `main`,
 #      and the deploy credential names reported as set or missing
+#      (CLOUDFLARE_API_TOKEN and NEON_MIGRATOR_URL secrets,
+#      CLOUDFLARE_ACCOUNT_ID variable)
+#   8. the repository-level CI database credential names reported as set or
+#      missing (NEON_CI_API_KEY secret, NEON_CI_PROJECT_ID variable)
 #
 # Usage:
 #   scripts/github/apply-settings.sh           apply drift (idempotent)
@@ -293,9 +297,11 @@ fi
 handle_step "$RULESET_NAME ruleset" "$ruleset_detail" apply_ruleset
 
 # --- 7. The `production` environment ----------------------------------------
-# The deploy job runs in this environment, so the Cloudflare credentials are
-# scoped to it and only `main` may use them (design D3 in
-# openspec/changes/archive/2026-10-18-edge-infrastructure/design.md). The environment is
+# The deploy job runs in this environment, so the Cloudflare credentials and
+# the migrator's database URL are scoped to it and only `main` may use them
+# (design D3 in
+# openspec/changes/archive/2026-10-18-edge-infrastructure/design.md; design D9
+# and D10 in openspec/changes/content-store/design.md). The environment is
 # upserted, never recreated, and its branch policies converge to exactly
 # `main`. A missing credential can only be reported by name - the script
 # cannot set the secret's value - so it counts as drift under --check and
@@ -378,6 +384,9 @@ fi
 if ! grep -qx 'CLOUDFLARE_ACCOUNT_ID' <<< "$environment_variable_names"; then
   credentials_detail="${credentials_detail}${credentials_detail:+; }CLOUDFLARE_ACCOUNT_ID (variable) not set"
 fi
+if ! grep -qx 'NEON_MIGRATOR_URL' <<< "$environment_secret_names"; then
+  credentials_detail="${credentials_detail}${credentials_detail:+; }NEON_MIGRATOR_URL (secret) not set"
+fi
 if [ -z "$credentials_detail" ]; then
   printf '%s: unchanged\n' "$ENVIRONMENT_NAME credentials"
 elif [ "$mode" = "check" ]; then
@@ -386,6 +395,33 @@ elif [ "$mode" = "check" ]; then
 else
   printf '%s: missing (%s); set them by hand (see README, "Deploying")\n' \
     "$ENVIRONMENT_NAME credentials" "$credentials_detail"
+fi
+
+# --- 8. The CI database credentials -----------------------------------------
+# The `database` job in .github/workflows/ci.yml creates a branch of the
+# project that only CI may reach (design D7 and D10 in
+# openspec/changes/content-store/design.md). Both live at repository level, not
+# in an environment, because a pull-request job reads them without one; the key
+# is scoped to the CI project, so a leak of a fork runner's environment could
+# still not touch production. As in step 7, only names are read.
+
+repository_secret_names="$(gh api "repos/$REPO/actions/secrets" --jq '.secrets[].name')"
+repository_variable_names="$(gh api "repos/$REPO/actions/variables" --jq '.variables[].name')"
+ci_credentials_detail=""
+if ! grep -qx 'NEON_CI_API_KEY' <<< "$repository_secret_names"; then
+  ci_credentials_detail="NEON_CI_API_KEY (secret) not set"
+fi
+if ! grep -qx 'NEON_CI_PROJECT_ID' <<< "$repository_variable_names"; then
+  ci_credentials_detail="${ci_credentials_detail}${ci_credentials_detail:+; }NEON_CI_PROJECT_ID (variable) not set"
+fi
+if [ -z "$ci_credentials_detail" ]; then
+  printf '%s: unchanged\n' "ci database credentials"
+elif [ "$mode" = "check" ]; then
+  printf '%s: drifted (%s)\n' "ci database credentials" "$ci_credentials_detail"
+  drift_found=1
+else
+  printf '%s: missing (%s); set them by hand (see README)\n' \
+    "ci database credentials" "$ci_credentials_detail"
 fi
 
 # --- Result -----------------------------------------------------------------
