@@ -34,7 +34,7 @@
 
 ## 5. Deploy
 
-- [ ] 5.1 Add the migration step to `.github/workflows/deploy.yml`, the `NEON_MIGRATOR_URL` `workflow_call` secret, and the pass-through in `release-please.yml`'s `deploy-admin` job, per design D9. Verify actionlint and zizmor report nothing; that, locally, `DATABASE_URL= bun packages/db/scripts/migrate.ts` exits non-zero with "DATABASE_URL is not set"; and that running `migrate.ts` from a checkout of an older commit against a database migrated by a newer one applies nothing and exits 0 (spec "Rollback deploy")
+- [x] 5.1 Add the migration step to `.github/workflows/deploy.yml`, the `NEON_MIGRATOR_URL` `workflow_call` secret, and the pass-through in `release-please.yml`'s `deploy-admin` job, per design D9. Verify actionlint and zizmor report nothing; that, locally, `DATABASE_URL= bun packages/db/scripts/migrate.ts` exits non-zero with "DATABASE_URL is not set"; and that running `migrate.ts` from a checkout of an older commit against a database migrated by a newer one applies nothing and exits 0 (spec "Rollback deploy")
 
 ## 6. Production setup (owner)
 

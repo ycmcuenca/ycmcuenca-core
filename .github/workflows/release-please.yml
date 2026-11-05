@@ -77,3 +77,6 @@ jobs:
       version: ${{ needs.release-please.outputs.admin_version }}
     secrets:
       CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      # `admin` migrates before its upload, so this deploy also needs the
+      # database owner role's URL (design D9 in the content-store change).
+      NEON_MIGRATOR_URL: ${{ secrets.NEON_MIGRATOR_URL }}
