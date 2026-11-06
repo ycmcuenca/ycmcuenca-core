@@ -126,14 +126,14 @@ flowchart LR
     end
     subgraph S2["S2 Publish path"]
         direction TB
-        hexagonal["Hexagonal architecture"]:::planned
-        cqrs["CQRS-lite read projections"]:::planned
-        revisions["Append-only revisions"]:::planned
+        hexagonal["Hexagonal architecture"]:::built
+        cqrs["CQRS-lite read projections"]:::built
+        revisions["Append-only revisions"]:::built
         upcasters["Schema versioning<br/>with upcasters"]:::planned
-        contracts["Versioned contracts<br/>and tolerant readers"]:::planned
+        contracts["Versioned contracts<br/>and tolerant readers"]:::built
         tags["Cache invalidation by tag"]:::planned
-        branches["Branch-per-PR<br/>database testing"]:::planned
-        expand["Expand and contract<br/>migrations"]:::planned
+        branches["Branch-per-PR<br/>database testing"]:::built
+        expand["Expand and contract<br/>migrations"]:::built
     end
     subgraph S3["S3 Media, inbox and backups"]
         direction TB
@@ -1809,7 +1809,7 @@ still works.
 
 ### Versioned contracts and tolerant readers
 
-**Status:** planned (S2)
+**Status:** built (S2)
 
 **What it is**
 
@@ -1837,6 +1837,51 @@ producer and the consumer can then deploy in either order.
    Ignore it, so a producer can add fields without breaking the reader.
 
    </details>
+
+```mermaid
+flowchart LR
+    write["producer writes<br/>snapshot_v 1"] --> kv[("KV value")]
+    kv --> read["reader checks<br/>snapshot_v first"]
+    read -->|"a version it knows"| parse["parse the known schema,<br/>drop unknown fields"]
+    read -->|"another version"| refuse["refuse whole:<br/>404 and one error line"]
+    parse --> page["render the page"]
+    later["a later producer<br/>adds an optional field"] -.->|"same version"| parse
+```
+
+**Trade-offs**
+
+- Stripping unknown fields is what lets a producer add a field without a
+  version bump: the reader keeps what it knows and drops the rest. An
+  incompatible change is a new `snapshot_v`, not a new field.
+- Adding a _required_ field is not additive. An older value fails validation
+  and the page becomes "not published", so the index's `updatedAt` is
+  optional and falls back to the first-publish date.
+- A tolerant reader turns one broken value into an empty page and one error
+  line instead of a 500. The cost is that a content bug reads like missing
+  content until someone opens the logs.
+
+**How this repository applies it**
+
+- [public-rendering D2](../openspec/changes/archive/2026-11-06-public-rendering/design.md#d2-reading-snapshots-tolerantly-c8):
+  `readArticle` and `readArticleIndex` answer `undefined` for a missing key, an
+  unsupported version or a value that fails the schema, and log one line
+  naming the key and the problem; the home page then says "No articles yet.".
+- `snapshot_v` is `1`, both schemas live in `cms-core`, and a version this code
+  does not know is refused whole before anything is parsed.
+- [public-rendering D3](../openspec/changes/archive/2026-11-06-public-rendering/design.md#d3-routes-on-welcome):
+  an index item gained an optional `updatedAt` (the entry's last-publish time)
+  at the same version; the sitemap uses it and falls back to `publishedAt`
+  when an index written earlier lacks it.
+
+**What we learned here**
+
+> Draft: awaiting the owner's rewrite.
+
+- A field added to a versioned contract should be optional and have a
+  fallback. "Additive" describes the schema, not the deployment order.
+- The tolerant path hid a real difference: a value that is not JSON at all
+  still arrived as a 500 until the read itself was wrapped, because parsing
+  sat outside the handled errors.
 
 **Further reading**
 
