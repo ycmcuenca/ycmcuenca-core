@@ -17,6 +17,7 @@
   },
   "dependencies": {
     "@ycmcuenca/cms-core": "workspace:*",
+    "@ycmcuenca/cms-render": "workspace:*",
     "@ycmcuenca/db": "workspace:*",
     "@ycmcuenca/ui": "workspace:*",
     "drizzle-orm": "0.45.4",

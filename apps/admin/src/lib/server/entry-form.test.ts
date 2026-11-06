@@ -4,6 +4,7 @@ import { describe, expect, it } from "vitest";
 import {
   articleInputFrom,
   formValuesFrom,
+  formValuesFromInput,
   takenSlugErrors,
 } from "./entry-form";
 
@@ -51,6 +52,19 @@ describe("articleInputFrom", () => {
 describe("formValuesFrom", () => {
   it("reads a stored revision back into the form's values", () => {
     expect(formValuesFrom("first-post", stored)).toEqual({
+      title: "First post",
+      slug: "first-post",
+      summary: "The first article.",
+      body: "## Hello\n\nSome **Markdown**.",
+    });
+  });
+});
+
+describe("formValuesFromInput", () => {
+  it("shows a refused submission with the values it posted", () => {
+    const input = articleInputFrom(postedForm("first-post"), unlocked);
+
+    expect(formValuesFromInput(input)).toEqual({
       title: "First post",
       slug: "first-post",
       summary: "The first article.",
