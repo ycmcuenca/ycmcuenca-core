@@ -1,0 +1,14 @@
+/* The styles `welcome` serves. cms-core renders a Markdown table cell's
+   alignment as one of these classes, because the strict CSP allows no inline
+   style except SvelteKit's announcer (design D8). */
+.align-left {
+  text-align: left;
+}
+
+.align-center {
+  text-align: center;
+}
+
+.align-right {
+  text-align: right;
+}

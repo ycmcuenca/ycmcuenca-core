@@ -14,6 +14,7 @@ import {
   futureArticle,
   newerArticle,
   publishedArticles,
+  tableArticle,
   updatedArticle,
 } from "./fixtures";
 
@@ -138,11 +139,26 @@ test("the feed lists every article newest first", async ({ request }) => {
   expect(older).toBeGreaterThan(newest);
 });
 
+test("an aligned table keeps its alignment without an inline style", async ({
+  page,
+}) => {
+  await page.goto(`/en/articles/${tableArticle.slug}`);
+
+  const headers = page.locator(".block-markdown th");
+  await expect(headers).toHaveText(["Left", "Center", "Right"]);
+  await expect(headers.nth(0)).toHaveCSS("text-align", "left");
+  await expect(headers.nth(1)).toHaveCSS("text-align", "center");
+  await expect(headers.nth(2)).toHaveCSS("text-align", "right");
+  await expect(page.locator(".block-markdown [style]")).toHaveCount(0);
+});
+
 test("the article page leaves no Content Security Policy violation", async ({
   page,
 }) => {
   await trackViolations(page);
-  const response = await page.goto(`/en/articles/${updatedArticle.slug}`);
+  // The table article is the one whose output would carry an inline style
+  // without the renderer's alignment class (design D8).
+  const response = await page.goto(`/en/articles/${tableArticle.slug}`);
   expect(response?.status()).toBe(200);
   // The announcer mounts only after hydration, so by now every violation the
   // page causes has been reported (design D7).
