@@ -119,16 +119,16 @@ journey
       See it live (planned S2): 5: Owner, Visitor
 ```
 
-| Step                              | Status       | Capability                        |
-| --------------------------------- | ------------ | --------------------------------- |
-| Sign in to `admin` through Access | today        | Cloudflare Access guards `admin`. |
-| Write the entry in English        | planned (S2) | `admin-editor`, `content-model`   |
-| Add images                        | planned (S3) | `media-uploads`                   |
-| Fill in Filipino and Esperanto    | planned (S4) | `content-localization`            |
-| Preview the draft inside `admin`  | planned (S4) | `draft-preview`                   |
-| Publish now                       | planned (S2) | `revisions-publishing`            |
-| Schedule a later time             | planned (S4) | `scheduled-publishing`            |
-| See the page on the public site   | planned (S2) | `public-rendering`                |
+| Step                              | Status       | Capability                                                                                            |
+| --------------------------------- | ------------ | ----------------------------------------------------------------------------------------------------- |
+| Sign in to `admin` through Access | today        | Cloudflare Access guards `admin`; its home page shows the number of stored entries (`content-store`). |
+| Write the entry in English        | planned (S2) | `admin-editor`, `content-model`                                                                       |
+| Add images                        | planned (S3) | `media-uploads`                                                                                       |
+| Fill in Filipino and Esperanto    | planned (S4) | `content-localization`                                                                                |
+| Preview the draft inside `admin`  | planned (S4) | `draft-preview`                                                                                       |
+| Publish now                       | planned (S2) | `revisions-publishing`                                                                                |
+| Schedule a later time             | planned (S4) | `scheduled-publishing`                                                                                |
+| See the page on the public site   | planned (S2) | `public-rendering`                                                                                    |
 
 English must be ready before any publish, and a locale that is not ready stays
 hidden ([L3](DECISIONS.md#localization)). The first end-to-end publish happens

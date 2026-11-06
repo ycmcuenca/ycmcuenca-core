@@ -51,7 +51,7 @@ flowchart TB
         access["Cloudflare Access"]:::built
         cache["Workers Cache<br/>(S2 public-rendering)"]:::planned
         welcome["welcome worker<br/>public site, placeholder page"]:::built
-        admin["admin worker<br/>CMS, placeholder page"]:::built
+        admin["admin worker<br/>CMS, shows the entry count"]:::built
         edge["Security headers, CSP,<br/>logs and traces"]:::built
         kv[("KV publish snapshot<br/>(S2 revisions-publishing)")]:::planned
         r2[("R2 media bucket and<br/>Images binding<br/>(S3 media-uploads)")]:::planned
@@ -59,7 +59,7 @@ flowchart TB
         wa["Web Analytics<br/>(S5 web-analytics)"]:::planned
     end
 
-    neon[("Neon Postgres<br/>through Hyperdrive<br/>(S2 content-store)")]:::planned
+    neon[("Neon Postgres<br/>through Hyperdrive<br/>(S2 content-store)")]:::built
 
     owner -->|"reviews and merges"| repo
     repo -->|"released apps"| deploy
@@ -75,7 +75,7 @@ flowchart TB
     welcome -.->|"reads only (C5)"| kv
     welcome -.->|"serves images (M2, M4)"| r2
     welcome -.->|"page-view beacon"| wa
-    admin -.->|"writes revisions (C3)"| neon
+    admin -->|"writes revisions (C3)"| neon
     admin -.->|"projects on publish (C4)"| kv
     admin -.->|"stores and resizes images (M3, M4)"| r2
     admin -.->|"purges cache tags (C10)"| welcome
@@ -88,8 +88,9 @@ flowchart TB
 ### What exists today
 
 - Two SvelteKit apps, `welcome` and `admin`, each built for Cloudflare Workers
-  ([P5](DECISIONS.md#platform-and-scope)). Each serves a placeholder page.
-  They share one workspace and task graph
+  ([P5](DECISIONS.md#platform-and-scope)). `welcome` serves a placeholder page;
+  `admin` shows the number of stored entries, read from Neon. They share one
+  workspace and task graph
   ([monorepo task graphs and caching](SYSTEM_DESIGN.md#monorepo-task-graphs-and-caching)).
 - Both apps are live on `*.ycmcuenca.workers.dev`
   ([P4](DECISIONS.md#platform-and-scope)); locally they run through `wrangler`.
@@ -102,23 +103,32 @@ flowchart TB
   [security headers and CSP](SYSTEM_DESIGN.md#browser-security-headers-and-csp)); Workers Logs and
   traces record both workers ([I9](DECISIONS.md#integrations-and-longevity);
   [structured logs](SYSTEM_DESIGN.md#structured-logs-with-a-correlation-id)).
-  Neither app has storage or service bindings yet.
+- `admin` reads and writes Neon Postgres through Hyperdrive
+  ([C3, C4](DECISIONS.md#cms-architecture),
+  [C11](DECISIONS.md#cms-architecture)). The database has two roles: one for
+  migrations, one with runtime rights only
+  ([I6](DECISIONS.md#integrations-and-longevity);
+  [least privilege](SYSTEM_DESIGN.md#least-privilege),
+  [append-only revisions](SYSTEM_DESIGN.md#event-sourcing-lite-append-only-revisions)).
+  The deploy applies pending migrations before it uploads `admin`
+  ([C12](DECISIONS.md#cms-architecture);
+  [expand and contract migrations](SYSTEM_DESIGN.md#expand-and-contract-migrations)).
+  `welcome` still has no storage binding.
 - The repository's delivery pipeline (see
   [How a change reaches users](#how-a-change-reaches-users)).
 
 ### Planned components
 
-| Component                          | Planned in                | What it does                                                                                                                                                   | Decisions                                                                          | Concepts                                                                                                                                                          |
-| ---------------------------------- | ------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Neon Postgres and Hyperdrive       | S2 `content-store`        | Neon is the database and the source of truth. Hyperdrive lets a worker connect to it. Two database roles keep migration rights apart from runtime rights.      | [C4](DECISIONS.md#cms-architecture), [I6](DECISIONS.md#integrations-and-longevity) | [branch-per-PR database testing](SYSTEM_DESIGN.md#branch-per-pr-database-testing)                                                                                 |
-| KV publish snapshot                | S2 `revisions-publishing` | KV is Cloudflare's key-value store. Publishing writes one key per entry (all locales) plus index keys. Every snapshot carries a version number.                | [C5, C6, C8](DECISIONS.md#cms-architecture)                                        | [CQRS-lite read projections](SYSTEM_DESIGN.md#cqrs-lite-read-projections), [versioned contracts](SYSTEM_DESIGN.md#versioned-contracts-and-tolerant-readers)       |
-| Workers Cache                      | S2 `public-rendering`     | Caches `welcome` responses, tagged by entry, type and locale. `admin` purges tags after it writes KV.                                                          | [C10](DECISIONS.md#cms-architecture)                                               | [cache invalidation by tag](SYSTEM_DESIGN.md#cache-invalidation-by-tag)                                                                                           |
-| Cron reconciler                    | S4 `scheduled-publishing` | One scheduled job publishes entries that are due and retries snapshots that failed to write.                                                                   | [W1](DECISIONS.md#publishing-workflow)                                             | [reconciliation loops](SYSTEM_DESIGN.md#reconciliation-loops-and-at-most-once-claims), [eventual consistency](SYSTEM_DESIGN.md#eventual-consistency-and-its-slos) |
-| R2 media bucket and Images binding | S3 `media-uploads`        | R2 is Cloudflare's object storage. `admin` stores the original image and creates three web-ready widths.                                                       | [M1, M3, M4](DECISIONS.md#media)                                                   | [content-addressed storage](SYSTEM_DESIGN.md#content-addressed-storage), [upload protocols](SYSTEM_DESIGN.md#upload-protocols-and-integrity-checks)               |
-| Contact inbox                      | S3 `contact-inbox`        | Stores contact-form messages in the CMS, protected by Turnstile and rate limiting. The change decides which worker receives the form, so the diagram omits it. | [I1](DECISIONS.md#integrations-and-longevity)                                      | [abuse prevention](SYSTEM_DESIGN.md#abuse-prevention)                                                                                                             |
-| Nightly backup job                 | S3 `data-backups`         | A GitHub Actions job copies the database to a private R2 bucket every night and keeps 30 days.                                                                 | [I8](DECISIONS.md#integrations-and-longevity)                                      | [backup and restore](SYSTEM_DESIGN.md#backup-and-restore-as-a-tested-process)                                                                                     |
-| Draft preview                      | S4 `draft-preview`        | Lets the owner see an unpublished entry. It runs inside `admin` and reads Neon directly.                                                                       | [W2](DECISIONS.md#publishing-workflow)                                             | [read-your-writes](SYSTEM_DESIGN.md#read-your-writes-for-previews)                                                                                                |
-| Web Analytics                      | S5 `web-analytics`        | Counts page views with Cloudflare's privacy-preserving beacon.                                                                                                 | [I3](DECISIONS.md#integrations-and-longevity)                                      | [privacy-preserving analytics](SYSTEM_DESIGN.md#privacy-preserving-analytics)                                                                                     |
+| Component                          | Planned in                | What it does                                                                                                                                                   | Decisions                                     | Concepts                                                                                                                                                          |
+| ---------------------------------- | ------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| KV publish snapshot                | S2 `revisions-publishing` | KV is Cloudflare's key-value store. Publishing writes one key per entry (all locales) plus index keys. Every snapshot carries a version number.                | [C5, C6, C8](DECISIONS.md#cms-architecture)   | [CQRS-lite read projections](SYSTEM_DESIGN.md#cqrs-lite-read-projections), [versioned contracts](SYSTEM_DESIGN.md#versioned-contracts-and-tolerant-readers)       |
+| Workers Cache                      | S2 `public-rendering`     | Caches `welcome` responses, tagged by entry, type and locale. `admin` purges tags after it writes KV.                                                          | [C10](DECISIONS.md#cms-architecture)          | [cache invalidation by tag](SYSTEM_DESIGN.md#cache-invalidation-by-tag)                                                                                           |
+| Cron reconciler                    | S4 `scheduled-publishing` | One scheduled job publishes entries that are due and retries snapshots that failed to write.                                                                   | [W1](DECISIONS.md#publishing-workflow)        | [reconciliation loops](SYSTEM_DESIGN.md#reconciliation-loops-and-at-most-once-claims), [eventual consistency](SYSTEM_DESIGN.md#eventual-consistency-and-its-slos) |
+| R2 media bucket and Images binding | S3 `media-uploads`        | R2 is Cloudflare's object storage. `admin` stores the original image and creates three web-ready widths.                                                       | [M1, M3, M4](DECISIONS.md#media)              | [content-addressed storage](SYSTEM_DESIGN.md#content-addressed-storage), [upload protocols](SYSTEM_DESIGN.md#upload-protocols-and-integrity-checks)               |
+| Contact inbox                      | S3 `contact-inbox`        | Stores contact-form messages in the CMS, protected by Turnstile and rate limiting. The change decides which worker receives the form, so the diagram omits it. | [I1](DECISIONS.md#integrations-and-longevity) | [abuse prevention](SYSTEM_DESIGN.md#abuse-prevention)                                                                                                             |
+| Nightly backup job                 | S3 `data-backups`         | A GitHub Actions job copies the database to a private R2 bucket every night and keeps 30 days.                                                                 | [I8](DECISIONS.md#integrations-and-longevity) | [backup and restore](SYSTEM_DESIGN.md#backup-and-restore-as-a-tested-process)                                                                                     |
+| Draft preview                      | S4 `draft-preview`        | Lets the owner see an unpublished entry. It runs inside `admin` and reads Neon directly.                                                                       | [W2](DECISIONS.md#publishing-workflow)        | [read-your-writes](SYSTEM_DESIGN.md#read-your-writes-for-previews)                                                                                                |
+| Web Analytics                      | S5 `web-analytics`        | Counts page views with Cloudflare's privacy-preserving beacon.                                                                                                 | [I3](DECISIONS.md#integrations-and-longevity) | [privacy-preserving analytics](SYSTEM_DESIGN.md#privacy-preserving-analytics)                                                                                     |
 
 ## How a change reaches users
 
@@ -206,7 +216,7 @@ the pattern of the existing ones: `@ycmcuenca/<name>` lives in `packages/<name>`
 | `scripts/deploy`, `scripts/docs`       | Exist                          | The deploy smoke check and the living-documents check.                                                                                                                                                                                                                                     |
 | `.github/`                             | Exists                         | Workflows and the `main` ruleset.                                                                                                                                                                                                                                                          |
 | `packages/cms-core`                    | Exists                         | The content model: the field, block and type layers, the `article` type, validation with field-level errors, safe Markdown rendering, the versioned stored-content and snapshot contracts, and form descriptions ([C1, C2, C8, C9](DECISIONS.md#cms-architecture)). No app imports it yet. |
-| `packages/db`                          | Planned: S2 `content-store`    | The Neon adapter and database migrations.                                                                                                                                                                                                                                                  |
+| `packages/db`                          | Exists                         | The Neon adapter: the Drizzle schema, generated migrations, the runtime-role script and the privilege check ([C1, C3](DECISIONS.md#cms-architecture)).                                                                                                                                     |
 | `packages/cms-render`                  | Planned: S2 `public-rendering` | The Svelte blocks that `welcome` and the admin preview both use.                                                                                                                                                                                                                           |
 | `packages/ui`                          | Planned: S2 `admin-editor`     | Shared interface components ([Q2](DECISIONS.md#quality)).                                                                                                                                                                                                                                  |
 

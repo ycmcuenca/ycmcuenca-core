@@ -163,6 +163,16 @@ marked _(audit)_ came from the stack audit on the same day (see
   exposes an RPC entrypoint that `admin` calls through a service binding to
   purge tags after the projector writes KV.
   Concept: [cache invalidation by tag](SYSTEM_DESIGN.md#cache-invalidation-by-tag).
+- **C11 Hyperdrive with caching disabled for `admin`** _(content-store D5)_. The
+  default cache holds identical reads for 60 seconds and does not invalidate
+  them on write, so the owner would save and then see the old list. `admin`'s
+  reads are few, so the cache saves almost nothing. A second, cached
+  configuration can follow if a read ever needs it.
+- **C12 Deploys apply migrations before uploading `admin`** _(content-store D9)_.
+  The deploy runs the released commit's migrations, then the privilege check,
+  then `wrangler deploy`. A failed migration stops the run and leaves the
+  running worker as it was, which expand-then-contract makes safe.
+  Concept: [expand and contract migrations](SYSTEM_DESIGN.md#expand-and-contract-migrations).
 
 ## Publishing workflow
 
@@ -246,7 +256,10 @@ marked _(audit)_ came from the stack audit on the same day (see
 
 - **Q1 Database tests on a Neon branch per PR** _(audit)_. CI creates a
   throwaway Neon branch, migrates it, runs the integration tests and deletes
-  it. This needs a Neon API key secret, so these tests do not run on fork PRs.
+  it. Amended by `content-store` (D7): the branch is made in a separate CI
+  project with a project-scoped API key, so the key can delete nothing of
+  value, and a pull request from a fork fails with a message instead of
+  skipping the check, because the owner accepts no outside contributions.
   Concept: [branch-per-PR database testing](SYSTEM_DESIGN.md#branch-per-pr-database-testing).
 - **Q2 UI in two steps** _(audit)_. Tailwind and shadcn-svelte arrive in
   `@ycmcuenca/ui` with the first admin UI (S2); the brand sprint later adds
@@ -259,10 +272,19 @@ marked _(audit)_ came from the stack audit on the same day (see
 - **Q4 SEO basics with public rendering** _(audit)_. Canonical URLs, `hreflang`
   for the three locales, `sitemap.xml` and an RSS/Atom feed generated from the
   KV indexes.
-- **Q5 Drizzle version** — **Proposed** _(audit)_. Decide in the S2
-  `content-store` proposal: Drizzle 1.0 if it is generally available by then,
-  otherwise its release candidate, to avoid building on 0.x relational queries
-  and migrating soon after.
+- **Q5 Drizzle version** — **Decided by `content-store`** _(audit)_. Drizzle
+  0.45.4 with the core query builder only, not the relational query builder.
+  1.0 was still a release candidate when the change was built, and the
+  relational API would have been the part most likely to change. Drizzle is
+  confined to `@ycmcuenca/db`, and `apps/admin` pins the same versions so its
+  server build can resolve the externalised modules, so a later upgrade
+  touches one package and one pin.
+- **Q6 Local database is a Postgres 18 container** _(content-store D6)_. One
+  `docker compose` service pinned by digest, on port 54329 so it cannot clash
+  with a Postgres on 5432, prepared by `bun run db:prepare` (roles, then
+  migrations). A Neon development branch was rejected: the container works
+  offline, costs nothing and resets quickly. The major version follows Neon's,
+  and Renovate proposes the digest updates.
 
 ## Parking lot
 
