@@ -68,7 +68,7 @@ An entry's first-publish time SHALL be set to the current UTC time on its first 
 
 ### Requirement: Failed projection is visible and retryable
 
-Moving the published revision and marking the entry as not yet projected SHALL happen in one database write. The mark SHALL be cleared only after the entry snapshot and the index are both written. While the mark is set, `admin` SHALL show the entry as published but not live and SHALL offer a retry, which repeats the projection of the current published revision.
+Moving the published revision and marking the entry as not yet projected SHALL happen in one database write. The mark SHALL be cleared only after the entry snapshot and the index are both written. While the mark is set, `admin` SHALL offer a retry, which repeats the projection of the current published state. The status line SHALL follow the published revision, as the scenarios show.
 
 #### Scenario: Snapshot store fails
 
@@ -79,6 +79,11 @@ Moving the published revision and marking the entry as not yet projected SHALL h
 
 - **WHEN** the owner presses retry on an entry marked not live and the snapshot store is available
 - **THEN** the entry snapshot and index are written, and `admin` shows the entry as live
+
+#### Scenario: Unpublish fails
+
+- **WHEN** the owner unpublishes an entry and the snapshot store removal fails
+- **THEN** the entry has no published revision, `admin` shows "not published" (not "published, not live") with a retry button, and the old snapshot may stay public until the retry succeeds
 
 #### Scenario: Retry after unpublish
 
