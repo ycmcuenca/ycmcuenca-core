@@ -34,6 +34,14 @@
     { "binding": "HYPERDRIVE", "id": "746de69576294fbcbc1f6916eaab3c22" },
   ],
 
+  // The published snapshots `welcome` reads (design D5 in
+  // openspec/changes/revisions-publishing/design.md), created with
+  // `wrangler kv namespace create snapshots`. The id is a public identifier,
+  // like the Hyperdrive id: it is useless without the account's credentials.
+  "kv_namespaces": [
+    { "binding": "SNAPSHOTS", "id": "c18b4b7d16494320b81857cf96a4b715" },
+  ],
+
   // Workers Logs with invocation logs and traces at full sampling (D4, I9).
   // A refusal writes one warning line and a 404 no application line, so the
   // Free plan's log volume stays proportional to real traffic.

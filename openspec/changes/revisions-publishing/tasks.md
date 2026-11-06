@@ -15,9 +15,9 @@
 
 ## 3. `admin`: KV adapter, entry page and actions
 
-- [ ] 3.1 **Owner task:** run `bunx wrangler kv namespace create snapshots` in `apps/admin`. Commit `"kv_namespaces": [{ "binding": "SNAPSHOTS", "id": "<id>" }]` in `apps/admin/wrangler.jsonc` (with a comment citing design D5), add `@ycmcuenca/cms-core: workspace:*` to `apps/admin/package.json`, and run `bun run gen`. Verify `worker-configuration.d.ts` types `SNAPSHOTS: KVNamespace`, and `bun run check` and `bun run build` pass
-- [ ] 3.2 Implement `snapshotStoreFor(kv)` in `apps/admin/src/lib/server/snapshot-store.ts` using `entryKey`/`indexKey`. Verify `src/lib/server/snapshot-store.test.ts` (with a `Map`-backed fake implementing the `get`/`put`/`delete` subset) shows the exact keys and JSON values written and deleted
-- [ ] 3.3 Add `apps/admin/src/routes/entries/[id]/+page.server.ts` (`load` plus the actions `publish`, `rollBack`, `unpublish` and `retry`) and `+page.svelte` per design D5, using `withDatabase`, `entryStoreFor`, `snapshotStoreFor`, a system clock and `createLogger("admin", request)`. Verify `bun run check` passes, and that under `bun run dev` with a seeded entry each button changes the status line as the spec describes
+- [x] 3.1 **Owner task:** run `bunx wrangler kv namespace create snapshots` in `apps/admin`. Commit `"kv_namespaces": [{ "binding": "SNAPSHOTS", "id": "<id>" }]` in `apps/admin/wrangler.jsonc` (with a comment citing design D5), add `@ycmcuenca/cms-core: workspace:*` to `apps/admin/package.json`, and run `bun run gen`. Verify `worker-configuration.d.ts` types `SNAPSHOTS: KVNamespace`, and `bun run check` and `bun run build` pass
+- [x] 3.2 Implement `snapshotStoreFor(kv)` in `apps/admin/src/lib/server/snapshot-store.ts` using `entryKey`/`indexKey`. Verify `src/lib/server/snapshot-store.test.ts` (with a `Map`-backed fake implementing the `get`/`put`/`delete` subset) shows the exact keys and JSON values written and deleted
+- [x] 3.3 Add `apps/admin/src/routes/entries/[id]/+page.server.ts` (`load` plus the actions `publish`, `rollBack`, `unpublish` and `retry`) and `+page.svelte` per design D5, using `withDatabase`, `entryStoreFor`, `snapshotStoreFor`, a system clock and `createLogger("admin", request)`. Verify `bun run check` passes, and that under `bun run dev` with a seeded entry each button changes the status line as the spec describes
 
 ## 4. End-to-end verification
 
