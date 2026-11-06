@@ -82,6 +82,10 @@ Current state, expected after `revisions-publishing`:
 ### D4. SEO metadata from one origin
 
 - `apps/welcome/wrangler.jsonc` gains `"vars": { "SITE_ORIGIN": "https://welcome.ycmcuenca.workers.dev" }`. `src/lib/server/seo.ts` exports `absoluteUrl(path)`. Each page's `load` returns `{ seo: { canonical, description } }`, and `+layout.svelte` renders the canonical link, the `hreflang="en"` and `x-default` alternates, the meta description and the feed autodiscovery link in `<svelte:head>`.
+- The type index carries an optional `updatedAt` per item (the entry's
+  last-publish time, added during review), and the sitemap uses it as
+  `<lastmod>`. An index written before the field existed falls back to
+  `publishedAt`, so `snapshot_v` stays `1` and an older index still renders.
 - `static/robots.txt` gains `Sitemap: https://welcome.ycmcuenca.workers.dev/sitemap.xml`. A unit test asserts it equals `SITE_ORIGIN` + `/sitemap.xml`, read from `wrangler.jsonc` with Wrangler's `unstable_readConfig`, as `apps/admin/src/lib/trust-config.test.ts` does, so the two cannot drift.
 - Canonical URLs always use the committed origin, also on preview URLs and under `wrangler dev`, so a preview never claims to be canonical.
 - **Failure modes:** _the custom-domain cutover (parking lot):_ `SITE_ORIGIN` and `robots.txt` change together, and the test enforces it.

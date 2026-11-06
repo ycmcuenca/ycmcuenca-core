@@ -155,7 +155,10 @@ marked _(audit)_ came from the stack audit on the same day (see
 - **C8 The snapshot is a versioned contract** _(audit)_. Every snapshot carries
   a `snapshot_v`; `cms-core` owns its Zod schema; `welcome` reads the current
   and the previous version (tolerant reader) and the reconciler re-projects old
-  snapshots. The two workers can then deploy in either order.
+  snapshots. The two workers can then deploy in either order. The type index
+  also carries an optional `updatedAt` (the entry's last-publish time), which
+  the sitemap uses as `<lastmod>` and which falls back to `publishedAt` for an
+  index written before the field existed (`public-rendering` D3).
   Concept: [versioned contracts and tolerant readers](SYSTEM_DESIGN.md#versioned-contracts-and-tolerant-readers).
 - **C9 Markdown is rendered at publish** _(audit)_. The projector stores
   sanitized HTML per locale in the snapshot, so `welcome` only renders
@@ -177,6 +180,12 @@ marked _(audit)_ came from the stack audit on the same day (see
   then `wrangler deploy`. A failed migration stops the run and leaves the
   running worker as it was, which expand-then-contract makes safe.
   Concept: [expand and contract migrations](SYSTEM_DESIGN.md#expand-and-contract-migrations).
+- **C13 One committed origin for every absolute URL** _(public-rendering D4)_.
+  The canonical link, both `hreflang` alternates, the sitemap's `<loc>`s, the
+  feed's links and the `Sitemap:` line in `static/robots.txt` all come from
+  `SITE_ORIGIN` in `apps/welcome/wrangler.jsonc`, including under `dev`, so a
+  preview URL never claims to be canonical. A unit test keeps the origin and
+  `robots.txt` equal; the custom-domain cutover changes both together.
 
 ## Publishing workflow
 
