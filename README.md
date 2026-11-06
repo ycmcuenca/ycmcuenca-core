@@ -171,7 +171,9 @@ Production and CI each use their own Neon project, both on Postgres 18. CI
 creates a throwaway branch per pull request, runs the migrations and the
 integration tests on it, and deletes it afterwards. A pull request from a fork
 cannot reach that project's key, so the `database` job refuses it instead of
-skipping it.
+skipping it. CI deletes each branch when its job ends. If one is left behind,
+`neon branches list` shows it: delete any branch named `ci-*`, or wait for its
+expiry.
 
 The credentials are not in the repository. Set them once:
 
