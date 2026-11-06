@@ -96,6 +96,22 @@ export interface SnapshotStore {
   putIndex(type: string, locale: string, index: IndexSnapshot): Promise<void>;
 }
 
+/**
+ * What a cache purge reports (design D4). A refusal is a result, not an error:
+ * the publish already succeeded, so only a warning follows.
+ */
+export type PurgeOutcome =
+  | { readonly purged: true }
+  | { readonly purged: false; readonly reason: string };
+
+/**
+ * Purges the edge cache by tag, owned by welcome's `Site` entrypoint (design
+ * D4). Admin reaches it through a service binding (D5).
+ */
+export interface CachePurger {
+  purge(tags: string[]): Promise<PurgeOutcome>;
+}
+
 /** The time source the use cases use, so a test can move time (design D1). */
 export interface Clock {
   now(): Date;

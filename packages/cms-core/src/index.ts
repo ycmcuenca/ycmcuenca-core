@@ -9,16 +9,19 @@
 // this package through Node's ESM loader, which resolves nothing extensionless.
 export { bodySchema, markdownBlock } from "./blocks.ts";
 export type { Block, BlockTypeName } from "./blocks.ts";
+export { entryTag, indexTag, localeTag, typeTag } from "./cache-tags.ts";
 export { multilineField, slugField, textField } from "./fields.ts";
 export type { FieldDefinition, FieldEditor, FieldOptions } from "./fields.ts";
 export { formDescription } from "./form.ts";
 export type { FieldDescription } from "./form.ts";
 export type {
+  CachePurger,
   Clock,
   EntryRecord,
   EntryStore,
   ProjectionState,
   PublishedEntry,
+  PurgeOutcome,
   RevisionRecord,
   SlugChange,
   SnapshotStore,
