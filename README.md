@@ -330,13 +330,14 @@ Read.
 
 ## Shipping shared-package changes
 
-`packages/edge` is internal and is never versioned on its own. A change
-there reaches production only through an app release. Every change that must
-ship therefore comes with a `fix(<app>)` (or `feat(<app>)`) commit that
-touches each affected app — a line in that app's `hooks.server.ts`, for
-example. That commit is what release-please proposes as the app's patch
-release, and the deploy carries the package change along. A package change
-without such a commit waits for the next app release.
+`packages/edge` and `packages/db` are internal and are never versioned on
+their own. A change there reaches production only through an app release.
+Every change that must ship therefore comes with a `fix(<app>)` (or
+`feat(<app>)`) commit that touches each affected app — a line in that app's
+`hooks.server.ts`, or a dependency in its `package.json`, for example. That
+commit is what release-please proposes as the app's patch release, and the
+deploy carries the package change along. A package change without such a
+commit waits for the next app release.
 
 ## Repository settings
 

@@ -115,13 +115,18 @@
       matchPackageNames: ["turbo", "vite", "typescript", "@types/**"],
       semanticCommitType: "chore",
     },
-    // Drizzle and node-postgres ship inside `admin`'s deployed output, so an
-    // update is a `fix(deps)` commit that gives `admin` a patch release
-    // (design D1 in openspec/changes/content-store/design.md). This rule comes
-    // after `build` so it wins for `@types/pg`, which the earlier `@types/**`
-    // rule would otherwise take.
+    // Drizzle and node-postgres ship inside `admin`'s deployed output, so
+    // `pg` and `drizzle-orm` are production dependencies of both
+    // `@ycmcuenca/db` and `admin` (design D1 in
+    // openspec/changes/content-store/design.md). Renovate updates both
+    // `package.json` files in one pull request, and the `fix(deps)` commit
+    // touching `apps/admin` gives `admin` a patch release. `drizzle-kit` and
+    // `@types/pg` are build-time only: an update there touches only
+    // `packages/db`, so it releases nothing. This rule comes after `build` so
+    // it wins for `@types/pg`, which the earlier `@types/**` rule would
+    // otherwise take.
     {
-      description: "Database runtime: fix(deps), so touched apps get a patch release",
+      description: "Database runtime: fix(deps), so the app that ships it gets a patch release",
       groupName: "db-runtime",
       matchDatasources: ["npm"],
       matchPackageNames: ["drizzle-orm", "drizzle-kit", "pg", "@types/pg"],

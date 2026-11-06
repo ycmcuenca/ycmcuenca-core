@@ -20,10 +20,13 @@ interface HyperdriveBinding {
 const bindings = (config.hyperdrive ?? []) as HyperdriveBinding[];
 
 describe("the committed Hyperdrive binding", () => {
-  it("binds HYPERDRIVE to a 32-character hex id", () => {
+  it("binds HYPERDRIVE to a real 32-character hex id", () => {
     const binding = bindings.find((entry) => entry.binding === "HYPERDRIVE");
     expect(binding).toBeDefined();
     expect(binding?.id).toMatch(/^[0-9a-f]{32}$/);
+    // The all-zero placeholder passes the shape check but binds nothing in
+    // production, so a release must never carry it.
+    expect(binding?.id).not.toBe("0".repeat(32));
   });
 
   it("never commits a local connection string", () => {
