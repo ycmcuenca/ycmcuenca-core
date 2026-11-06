@@ -26,6 +26,23 @@
   "workers_dev": true,
   "preview_urls": true,
 
+  // The published snapshots `welcome` reads (design D3 in
+  // openspec/changes/public-rendering/design.md): the same namespace `admin`
+  // writes, and the only content source on the read path. `welcome` has no
+  // database binding, so a database outage cannot reach a visitor (C5). The
+  // id is a public identifier, not a secret: it is useless without the
+  // account's credentials.
+  "kv_namespaces": [
+    { "binding": "SNAPSHOTS", "id": "c18b4b7d16494320b81857cf96a4b715" },
+  ],
+
+  // The single source of absolute URLs (design D4): canonical links, the
+  // sitemap and robots.txt all use this committed production origin, so a
+  // preview URL never claims to be canonical.
+  "vars": {
+    "SITE_ORIGIN": "https://welcome.ycmcuenca.workers.dev",
+  },
+
   // Workers Logs with invocation logs and traces at full sampling (D4, I9).
   // A 404 writes no application log line, so the Free plan's log volume stays
   // proportional to real traffic.
