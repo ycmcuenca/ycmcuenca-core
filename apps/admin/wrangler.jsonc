@@ -33,7 +33,7 @@
   // (task 6.3); the connection string lives only in that configuration, never
   // here.
   "hyperdrive": [
-    { "binding": "HYPERDRIVE", "id": "00000000000000000000000000000000" },
+    { "binding": "HYPERDRIVE", "id": "746de69576294fbcbc1f6916eaab3c22" },
   ],
 
   // Workers Logs with invocation logs and traces at full sampling (D4, I9).

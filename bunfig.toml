@@ -1,6 +1,0 @@
-[install]
-# Keep pg and drizzle-orm external in admin's SSR build (Vite 8 / rolldown would
-# otherwise inline pg's CommonJS and emit createRequire(import.meta.url), which
-# is undefined in workerd; vitejs/vite#20983). Externals must resolve from
-# apps/admin, but only @ycmcuenca/db declares them.
-publicHoistPattern = ["pg", "drizzle-orm"]
