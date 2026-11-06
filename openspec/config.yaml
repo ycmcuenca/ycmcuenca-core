@@ -42,6 +42,9 @@ rules:
   tasks:
     - Add a verification step for any behavior that has not been verified in this repository yet (external services, library behavior, platform limits).
     - Mark tasks only the owner can perform as an owner task and make the verification step explicit.
+    - Put owner tasks only in the first or the last task group, and nowhere else.
+    - Give each task group one `Check:` scoped to the files it touches. Never a bare suite or the full local-CI command per task; `/verify` runs those.
+    - Add a test task only when it guards logic, a contract, a security rule or a regression.
 
 operations:
   archive:
