@@ -179,6 +179,9 @@ test("two saves at once add one revision and refuse the other", async ({
   expect(await refused.text()).toContain(
     "Another save came first. Reload and try again.",
   );
+  // The refused page keeps the text that lost the race, not the stored
+  // revision, so the owner can copy it out (design D3, amendment 2).
+  expect(await refused.text()).toContain("The raced body.");
 
   const revisions = await revisionsOf(entryId);
   expect(revisions).toHaveLength(3);

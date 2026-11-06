@@ -158,6 +158,7 @@ async function saveEntry(entryId: string, request: Request) {
         if (thrown instanceof ConcurrentRevisionError) {
           return fail(409, {
             message: "Another save came first. Reload and try again.",
+            values: read.values,
           });
         }
         throw thrown;

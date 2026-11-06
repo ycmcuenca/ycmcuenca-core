@@ -59,6 +59,19 @@ describe("articleInputFrom", () => {
 
     expect(input.slug).toBe("first-post");
   });
+
+  it("reads a browser's CRLF line breaks back as the store's LF", () => {
+    const form = postedForm("first-post");
+    form.set("summary", "The first\r\narticle.");
+    form.set("body", "## Hello\r\n\r\nSome **Markdown**.");
+
+    const input = articleInputFrom(form, unlocked);
+
+    expect(input.summary).toBe("The first\narticle.");
+    expect(input.body).toEqual([
+      { type: "markdown", source: "## Hello\n\nSome **Markdown**." },
+    ]);
+  });
 });
 
 describe("formValuesFrom", () => {
