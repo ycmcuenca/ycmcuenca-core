@@ -27,6 +27,12 @@ export default [
               message:
                 "Drizzle's Relational Queries v1 API is removed in 1.0 (design D1, Q5).",
             },
+            {
+              name: "drizzle-orm",
+              importNames: ["relations"],
+              message:
+                "Drizzle's Relational Queries v1 API is removed in 1.0 (design D1, Q5).",
+            },
           ],
         },
       ],
