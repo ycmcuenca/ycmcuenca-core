@@ -7,8 +7,8 @@
 
 ## 2. Tags and the purge port in cms-core
 
-- [ ] 2.1 Add `packages/cms-core/src/cache-tags.ts` (`entryTag`, `indexTag`, `typeTag`, `localeTag`) and `CachePurger`/`PurgeOutcome` in `src/ports.ts`, exported from `src/index.ts`. Verify a unit test pins the four formats, and that `entryTag` equals `entryKey` for the same type and slug
-- [ ] 2.2 Add the purge step to `src/publishing.ts` after `markProjected`, per design D4: widen `ProjectionLogger` with `warn`, add `purger` to `PublishingDependencies`, and give the fakes in `src/publishing.test.ts` a purger. Verify `src/publishing.test.ts` shows: exactly `[entry tag, index tag]` purged after publish, rollback, unpublish and retry; no purge when the projection fails; and, for a failing purger or one that throws, a `cache purge failed` warning naming the tags with the result still `{ ok: true, live: true }`
+- [x] 2.1 Add `packages/cms-core/src/cache-tags.ts` (`entryTag`, `indexTag`, `typeTag`, `localeTag`) and `CachePurger`/`PurgeOutcome` in `src/ports.ts`, exported from `src/index.ts`. Verify a unit test pins the four formats, and that `entryTag` equals `entryKey` for the same type and slug
+- [x] 2.2 Add the purge step to `src/publishing.ts` after `markProjected`, per design D4: widen `ProjectionLogger` with `warn`, add `purger` to `PublishingDependencies`, and give the fakes in `src/publishing.test.ts` a purger. Verify `src/publishing.test.ts` shows: exactly `[entry tag, index tag]` purged after publish, rollback, unpublish and retry; no purge when the projection fails; and, for a failing purger or one that throws, a `cache purge failed` warning naming the tags with the result still `{ ok: true, live: true }`
 
 ## 3. `welcome`: entrypoint, routing and headers
 
