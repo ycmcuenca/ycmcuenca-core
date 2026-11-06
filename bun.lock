@@ -79,6 +79,25 @@
         "vitest": "4.1.12",
       },
     },
+    "packages/cms-render": {
+      "name": "@ycmcuenca/cms-render",
+      "version": "0.0.0",
+      "dependencies": {
+        "@ycmcuenca/cms-core": "workspace:*",
+      },
+      "devDependencies": {
+        "@sveltejs/vite-plugin-svelte": "7.3.1",
+        "@ycmcuenca/eslint-config": "workspace:*",
+        "@ycmcuenca/tsconfig": "workspace:*",
+        "svelte": "5.57.2",
+        "svelte-check": "4.7.7",
+        "typescript": "6.0.3",
+        "vitest": "4.1.12",
+      },
+      "peerDependencies": {
+        "svelte": "5.57.2",
+      },
+    },
     "packages/db": {
       "name": "@ycmcuenca/db",
       "version": "0.0.0",
@@ -563,6 +582,8 @@
     "@vitest/utils": ["@vitest/utils@4.1.12", "", { "dependencies": { "@vitest/pretty-format": "4.1.12", "convert-source-map": "^2.0.0", "tinyrainbow": "^3.1.0" } }, "sha512-Q3awXrwOfEV+qc3WmO5ONyE0yO7Q1gQ9/oyHxGLZ/pl7N3NO/ZztqQwKLuwMkV+CA1JYSIeO3gkHnRDIo4AVaA=="],
 
     "@ycmcuenca/cms-core": ["@ycmcuenca/cms-core@workspace:packages/cms-core"],
+
+    "@ycmcuenca/cms-render": ["@ycmcuenca/cms-render@workspace:packages/cms-render"],
 
     "@ycmcuenca/db": ["@ycmcuenca/db@workspace:packages/db"],
 
