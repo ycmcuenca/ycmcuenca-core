@@ -1,6 +1,7 @@
 <script lang="ts">
   import { page } from "$app/state";
   import favicon from "#lib/assets/favicon.svg";
+  import "../app.css";
   import type { LayoutProps } from "./$types";
 
   let { data, children }: LayoutProps = $props();

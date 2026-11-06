@@ -75,6 +75,25 @@ describe("renderMarkdown", () => {
     expect(html).toContain('<pre><code class="language-js">');
   });
 
+  it("renders an aligned table cell as a class, never an inline style", () => {
+    // The strict CSP allows no inline style except SvelteKit's announcer
+    // (design D8), so the alignment the author wrote must reach the page as a
+    // class (spec: Markdown renders to safe HTML).
+    const html = renderMarkdown(
+      [
+        "| Left | Plain | Right |",
+        "| :--- | ----- | ----: |",
+        "| a    | b     | c     |",
+      ].join("\n"),
+    );
+
+    expect(html).not.toContain("style=");
+    expect(html).toContain('<th class="align-left">Left</th>');
+    expect(html).toContain("<th>Plain</th>");
+    expect(html).toContain('<th class="align-right">Right</th>');
+    expect(html).toContain('<td class="align-left">a</td>');
+  });
+
   it("renders the sample to exactly the recorded HTML", () => {
     // The golden output of markdown-it 15.0.3 with html, linkify and
     // typographer off (design D5). An update that changes it shows up here.

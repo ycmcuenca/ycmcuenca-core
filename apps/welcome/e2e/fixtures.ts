@@ -1,7 +1,15 @@
 // The snapshots the `welcome` e2e seeds into local KV (design D5). The global
 // setup writes these values and the tests assert against the same objects, so
 // the fixture and the expectation cannot drift apart.
+import { renderMarkdown } from "@ycmcuenca/cms-core";
 import type { EntrySnapshot, IndexSnapshot } from "@ycmcuenca/cms-core";
+
+/** The Markdown a publish of the aligned-table article renders. */
+const tableSource = [
+  "| Left | Center | Right |",
+  "| :--- | :----: | ----: |",
+  "| a    | b      | c     |",
+].join("\n");
 
 /** The article whose first and last publish days differ (spec: updated article). */
 export const updatedArticle: EntrySnapshot = {
@@ -30,10 +38,28 @@ export const newerArticle: EntrySnapshot = {
   updatedAt: "2026-11-03T12:00:00.000Z",
 };
 
+/**
+ * An article whose body holds an aligned table. The fixture renders its body
+ * through cms-core, as publishing does, so the stored HTML is what the
+ * renderer produces: classes under the strict CSP, never inline styles
+ * (design D8).
+ */
+export const tableArticle: EntrySnapshot = {
+  snapshot_v: 1,
+  type: "article",
+  slug: "aligned-table",
+  title: "An aligned table",
+  summary: "A body with an aligned table.",
+  blocks: [{ type: "markdown", html: renderMarkdown(tableSource) }],
+  publishedAt: "2026-10-30T09:00:00.000Z",
+  updatedAt: "2026-10-30T09:00:00.000Z",
+};
+
 /** The readable articles, in the order the home page lists them. */
 export const publishedArticles: readonly EntrySnapshot[] = [
   newerArticle,
   updatedArticle,
+  tableArticle,
 ];
 
 /** The index the projector writes for both articles (design D3). */
