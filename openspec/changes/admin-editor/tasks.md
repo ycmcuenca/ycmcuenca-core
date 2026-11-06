@@ -46,8 +46,8 @@ Check: `bunx turbo run test:e2e --filter=admin -- editing`
 Depends: 5
 Check: `scripts/docs/check-living-docs.sh`
 
-- [ ] 6.1 Add an "Editing content" paragraph to the README (the editor, the preview, the slug rule, the one-block form) and a short `packages/ui/README.md` (the CSP rule for components, how to add one). Verify `scripts/docs/check-living-docs.sh` passes
-- [ ] 6.2 Run the local CI equivalent from `AGENTS.md` plus `bun run test:integration`. Verify all pass, `bunx openspec validate admin-editor --strict` passes, and `ci-ok` is green on the pull request
+- [x] 6.1 Add an "Editing content" paragraph to the README (the editor, the preview, the slug rule, the one-block form) and a short `packages/ui/README.md` (the CSP rule for components, how to add one). Verify `scripts/docs/check-living-docs.sh` passes
+- [x] 6.2 Run the local CI equivalent from `AGENTS.md` plus `bun run test:integration`. Verify all pass, `bunx openspec validate admin-editor --strict` passes, and `ci-ok` is green on the pull request
 
 ## 7. Owner production check (manual)
 
