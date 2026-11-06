@@ -194,8 +194,8 @@ again, so running it twice leaves the same result. Until the reconciler of
 [W1](docs/DECISIONS.md#publishing-workflow) arrives, the owner presses retry.
 
 An entry's slug can change only until its first publish. A published URL
-outlives the entry's title, and changing it needs redirects. `admin` refuses
-the change, and so does the database.
+outlives the entry's title, and changing it needs redirects. The publishing use
+case refuses the change, and so does the database.
 
 ### Production (owner)
 

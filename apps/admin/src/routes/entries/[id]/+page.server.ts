@@ -33,8 +33,21 @@ interface ActionMessage {
 /** An action's result: the page's message, or a refused form submission. */
 type ActionOutcome = ActionMessage | ActionFailure<ActionMessage>;
 
-export const load: PageServerLoad = async ({ params }) =>
-  withDatabase(async (database) => {
+// A URL parameter that names an entry or a revision is a UUID. Postgres treats
+// any other string as a malformed uuid and throws, which would turn bad input
+// into a 500, so the route checks the shape before it queries.
+const uuidPattern =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+function isUuid(value: string): boolean {
+  return uuidPattern.test(value);
+}
+
+export const load: PageServerLoad = async ({ params }) => {
+  if (!isUuid(params.id)) {
+    error(404, "No entry has that id.", { requestId: "" });
+  }
+  return withDatabase(async (database) => {
     const entry = await entryStoreFor(database).findEntry(params.id);
     if (entry === undefined) {
       error(404, "No entry has that id.", { requestId: "" });
@@ -48,24 +61,30 @@ export const load: PageServerLoad = async ({ params }) =>
       dirty: entry.projectionState === "dirty",
     };
   });
+};
 
 export const actions = {
   publish: async ({ params, request }) =>
-    runRevisionAction(request, (dependencies, revisionId) =>
+    runRevisionAction(params.id, request, (dependencies, revisionId) =>
       publishRevision(dependencies, params.id, revisionId),
     ),
   rollBack: async ({ params, request }) =>
-    runRevisionAction(request, (dependencies, revisionId) =>
+    runRevisionAction(params.id, request, (dependencies, revisionId) =>
       rollBack(dependencies, params.id, revisionId),
     ),
   unpublish: async ({ params, request }) =>
-    run(request, (dependencies) => unpublish(dependencies, params.id)),
+    run(params.id, request, (dependencies) =>
+      unpublish(dependencies, params.id),
+    ),
   retry: async ({ params, request }) =>
-    run(request, (dependencies) => retryProjection(dependencies, params.id)),
+    run(params.id, request, (dependencies) =>
+      retryProjection(dependencies, params.id),
+    ),
 } satisfies Actions;
 
 // The publish and rollback forms name the revision they act on.
 async function runRevisionAction(
+  entryId: string,
   request: Request,
   work: (
     dependencies: PublishingDependencies,
@@ -74,18 +93,24 @@ async function runRevisionAction(
 ): Promise<ActionOutcome> {
   const form = await request.formData();
   const revisionId = form.get("revisionId");
-  if (typeof revisionId !== "string" || revisionId === "") {
+  if (typeof revisionId !== "string" || !isUuid(revisionId)) {
     return fail(400, { message: "Choose a revision." });
   }
-  return run(request, (dependencies) => work(dependencies, revisionId));
+  return run(entryId, request, (dependencies) =>
+    work(dependencies, revisionId),
+  );
 }
 
 // Every action runs one use case with the database, the KV adapter, the
 // system clock and the request's logger (design D2, D5, D6).
 async function run(
+  entryId: string,
   request: Request,
   work: (dependencies: PublishingDependencies) => Promise<PublishingResult>,
 ): Promise<ActionOutcome> {
+  if (!isUuid(entryId)) {
+    return fail(400, { message: "That entry id is not valid." });
+  }
   const result = await withDatabase((database) =>
     work(dependenciesFor(database, request)),
   );
@@ -95,7 +120,7 @@ async function run(
   if (!result.live) {
     return {
       message:
-        "The revision moved, but its snapshot could not be written. Press Retry.",
+        "The change is saved, but the snapshot store was not updated. Press Retry.",
     };
   }
   return { message: "" };

@@ -166,15 +166,14 @@ describe("the entry store", () => {
     const older = await createArticle("a", "A first version");
     await appendArticle(older.entryId, "A newer version", "Not published.");
     const newer = await createArticle("b", "B published");
-    const unpublished = await createArticle("c", "C unpublished");
+    // `c` is created but never published, so it stays out of the index.
+    await createArticle("c", "C unpublished");
 
     const listed = await asRuntimeRole(async (db) => {
       const store = entryStoreFor(db);
       // Publish revision 1 of `a`, not the newer revision 2.
       await store.markPublished(older.entryId, older.revisionId, firstPublish);
       await store.markPublished(newer.entryId, newer.revisionId, secondPublish);
-      // `c` is created but never published.
-      expect(unpublished.entryId).toBeDefined();
       return store.listPublished("article");
     });
 
@@ -220,10 +219,13 @@ describe("the slug guard", () => {
     ).catch((reason: unknown) => reason);
     expect(repositoryError).toBeInstanceOf(PublishedSlugError);
 
-    const portError = await asRuntimeRole((db) =>
+    const portRefusal = await asRuntimeRole((db) =>
       entryStoreFor(db).updateSlug(entryId, "published-address"),
-    ).catch((reason: unknown) => reason);
-    expect(portError).toBeInstanceOf(PublishedSlugError);
+    );
+    expect(portRefusal).toEqual({
+      ok: false,
+      reason: "Published slugs cannot change.",
+    });
 
     // The address did not move.
     const entry = await asRuntimeRole((db) =>

@@ -49,6 +49,14 @@ export interface PublishedEntry {
 }
 
 /**
+ * What a slug move reports (design D2). A refusal is returned, never thrown:
+ * the slug rule and the database's second guard are ordinary outcomes of a
+ * form submission, so the use case can turn either into `{ ok: false }`.
+ */
+export type SlugChange =
+  { readonly ok: true } | { readonly ok: false; readonly reason: string };
+
+/**
  * The entries and revisions of record, owned by @ycmcuenca/db (design D1).
  * The two mark methods move the published pointer and set the dirty mark in
  * one write, so a crash can never separate them (D2).
@@ -63,9 +71,9 @@ export interface EntryStore {
   /**
    * Moves an entry's slug (design D2). The database adds "only while never
    * published" as a second guard, so a raced publish cannot slip past the
-   * use case's check.
+   * use case's check. A refused move is a result, not an error.
    */
-  updateSlug(entryId: string, slug: string): Promise<void>;
+  updateSlug(entryId: string, slug: string): Promise<SlugChange>;
 }
 
 /**
