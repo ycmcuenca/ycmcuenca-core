@@ -10,10 +10,16 @@ import type {
   ProjectionState,
   PublishedEntry,
   RevisionRecord,
+  SlugChange,
 } from "@ycmcuenca/cms-core";
 import { asc, desc, eq, sql } from "drizzle-orm";
 import type { Database } from "./client.ts";
-import { MissingEntryError, updateSlug as moveSlug } from "./entries.ts";
+import {
+  DuplicateSlugError,
+  MissingEntryError,
+  PublishedSlugError,
+  updateSlug as moveSlug,
+} from "./entries.ts";
 import { entries, revisions } from "./schema.ts";
 
 /** The `EntryStore` port on Drizzle (design D1). */
@@ -161,19 +167,35 @@ async function listPublished(
   });
 }
 
-// The port reports a refusal by throwing; the repository returns validation
-// errors for a form, so the adapter turns them into that failure.
+// The port returns a refusal instead of throwing, so the use case can answer
+// a form submission without a 500 (design D2).
 async function moveEntrySlug(
   database: Database,
   entryId: string,
   slug: string,
-): Promise<void> {
-  const result = await moveSlug(database, entryId, slug);
-  if (!result.ok) {
+): Promise<SlugChange> {
+  try {
+    const result = await moveSlug(database, entryId, slug);
+    if (result.ok) {
+      return { ok: true };
+    }
     const messages = Object.values(result.errors).filter(
       (message): message is string => message !== undefined,
     );
-    throw new Error(messages.join(" ") || "The slug was refused.");
+    return { ok: false, reason: messages.join(" ") || "The slug was refused." };
+  } catch (error) {
+    // The database is the second guard: a publish that races the use case's
+    // check is refused here (design D2).
+    if (error instanceof PublishedSlugError) {
+      return { ok: false, reason: "Published slugs cannot change." };
+    }
+    if (
+      error instanceof DuplicateSlugError ||
+      error instanceof MissingEntryError
+    ) {
+      return { ok: false, reason: error.message };
+    }
+    throw error;
   }
 }
 

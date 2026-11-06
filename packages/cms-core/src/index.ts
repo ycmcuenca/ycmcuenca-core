@@ -20,6 +20,7 @@ export type {
   ProjectionState,
   PublishedEntry,
   RevisionRecord,
+  SlugChange,
   SnapshotStore,
 } from "./ports.ts";
 export { buildEntrySnapshot, buildIndexSnapshot } from "./projector.ts";

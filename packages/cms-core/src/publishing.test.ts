@@ -5,6 +5,7 @@ import type {
   EntryStore,
   PublishedEntry,
   RevisionRecord,
+  SlugChange,
   SnapshotStore,
 } from "./ports";
 import {
@@ -139,9 +140,22 @@ class MemoryEntryStore implements EntryStore {
     return published;
   }
 
-  async updateSlug(entryId: string, slug: string): Promise<void> {
+  async updateSlug(entryId: string, slug: string): Promise<SlugChange> {
     const entry = this.entry(entryId);
+    for (const other of this.records.values()) {
+      if (
+        other.id !== entryId &&
+        other.type === entry.type &&
+        other.slug === slug
+      ) {
+        return {
+          ok: false,
+          reason: `An article already uses the slug "${slug}".`,
+        };
+      }
+    }
     this.records.set(entryId, { ...entry, slug });
+    return { ok: true };
   }
 
   private nextNumberFor(entryId: string): number {
@@ -606,5 +620,19 @@ describe("changeSlug", () => {
       reason: "Published slugs cannot change.",
     });
     expect(entries.entry(entry.id).slug).toBe("hello-world");
+  });
+
+  it("returns the store's refusal when another entry uses the slug", async () => {
+    const { dependencies, entries } = setup();
+    entries.createEntry("taken");
+    const entry = entries.createEntry("free");
+
+    const result = await changeSlug(dependencies, entry.id, "taken");
+
+    expect(result).toEqual({
+      ok: false,
+      reason: 'An article already uses the slug "taken".',
+    });
+    expect(entries.entry(entry.id).slug).toBe("free");
   });
 });

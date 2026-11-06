@@ -121,8 +121,13 @@ export async function changeSlug(
   if (entry.firstPublishedAt !== null) {
     return refuse("Published slugs cannot change.");
   }
-  await dependencies.entries.updateSlug(entry.id, slug);
-  return { ok: true, live: entry.publishedRevisionId !== null };
+  const changed = await dependencies.entries.updateSlug(entry.id, slug);
+  if (!changed.ok) {
+    return refuse(changed.reason);
+  }
+  // Only a never-published entry reaches this point, so it has no snapshot
+  // and no projection is needed (design D2).
+  return { ok: true, live: false };
 }
 
 // The shared projection (design D2): read the entry again, which is the
