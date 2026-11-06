@@ -136,16 +136,20 @@ marked _(audit)_ came from the stack audit on the same day (see
   Concepts: [append-only revisions](SYSTEM_DESIGN.md#event-sourcing-lite-append-only-revisions) and [upcasters](SYSTEM_DESIGN.md#schema-versioning-with-upcasters).
 - **C4 Neon is the source of truth; KV and R2 are projections.** Anything in KV
   or R2 can be rebuilt from Neon. A failed projection leaves a dirty flag that
-  the cron reconciler retries. _(audit)_ Neon Postgres is kept over Cloudflare
-  D1: real Postgres is the more transferable skill and satellites can reuse
-  it; Neon's weak free backups are covered by I8.
+  the cron reconciler retries. In S2 the owner retries from `admin`, and S4's
+  reconciler automates the same code path (`revisions-publishing` D2).
+  _(audit)_ Neon Postgres is kept over Cloudflare D1: real Postgres is the more
+  transferable skill and satellites can reuse it; Neon's weak free backups are
+  covered by I8.
   Concept: [CQRS-lite read projections](SYSTEM_DESIGN.md#cqrs-lite-read-projections).
 - **C5 Publish-snapshot read path (CQRS-lite).** Publishing writes a snapshot
   to KV; `welcome` reads only KV and has no database binding. This is a
   projection written at publish time, not cache-aside.
   Concept: [CQRS-lite read projections](SYSTEM_DESIGN.md#cqrs-lite-read-projections).
 - **C6 One KV key per entry**, holding all locales, plus per-type index keys,
-  which keeps writes under the free 1,000 per day.
+  which keeps writes under the free 1,000 per day. The index is rebuilt from
+  Neon on every publish, never read and patched in KV, because KV is eventually
+  consistent (`revisions-publishing` D3).
 - **C7 Every service owns its own database.** Portfolio projects are a CMS
   content type, not a separate service.
 - **C8 The snapshot is a versioned contract** _(audit)_. Every snapshot carries

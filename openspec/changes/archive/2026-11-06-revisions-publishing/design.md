@@ -45,7 +45,7 @@ interface EntryStore {
   getRevision(revisionId): Promise<RevisionRecord | undefined>;
   markPublished(entryId, revisionId, at: Date): Promise<void>; // pointer + times + dirty, one UPDATE
   markUnpublished(entryId): Promise<void>; // pointer null + dirty, one UPDATE
-  markProjected(entryId): Promise<void>; // dirty -> clean
+  markProjected(entryId, revisionId): Promise<void>; // dirty -> clean only while the pointer still names revisionId; null after an unpublish
   listPublished(type): Promise<PublishedEntry[]>; // slug, title, summary, firstPublishedAt
 }
 interface SnapshotStore {
@@ -76,7 +76,7 @@ interface Clock {
    1. Read the entry again from the store, which is the source of truth.
    2. If it has a pointer, build the entry snapshot (D3) and `putEntry`. If it has none, `deleteEntry`.
    3. Rebuild the index from `listPublished(type)` and `putIndex(type, "en", …)`.
-   4. `markProjected`.
+   4. `markProjected(entryId, entry.publishedRevisionId)`. The clear is scoped to the revision that was projected, so a publish or rollback that moved the pointer while this projection ran leaves the mark dirty for Retry and W1.
 
    A failure in step 2 or 3 logs one error line (D6), leaves the mark set and returns `{ ok: true, live: false }`. The pointer move succeeded; only the projection is pending.
 

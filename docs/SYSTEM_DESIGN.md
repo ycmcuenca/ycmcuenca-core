@@ -1533,6 +1533,11 @@ flowchart LR
   from `@ycmcuenca/cms-core` and never the other way round, so the content
   model stays free of database code
   ([C1](DECISIONS.md#cms-architecture)).
+- [revisions-publishing D1](../openspec/changes/archive/2026-11-06-revisions-publishing/design.md#d1-ports-in-cms-core):
+  the publishing rules depend only on `EntryStore`, `SnapshotStore` and
+  `Clock`. `@ycmcuenca/db` implements the first on Neon, `admin` implements the
+  second on KV, and `src/publishing.test.ts` runs the same rules against
+  in-memory fakes.
 
 **What we learned here**
 
@@ -1576,7 +1581,7 @@ flowchart LR
 
 ### CQRS-lite read projections
 
-**Status:** planned (S2)
+**Status:** built (S2)
 
 **What it is**
 
@@ -1586,6 +1591,56 @@ shaped for one kind of read, built from the write model, such as a ready-made
 page snapshot. "Lite" means both sides share one database of record, and the
 projection is rebuilt when the source changes, rather than splitting into
 separate systems.
+
+```mermaid
+flowchart LR
+    action["publish, roll back<br/>or unpublish"] --> mark["one UPDATE:<br/>published pointer<br/>+ projection_state = 'dirty'"]
+    mark --> project["project: rebuild<br/>from Neon"]
+    project --> entry[("KV entry snapshot")]
+    project --> index[("KV type index")]
+    project --> clear["mark clean, only while<br/>the pointer still names<br/>the projected revision"]
+    retry["Retry in admin"] --> project
+    project -.->|"fails"| log["one error log line;<br/>mark stays dirty"]
+```
+
+**Trade-offs**
+
+- Neon and KV cannot share a transaction, so the pointer move marks the entry
+  dirty first and the mark clears only after both KV writes. A crash leaves a
+  repairable state rather than a silent disagreement.
+- Rebuilding the index from the database of record on every publish converges
+  even when a KV read would be stale, but the cost grows with the number of
+  published entries; a read-modify-write in KV would be cheaper and wrong.
+- The visible dirty state puts the repair in the owner's hands until S4's
+  reconciler automates it, which means a failure is repaired only when the
+  owner notices it.
+
+**How this repository applies it**
+
+- [revisions-publishing D2](../openspec/changes/archive/2026-11-06-revisions-publishing/design.md#d2-the-publishing-use-cases):
+  `markPublished` and `markUnpublished` set the dirty mark in the same `UPDATE`
+  as the pointer, then `project` writes the entry snapshot and the index and
+  calls `markProjected`.
+- [revisions-publishing D3](../openspec/changes/archive/2026-11-06-revisions-publishing/design.md#d3-snapshot-building-c8-c9):
+  the index is built from `listPublished`, which joins the published revision
+  in Neon, never from the previous index in KV.
+- The mark is scoped to the revision that was projected, so a publish that
+  lands while a slower projection runs leaves the entry dirty for Retry and
+  W1 (commit `4e85433`).
+
+**What we learned here**
+
+> Draft: awaiting the owner's rewrite.
+
+- Separating the pointer move from the projection needs one fact in the
+  database to say "not projected yet", and it must be written with the pointer.
+  A mark written after a failed KV call can be lost by the same crash that
+  causes the failure.
+- Clearing the mark by entry alone let an old projection wipe a newer one's
+  dirty state; naming the projected revision in the guard turned that race
+  into a test case.
+- The manual retry and the future reconciler are the same function, so S4 has
+  no new write path to design, only a scheduler to call it.
 
 **Check yourself**
 
@@ -1667,6 +1722,11 @@ flowchart LR
   the runtime role may `SELECT` and `INSERT` revisions and may not `UPDATE`,
   `DELETE` or `TRUNCATE` them, so append-only holds even against a bug in the
   app ([I6](DECISIONS.md#integrations-and-longevity)).
+- [revisions-publishing D2](../openspec/changes/archive/2026-11-06-revisions-publishing/design.md#d2-the-publishing-use-cases):
+  publishing moves `entries.published_revision_id` to an existing revision and
+  leaves every revision in place, so rolling back points the same column at an
+  older revision and unpublishing clears it. The projection copy in KV is
+  derived from that pointer, never the history itself.
 
 **What we learned here**
 
