@@ -22,8 +22,8 @@ Check: `bunx turbo run check lint test test:integration --filter=@ycmcuenca/cms-
 Depends: 1
 Check: `bunx turbo run check lint test --filter=admin`
 
-- [ ] 3.1 Implement `apps/admin/src/lib/server/entry-form.ts` (`FormData` to cms-core input, entry to form values, `DuplicateSlugError` to a slug field error with the store's message) per design D2 and D3. Verify `entry-form.test.ts` covers the one-block body, the ignored slug when locked, and the taken-slug message
-- [ ] 3.2 Implement `apps/admin/src/lib/components/EntryForm.svelte` per design D2. Verify a component test with `svelte/server`'s `render` shows the four labeled controls in order, `maxlength` on title, slug and summary, `aria-invalid` plus `aria-describedby` on a field with an error, and a read-only slug with the note when locked
+- [x] 3.1 Implement `apps/admin/src/lib/server/entry-form.ts` (`FormData` to cms-core input, entry to form values, `DuplicateSlugError` to a slug field error with the store's message) per design D2 and D3. Verify `entry-form.test.ts` covers the one-block body, the ignored slug when locked, and the taken-slug message
+- [x] 3.2 Implement `apps/admin/src/lib/components/EntryForm.svelte` per design D2. Verify a component test with `svelte/server`'s `render` shows the four labeled controls in order, `maxlength` on title, slug and summary, `aria-invalid` plus `aria-describedby` on a field with an error, and a read-only slug with the note when locked
 
 ## 4. Routes and actions
 
