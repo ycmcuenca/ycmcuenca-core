@@ -2,10 +2,10 @@
 
 ## 1. Ports, projector and use cases in cms-core
 
-- [ ] 1.1 Add `packages/cms-core/src/ports.ts` (`EntryStore`, `SnapshotStore`, `Clock`, and the `EntryRecord`, `RevisionRecord` and `PublishedEntry` types) per design D1, exported from `src/index.ts`. Verify `bunx turbo run check --filter=@ycmcuenca/cms-core` passes
-- [ ] 1.2 Implement `buildEntrySnapshot` and `buildIndexSnapshot` in `src/projector.ts` per design D3 (validate the output with the snapshot schemas; sort by first publish descending, then slug). Verify `src/projector.test.ts` shows rendered HTML in the blocks, ISO UTC times, stable ordering for equal times, and that an invalid built snapshot throws
-- [ ] 1.3 Add `src/snapshot-keys.ts` (`entryKey(type, slug)` returns `entry:<type>:<slug>`; `indexKey(type, locale)` returns `index:<type>:<locale>`), exported from `src/index.ts`. Verify a unit test pins both formats
-- [ ] 1.4 Implement `publishRevision`, `rollBack`, `unpublish`, `retryProjection` and `changeSlug` in `src/publishing.ts` per design D2 and D6, with in-memory fakes of the three ports in `src/publishing.test.ts`. Verify the tests cover every scenario of `specs/publishing/spec.md` that does not need a database (including a failing `putEntry` leaving the entry dirty with one `projection failed` log line that contains no content, retry clearing the mark, idempotent double retry, retry after a failed unpublish, and the first-publish time kept across unpublish and republish)
+- [x] 1.1 Add `packages/cms-core/src/ports.ts` (`EntryStore`, `SnapshotStore`, `Clock`, and the `EntryRecord`, `RevisionRecord` and `PublishedEntry` types) per design D1, exported from `src/index.ts`. Verify `bunx turbo run check --filter=@ycmcuenca/cms-core` passes
+- [x] 1.2 Implement `buildEntrySnapshot` and `buildIndexSnapshot` in `src/projector.ts` per design D3 (validate the output with the snapshot schemas; sort by first publish descending, then slug). Verify `src/projector.test.ts` shows rendered HTML in the blocks, ISO UTC times, stable ordering for equal times, and that an invalid built snapshot throws
+- [x] 1.3 Add `src/snapshot-keys.ts` (`entryKey(type, slug)` returns `entry:<type>:<slug>`; `indexKey(type, locale)` returns `index:<type>:<locale>`), exported from `src/index.ts`. Verify a unit test pins both formats
+- [x] 1.4 Implement `publishRevision`, `rollBack`, `unpublish`, `retryProjection` and `changeSlug` in `src/publishing.ts` per design D2 and D6, with in-memory fakes of the three ports in `src/publishing.test.ts`. Verify the tests cover every scenario of `specs/publishing/spec.md` that does not need a database (including a failing `putEntry` leaving the entry dirty with one `projection failed` log line that contains no content, retry clearing the mark, idempotent double retry, retry after a failed unpublish, and the first-publish time kept across unpublish and republish)
 
 ## 2. Database adapter and migration
 
