@@ -3,11 +3,19 @@
 // current published state into the snapshot store. A projection failure
 // leaves the mark set, logs one line without the entry's content (D6), and
 // still reports that the pointer moved.
-import type { Clock, EntryRecord, EntryStore, SnapshotStore } from "./ports.ts";
+import type {
+  CachePurger,
+  Clock,
+  EntryRecord,
+  EntryStore,
+  SnapshotStore,
+} from "./ports.ts";
+import { entryTag, indexTag } from "./cache-tags.ts";
 import { buildEntrySnapshot, buildIndexSnapshot } from "./projector.ts";
 
 /** The part of the request logger the use cases use (design D6). */
 export interface ProjectionLogger {
+  warn(message: string, fields?: Record<string, unknown>): void;
   error(message: string, fields?: Record<string, unknown>): void;
 }
 
@@ -17,6 +25,7 @@ export interface PublishingDependencies {
   readonly snapshots: SnapshotStore;
   readonly clock: Clock;
   readonly log: ProjectionLogger;
+  readonly purger: CachePurger;
 }
 
 /**
@@ -158,7 +167,38 @@ async function project(
     return { ok: true, live: false };
   }
   await dependencies.entries.markProjected(entry.id, entry.publishedRevisionId);
+  await purgeCache(dependencies, entry);
   return { ok: true, live: true };
+}
+
+// The edge cache purges only after the snapshot store and the mark are written
+// (design D4): a purge before the KV write would let a request refill the cache
+// with the old snapshot. A failed purge only warns, because the publish itself
+// already succeeded (spec, "A failed purge does not fail the publish").
+async function purgeCache(
+  dependencies: PublishingDependencies,
+  entry: { readonly type: string; readonly slug: string },
+): Promise<void> {
+  // The index's only locale today is English, which `writeIndex` writes.
+  const tags = [entryTag(entry.type, entry.slug), indexTag(entry.type, "en")];
+  try {
+    const outcome = await dependencies.purger.purge(tags);
+    if (!outcome.purged) {
+      logPurgeFailure(dependencies, tags, outcome.reason);
+    }
+  } catch (error) {
+    logPurgeFailure(dependencies, tags, messageOf(error));
+  }
+}
+
+// One warning line per failed purge, naming the tags and the reason; the
+// request logger adds the request id (design D4; observability delta).
+function logPurgeFailure(
+  dependencies: PublishingDependencies,
+  tags: readonly string[],
+  reason: string,
+): void {
+  dependencies.log.warn("cache purge failed", { tags, reason });
 }
 
 // The entry half of the projection. A false result means the step failed and
@@ -225,8 +265,14 @@ function logProjectionFailure(
   dependencies.log.error("projection failed", {
     entryId,
     step,
-    error: error instanceof Error ? error.message : String(error),
+    error: messageOf(error),
   });
+}
+
+// A thrown value's message, whatever was thrown (design D4, D6); an error is
+// never logged as an object, so no stack or payload slips into the line.
+function messageOf(error: unknown): string {
+  return error instanceof Error ? error.message : String(error);
 }
 
 function missingEntry(entryId: string): string {

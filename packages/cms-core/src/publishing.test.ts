@@ -1,9 +1,11 @@
 import { describe, expect, it } from "vitest";
 import type {
+  CachePurger,
   Clock,
   EntryRecord,
   EntryStore,
   PublishedEntry,
+  PurgeOutcome,
   RevisionRecord,
   SlugChange,
   SnapshotStore,
@@ -271,7 +273,7 @@ class FixedClock implements Clock {
 }
 
 interface LogLine {
-  readonly level: "error";
+  readonly level: "warn" | "error";
   readonly message: string;
   readonly fields: Record<string, unknown> | undefined;
 }
@@ -279,8 +281,35 @@ interface LogLine {
 class MemoryLogger implements ProjectionLogger {
   readonly lines: LogLine[] = [];
 
+  warn(message: string, fields?: Record<string, unknown>): void {
+    this.lines.push({ level: "warn", message, fields });
+  }
+
   error(message: string, fields?: Record<string, unknown>): void {
     this.lines.push({ level: "error", message, fields });
+  }
+}
+
+// Records every purge in order, and can refuse or throw on demand, so a test
+// can see both the tags named and the failure the use case has to survive.
+class MemoryPurger implements CachePurger {
+  readonly purges: string[][] = [];
+  failWith: string | null = null;
+  throwError: Error | null = null;
+
+  async purge(tags: string[]): Promise<PurgeOutcome> {
+    this.purges.push(tags);
+    if (this.throwError !== null) {
+      throw this.throwError;
+    }
+    if (this.failWith !== null) {
+      return { purged: false, reason: this.failWith };
+    }
+    return { purged: true };
+  }
+
+  clear(): void {
+    this.purges.splice(0);
   }
 }
 
@@ -290,6 +319,7 @@ interface Fixture {
   readonly snapshots: MemorySnapshotStore;
   readonly clock: FixedClock;
   readonly log: MemoryLogger;
+  readonly purger: MemoryPurger;
 }
 
 function setup(): Fixture {
@@ -297,12 +327,14 @@ function setup(): Fixture {
   const snapshots = new MemorySnapshotStore();
   const clock = new FixedClock(new Date("2026-11-01T09:00:00.000Z"));
   const log = new MemoryLogger();
+  const purger = new MemoryPurger();
   return {
-    dependencies: { entries, snapshots, clock, log },
+    dependencies: { entries, snapshots, clock, log, purger },
     entries,
     snapshots,
     clock,
     log,
+    purger,
   };
 }
 
@@ -710,5 +742,104 @@ describe("changeSlug", () => {
       reason: 'An article already uses the slug "taken".',
     });
     expect(entries.entry(entry.id).slug).toBe("free");
+  });
+});
+
+describe("the cache purge", () => {
+  const tags = ["entry:article:hello-world", "index:article:en"];
+
+  it("purges the entry tag and the index tag after a publish", async () => {
+    const { dependencies, entries, purger } = setup();
+    const entry = entries.createEntry("hello-world");
+    const revision = entries.createRevision(entry.id, content("Hello world"));
+
+    await publishRevision(dependencies, entry.id, revision.id);
+
+    expect(purger.purges).toEqual([tags]);
+  });
+
+  it("purges after a rollback", async () => {
+    const { dependencies, entries, purger } = setup();
+    const entry = entries.createEntry("hello-world");
+    const first = entries.createRevision(entry.id, content("First"));
+    const second = entries.createRevision(entry.id, content("Second"));
+    await publishRevision(dependencies, entry.id, second.id);
+    purger.clear();
+
+    await rollBack(dependencies, entry.id, first.id);
+
+    expect(purger.purges).toEqual([tags]);
+  });
+
+  it("purges after an unpublish", async () => {
+    const { dependencies, entries, purger } = setup();
+    const entry = entries.createEntry("hello-world");
+    const revision = entries.createRevision(entry.id, content("Hello world"));
+    await publishRevision(dependencies, entry.id, revision.id);
+    purger.clear();
+
+    await unpublish(dependencies, entry.id);
+
+    expect(purger.purges).toEqual([tags]);
+  });
+
+  it("purges after a retry", async () => {
+    const { dependencies, entries, purger } = setup();
+    const entry = entries.createEntry("hello-world");
+    const revision = entries.createRevision(entry.id, content("Hello world"));
+    await publishRevision(dependencies, entry.id, revision.id);
+    purger.clear();
+
+    await retryProjection(dependencies, entry.id);
+
+    expect(purger.purges).toEqual([tags]);
+  });
+
+  it("does not purge when the projection fails", async () => {
+    const { dependencies, entries, snapshots, purger } = setup();
+    const entry = entries.createEntry("hello-world");
+    const revision = entries.createRevision(entry.id, content("Hello world"));
+    snapshots.failPutEntry = true;
+
+    const result = await publishRevision(dependencies, entry.id, revision.id);
+
+    expect(result).toEqual({ ok: true, live: false });
+    expect(purger.purges).toEqual([]);
+  });
+
+  it("warns with the tags when the purge is refused, and still reports live", async () => {
+    const { dependencies, entries, log, purger } = setup();
+    const entry = entries.createEntry("hello-world");
+    const revision = entries.createRevision(entry.id, content("Hello world"));
+    purger.failWith = "cache unavailable";
+
+    const result = await publishRevision(dependencies, entry.id, revision.id);
+
+    expect(result).toEqual({ ok: true, live: true });
+    expect(log.lines).toEqual([
+      {
+        level: "warn",
+        message: "cache purge failed",
+        fields: { tags, reason: "cache unavailable" },
+      },
+    ]);
+  });
+
+  it("warns with the tags when the purger throws, and still reports live", async () => {
+    const { dependencies, entries, log, purger } = setup();
+    const entry = entries.createEntry("hello-world");
+    const revision = entries.createRevision(entry.id, content("Hello world"));
+    purger.throwError = new Error("The binding is unavailable.");
+
+    const result = await publishRevision(dependencies, entry.id, revision.id);
+
+    expect(result).toEqual({ ok: true, live: true });
+    expect(log.lines).toEqual([
+      {
+        level: "warn",
+        message: "cache purge failed",
+        fields: { tags, reason: "The binding is unavailable." },
+      },
+    ]);
   });
 });
