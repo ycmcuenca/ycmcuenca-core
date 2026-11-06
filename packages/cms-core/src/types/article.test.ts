@@ -114,6 +114,10 @@ describe("validateArticle", () => {
     });
   });
 
+  it("reports a body of only spaces on the body", () => {
+    expect(errorsFor(withSource("   "))).toEqual({ body: "Enter the body." });
+  });
+
   it("reports an unknown block type on that block", () => {
     expect(errorsFor({ ...validInput, body: [{ type: "image" }] })).toEqual({
       "body.0.type": "Only markdown blocks are supported.",
