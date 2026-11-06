@@ -90,7 +90,7 @@ describe("entries", () => {
     expect(await asRuntimeRole((db) => countEntries(db))).toBe(2);
   });
 
-  it("moves a slug, and refuses a duplicate or an unknown entry", async () => {
+  it("moves a slug, and refuses a duplicate, an invalid slug or an unknown entry", async () => {
     const { entry } = creation(
       await asRuntimeRole((db) => createEntry(db, articleInput())),
     );
@@ -103,7 +103,24 @@ describe("entries", () => {
     const updated = await asRuntimeRole((db) =>
       updateSlug(db, entry.id, "moved"),
     );
-    expect(updated.slug).toBe("moved");
+    expect(updated.ok).toBe(true);
+    if (!updated.ok) {
+      return;
+    }
+    expect(updated.entry.slug).toBe("moved");
+    expect(
+      await asRuntimeRole((db) => findEntry(db, "article", "moved")),
+    ).toBeDefined();
+
+    const refused = await asRuntimeRole((db) =>
+      updateSlug(db, entry.id, "Not A Slug"),
+    );
+    expect(refused.ok).toBe(false);
+    if (refused.ok) {
+      return;
+    }
+    expect(refused.errors["slug"]).toBeDefined();
+    // The address did not move.
     expect(
       await asRuntimeRole((db) => findEntry(db, "article", "moved")),
     ).toBeDefined();
@@ -155,6 +172,18 @@ describe("revisions", () => {
     expect(
       await asRuntimeRole((db) => getRevision(db, entry.id, 2)),
     ).toBeUndefined();
+  });
+
+  it("refuses a revision for an entry that is not stored", async () => {
+    await expect(
+      asRuntimeRole((db) =>
+        appendRevision(
+          db,
+          "00000000-0000-0000-0000-000000000000",
+          articleInput(),
+        ),
+      ),
+    ).rejects.toBeInstanceOf(MissingEntryError);
   });
 
   it("returns validation errors and appends nothing for invalid content", async () => {

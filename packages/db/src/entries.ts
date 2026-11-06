@@ -9,7 +9,7 @@ import {
   validateArticle,
 } from "@ycmcuenca/cms-core";
 import type { ArticleErrors, StoredContent } from "@ycmcuenca/cms-core";
-import { article } from "@ycmcuenca/cms-core";
+import { article, articleSchema } from "@ycmcuenca/cms-core";
 import { and, asc, count, eq, sql } from "drizzle-orm";
 import type { Database } from "./client.ts";
 import { entries, revisions } from "./schema.ts";
@@ -142,6 +142,7 @@ export async function createEntry(
  * Appends a revision numbered one higher than the entry's latest (design D2).
  * The number is computed and inserted in one transaction; the unique
  * constraint turns a concurrent duplicate into an error, never an overwrite.
+ * Throws `MissingEntryError` when no entry has that id.
  */
 export async function appendRevision(
   database: Database,
@@ -180,6 +181,9 @@ export async function appendRevision(
   } catch (error) {
     if (isUniqueViolation(error, "revisions_entry_number_unique")) {
       throw new ConcurrentRevisionError(entryId);
+    }
+    if (isMissingEntryViolation(error)) {
+      throw new MissingEntryError(entryId);
     }
     throw error;
   }
@@ -241,13 +245,22 @@ export async function getRevision(
 
 /**
  * Moves an entry's slug (design D2: the slug lives on the entry so it can be
- * unique per type). Throws `MissingEntryError` when no entry has that id.
+ * unique per type). An invalid slug is returned as the same failure a write
+ * returns, because the slug becomes the entry's public address; a taken slug
+ * throws `DuplicateSlugError`, and an unknown id throws `MissingEntryError`.
  */
 export async function updateSlug(
   database: Database,
   entryId: string,
   slug: string,
-): Promise<Entry> {
+): Promise<{ readonly ok: true; readonly entry: Entry } | StoreFailure> {
+  // Entries are articles (the only type in Sprint 2), so the article's slug
+  // field is the rule their address must meet. The same rule runs in
+  // `createEntry`, so the two cannot disagree.
+  const checked = articleSchema.shape.slug.safeParse(slug);
+  if (!checked.success) {
+    return { ok: false, errors: slugErrors(checked.error) };
+  }
   try {
     const rows = await database
       .update(entries)
@@ -258,7 +271,7 @@ export async function updateSlug(
     if (!row) {
       throw new MissingEntryError(entryId);
     }
-    return toEntry(row);
+    return { ok: true, entry: toEntry(row) };
   } catch (error) {
     if (isUniqueViolation(error, "entries_type_slug_unique")) {
       throw new DuplicateSlugError(slug);
@@ -301,9 +314,29 @@ function only<T>(rows: readonly T[]): T {
 }
 
 // A Postgres unique-violation (SQLSTATE 23505) on the named constraint.
-// Drizzle wraps the driver's error, so the walk follows `cause` to the pg
-// error that carries the code and constraint.
 function isUniqueViolation(error: unknown, constraint: string): boolean {
+  return isPostgresViolation(error, "23505", constraint);
+}
+
+// A Postgres foreign-key violation (SQLSTATE 23503) on the revision's entry
+// reference: the entry id names no row. It is how `appendRevision` learns of
+// an unknown entry, since the insert is the first statement that checks it.
+function isMissingEntryViolation(error: unknown): boolean {
+  return isPostgresViolation(
+    error,
+    "23503",
+    "revisions_entry_id_entries_id_fk",
+  );
+}
+
+// A Postgres error with the given SQLSTATE and constraint. Drizzle wraps the
+// driver's error, so the walk follows `cause` to the pg error that carries the
+// code and constraint.
+function isPostgresViolation(
+  error: unknown,
+  code: string,
+  constraint: string,
+): boolean {
   let current: unknown = error;
   for (
     let depth = 0;
@@ -315,10 +348,22 @@ function isUniqueViolation(error: unknown, constraint: string): boolean {
       constraint?: unknown;
       cause?: unknown;
     };
-    if (candidate.code === "23505" && candidate.constraint === constraint) {
+    if (candidate.code === code && candidate.constraint === constraint) {
       return true;
     }
     current = candidate.cause;
   }
   return false;
+}
+
+// The refusal a form shows for an invalid slug: the first message the content
+// model gave, keyed by the field name the form looks up (design D3).
+function slugErrors(error: {
+  readonly issues: readonly { readonly message: string }[];
+}): ArticleErrors {
+  const errors: ArticleErrors = {};
+  for (const issue of error.issues) {
+    errors["slug"] ??= issue.message;
+  }
+  return errors;
 }
