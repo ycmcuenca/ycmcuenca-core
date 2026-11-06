@@ -35,7 +35,7 @@
 
   The first production publish happens in `admin-editor`, where content can be written (revisions-publishing assumption A2)
 
-- [ ] 5.3 Run the local CI equivalent from `AGENTS.md` plus `bun run test:integration`. Verify all pass, `bunx openspec validate public-rendering --strict` passes, and `ci-ok` is green on the pull request
+- [x] 5.3 Run the local CI equivalent from `AGENTS.md` plus `bun run test:integration`. Verify all pass, `bunx openspec validate public-rendering --strict` passes, and `ci-ok` is green on the pull request
 
 ## Workflow follow-up
 
