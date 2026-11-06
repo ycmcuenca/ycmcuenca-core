@@ -23,6 +23,17 @@ function control(html: string, name: string): string {
   return match[0];
 }
 
+// The one label element the form renders for a field's name.
+function labelFor(html: string, name: string): string {
+  const match = html.match(
+    new RegExp(`<label[^>]*\\bfor="${name}"[^>]*>[\\s\\S]*?</label>`),
+  );
+  if (match === null) {
+    throw new Error(`The form has no label named ${name}.`);
+  }
+  return match[0];
+}
+
 function renderForm(
   errors: Record<string, string> = {},
   slugLocked = false,
@@ -30,16 +41,9 @@ function renderForm(
   const { body } = render(EntryForm, {
     props: { description, values, errors, slugLocked },
   });
-  // Svelte marks its hydration boundaries with empty comments, which split a
-  // label's text from its tags in a naive search.
-  return body.replace(/<!--[\s\S]*?-->/g, "");
-}
-
-// The visible text of each label, in the order the form renders them.
-function labelTexts(html: string): string[] {
-  return [...html.matchAll(/<label[^>]*>([\s\S]*?)<\/label>/g)].map((match) =>
-    (match[1] ?? "").replace(/<[^>]*>/g, ""),
-  );
+  // The helpers read the markup as rendered, comments included, so a test never
+  // has to strip tags or comments from it.
+  return body;
 }
 
 describe("EntryForm", () => {
@@ -54,9 +58,15 @@ describe("EntryForm", () => {
   it("marks each required field with a hidden asterisk, in the type's order", () => {
     const body = renderForm();
 
-    expect(labelTexts(body)).toEqual(["Title*", "Slug*", "Summary*", "Body*"]);
-    for (const { name } of description) {
-      expect(control(body, name)).toContain("required");
+    for (const field of description) {
+      const label = labelFor(body, field.name);
+      expect(label).toContain(field.label);
+      if (field.required) {
+        expect(label).toContain('<span aria-hidden="true">*</span>');
+      } else {
+        expect(label).not.toContain('<span aria-hidden="true">*</span>');
+      }
+      expect(control(body, field.name)).toContain("required");
     }
     expect(body.match(/<span aria-hidden="true">\*<\/span>/g)).toHaveLength(
       description.filter((field) => field.required).length,
