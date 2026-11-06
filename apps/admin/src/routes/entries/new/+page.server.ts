@@ -1,19 +1,10 @@
 // The create page (design D3): one action stores the article and opens its
 // entry page, the other renders the unsaved body without writing anything.
-import {
-  article,
-  formDescription,
-  renderBody,
-  validateArticle,
-} from "@ycmcuenca/cms-core";
+import { article, formDescription, renderBody } from "@ycmcuenca/cms-core";
 import { createEntry, DuplicateSlugError } from "@ycmcuenca/db";
 import { fail, redirect } from "@sveltejs/kit";
 import { withDatabase } from "#lib/server/database.js";
-import {
-  articleInputFrom,
-  formValuesFromInput,
-  takenSlugErrors,
-} from "#lib/server/entry-form.js";
+import { readArticleForm, takenSlugErrors } from "#lib/server/entry-form.js";
 import type { EntryFormValues } from "#lib/server/entry-form.js";
 import type { Actions, PageServerLoad } from "./$types";
 
@@ -36,35 +27,34 @@ export const load: PageServerLoad = () => ({
 export const actions = {
   create: async ({ request }) => {
     const form = await request.formData();
-    const input = articleInputFrom(form, newEntrySlug);
-    const values = formValuesFromInput(input);
-    const validated = validateArticle(input);
-    if (!validated.ok) {
-      return fail(400, { errors: validated.errors, values });
+    const read = readArticleForm(form, newEntrySlug);
+    if (!read.ok) {
+      return fail(400, { errors: read.errors, values: read.values });
     }
     try {
       const created = await withDatabase((database) =>
-        createEntry(database, input),
+        createEntry(database, read.input),
       );
       if (!created.ok) {
-        return fail(400, { errors: created.errors, values });
+        return fail(400, { errors: created.errors, values: read.values });
       }
       redirect(303, `/entries/${created.entry.id}`);
     } catch (error) {
       if (error instanceof DuplicateSlugError) {
-        return fail(400, { errors: takenSlugErrors(error), values });
+        return fail(400, {
+          errors: takenSlugErrors(error),
+          values: read.values,
+        });
       }
       throw error;
     }
   },
   preview: async ({ request }) => {
     const form = await request.formData();
-    const input = articleInputFrom(form, newEntrySlug);
-    const values = formValuesFromInput(input);
-    const validated = validateArticle(input);
-    if (!validated.ok) {
-      return fail(400, { errors: validated.errors, values });
+    const read = readArticleForm(form, newEntrySlug);
+    if (!read.ok) {
+      return fail(400, { errors: read.errors, values: read.values });
     }
-    return { values, preview: renderBody(validated.content.body) };
+    return { values: read.values, preview: renderBody(read.content.body) };
   },
 } satisfies Actions;
