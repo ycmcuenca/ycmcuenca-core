@@ -1492,7 +1492,7 @@ sprint, each entry is completed when its change is archived.
 
 ### Hexagonal architecture (ports and adapters)
 
-**Status:** planned (S2)
+**Status:** built (S2)
 
 **What it is**
 
@@ -1502,6 +1502,49 @@ interfaces that say what it needs, such as "save a revision". Adapters
 implement those ports for a real technology, such as Postgres. The core can
 then be tested with fake adapters, and a technology can be replaced without
 touching it.
+
+```mermaid
+flowchart LR
+    form["admin form action<br/>(outer ring)"] --> port["cms-core: validation<br/>and stored-content contract"]
+    form --> adapter["@ycmcuenca/db<br/>store functions"]
+    adapter --> drizzle["Drizzle query builder"]
+    drizzle --> pg["pg client"]
+    pg --> neon[("Neon Postgres")]
+    port -.->|"types only"| adapter
+```
+
+**Trade-offs**
+
+- The core stays testable and portable, but each new database operation needs a
+  function in the adapter rather than a query written where it is used.
+- Types cross the boundary, so the adapter imports the core, never the reverse;
+  a type the adapter needs must be published by the core.
+- A technology swap is cheap in the core and expensive in the adapter, which is
+  where all of the real work lives.
+
+**How this repository applies it**
+
+- [content-store D1](../openspec/changes/archive/2026-11-06-content-store/design.md#d1-drizzle-0454-with-the-core-query-builder-only-q5):
+  Drizzle is used only in `@ycmcuenca/db`, which holds the schema, the store
+  functions and the migrations. `apps/admin` declares the same versions so its
+  server build can resolve the modules Vite externalises, and no other package
+  uses them.
+- `@ycmcuenca/db` imports the `article` type and the stored-content contract
+  from `@ycmcuenca/cms-core` and never the other way round, so the content
+  model stays free of database code
+  ([C1](DECISIONS.md#cms-architecture)).
+
+**What we learned here**
+
+> Draft: awaiting the owner's rewrite.
+
+- Keeping a database library inside one package is easy; keeping it out of the
+  app's bundler is not. SvelteKit's server build inlined `pg`'s CommonJS and
+  emitted `createRequire(import.meta.url)`, which is undefined in workerd, so
+  the app also had to declare the pins and externalise them.
+- The boundary paid for itself in tests: the store's integration tests run
+  against a real Postgres container without the app, and the app's smoke test
+  needs only a migrated database.
 
 **Check yourself**
 
@@ -1585,7 +1628,7 @@ separate systems.
 
 ### Event-sourcing-lite append-only revisions
 
-**Status:** planned (S2)
+**Status:** built (S2)
 
 **What it is**
 
@@ -1594,6 +1637,48 @@ ones. The current state is derived from that history. "Lite" here means
 storing whole revisions, complete copies of an entry at each save, rather than
 small events. Nothing is lost, any old version can be shown or restored, and
 publishing becomes moving a pointer to one revision.
+
+```mermaid
+flowchart LR
+    save["save content"] --> next["appendRevision:<br/>number = max + 1"]
+    next --> rev[("revisions<br/>1, 2, 3 … per entry")]
+    rev --> read["latest revision<br/>(one indexed query)"]
+    app["cms_runtime role"] -->|"SELECT, INSERT"| rev
+    app -.->|"UPDATE, DELETE refused"| rev
+    migrator["migrator role"] -->|"owns the table"| rev
+```
+
+**Trade-offs**
+
+- Storage grows with every save, and the newest state needs a query rather than
+  a column read.
+- Append-only is easy to declare and hard to rely on unless the database
+  enforces it; a check that compares privileges with the expected set costs a
+  script and one deploy step.
+- Numbering inside a transaction keeps values dense, but two writers would
+  still race; the unique constraint turns that race into an error.
+
+**How this repository applies it**
+
+- [content-store D2](../openspec/changes/archive/2026-11-06-content-store/design.md#d2-schema):
+  `entries` plus `revisions`, where `number` is `coalesce(max(number), 0) + 1`
+  for the entry inside a transaction and `(entry_id, number)` is unique.
+- [content-store D3](../openspec/changes/archive/2026-11-06-content-store/design.md#d3-roles-and-privileges-i6):
+  the runtime role may `SELECT` and `INSERT` revisions and may not `UPDATE`,
+  `DELETE` or `TRUNCATE` them, so append-only holds even against a bug in the
+  app ([I6](DECISIONS.md#integrations-and-longevity)).
+
+**What we learned here**
+
+> Draft: awaiting the owner's rewrite.
+
+- Enforcing append-only with grants, not a trigger, also gives the privilege
+  check something exact to compare, and the check names any extra right.
+- A foreign-key violation and a duplicate slug both arrive as Postgres error
+  codes; mapping them to named errors needs the constraint's name, not just
+  the code.
+- Reading the latest revision is one query, which made a `current_content`
+  column unnecessary.
 
 **Check yourself**
 
@@ -1743,7 +1828,7 @@ a matching tag, without knowing their addresses.
 
 ### Branch-per-PR database testing
 
-**Status:** planned (S2)
+**Status:** built (S2)
 
 **What it is**
 
@@ -1752,6 +1837,48 @@ leftovers and lets runs disturb each other. Some databases can create a
 branch: a fast, copy-on-write clone that shares unchanged data with its
 parent. Creating one branch per pull request gives each run its own fresh
 database, which is migrated, tested against and then deleted.
+
+```mermaid
+flowchart LR
+    pr["pull request"] --> job["database job<br/>contents: read"]
+    job --> key{"CI project key<br/>present?"}
+    key -->|"no: fork"| fail["fail with the message<br/>forks are not accepted"]
+    key -->|"yes"| create["create branch<br/>ci-&lt;run&gt;-&lt;attempt&gt;"]
+    create --> migrate["migrate and check<br/>privileges"]
+    migrate --> test["integration tests"]
+    test --> delete["delete branch<br/>(always)"]
+```
+
+**Trade-offs**
+
+- Each run gets clean, isolated data, but needs an API key, so forks cannot run
+  the job at all.
+- A separate CI project limits what a leaked key can destroy, and costs one
+  more project to keep under the free plan.
+- The delete step can fail; an expiry on the branch is the safety net, and
+  old branches need occasional cleanup.
+
+**How this repository applies it**
+
+- [content-store D7](../openspec/changes/archive/2026-11-06-content-store/design.md#d7-ci-a-throwaway-branch-in-a-separate-neon-ci-project-q1-amended):
+  the `database` job creates a branch in a project used only by CI, runs
+  `migrate.ts` (which ends with the privilege check) and the integration
+  tests, and deletes the branch with `if: always()`.
+- Pull requests from forks fail with "Pull requests from forks are not
+  accepted; see README" instead of skipping the job, because a skipped check
+  could merge an untested migration
+  ([Q1](DECISIONS.md#quality), amended).
+
+**What we learned here**
+
+> Draft: awaiting the owner's rewrite.
+
+- A project-scoped Neon key can still create and delete everything inside its
+  project, so the project itself must hold nothing worth keeping.
+- `neondatabase/create-branch-action` v6 without a `role` input uses the
+  project's owner role, which is exactly what a migrator needs.
+- The job's cleanup has to be a separate step under `if: always()`, or a failed
+  migration leaves the branch behind.
 
 **Check yourself**
 
@@ -1785,7 +1912,7 @@ database, which is migrated, tested against and then deleted.
 
 ### Expand and contract migrations
 
-**Status:** planned (S2)
+**Status:** built (S2)
 
 **What it is**
 
@@ -1797,6 +1924,49 @@ expand: add the new column beside the old one, and write to both, so both
 versions work. Then, only after no released version reads the old shape,
 contract: remove the old column. Each step is backward-compatible, so any
 deploy can be rolled back without touching the data.
+
+```mermaid
+flowchart LR
+    tag["released tag's<br/>migrations"] --> apply["migrate.ts:<br/>apply pending only"]
+    apply --> check["privilege check"]
+    check --> upload["wrangler deploy"]
+    old["previous admin<br/>still old schema"] -.->|"keeps working"| apply
+    rollback["rollback deploy of an<br/>older tag"] --> apply
+```
+
+**Trade-offs**
+
+- Every shape change takes two releases and a temporary duplicate column,
+  which is slower than a rename and leaves unused columns for a while.
+- A rollback can always be a deploy, at the cost of writing code that reads and
+  writes both shapes in the middle release.
+- Numbered migrations that record themselves make "what has been applied" a
+  fact, not a guess, but the order is fixed by a journal that two branches can
+  disagree about.
+
+**How this repository applies it**
+
+- [content-store D4](../openspec/changes/archive/2026-11-06-content-store/design.md#d4-migrations-generated-forward-only-expand-then-contract):
+  migrations are generated, numbered and forward-only; the rules live in
+  `packages/db/README.md` and forbid editing or deleting a merged migration.
+- [content-store D9](../openspec/changes/archive/2026-11-06-content-store/design.md#d9-the-deploy-applies-migrations-before-uploading-admin):
+  the deploy applies the released tag's migrations before the upload, so a
+  rollback deploy applies an older, already-applied set
+  ([C12](DECISIONS.md#cms-architecture)).
+
+**What we learned here**
+
+> Draft: awaiting the owner's rewrite.
+
+- A migration that is generated is not automatically ordered: rebase-merging
+  keeps each journal stamp, and Drizzle skips a migration whose stamp is older
+  than the last applied one, in silence. The rule is to regenerate after
+  rebasing over a newer migration.
+- A fresh database in CI cannot catch that skip, because it applies every
+  migration in journal order. Only a database that already has a later
+  migration can show it.
+- A rollback can be proven without production: run the older migrator against
+  a local database and check that it exits 0 and leaves the journal unchanged.
 
 **Check yourself**
 
