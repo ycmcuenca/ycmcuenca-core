@@ -53,8 +53,8 @@ Check: `scripts/docs/check-living-docs.sh`
 
 Check: `bunx turbo run check lint test --filter=@ycmcuenca/cms-core --filter=admin`
 
-- [ ] 7.1 Show a visible required marker on each required field's label in `apps/admin/src/lib/components/EntryForm.svelte`: an `aria-hidden` asterisk, with the control's `required` attribute left as the accessible marker (design D2). Verify `EntryForm.test.ts` shows one marker per required field, in order
-- [ ] 7.2 Refuse a whitespace-only body in `packages/cms-core/src/types/article.ts` with a body-level check next to the byte limit and the message "Enter the body." (design D2), so it lands on the `body` field in `admin` and publish refuses it too. Verify one `article.test.ts` case (spaces only → `{ body: "Enter the body." }`)
+- [x] 7.1 Show a visible required marker on each required field's label in `apps/admin/src/lib/components/EntryForm.svelte`: an `aria-hidden` asterisk, with the control's `required` attribute left as the accessible marker (design D2). Verify `EntryForm.test.ts` shows one marker per required field, in order
+- [x] 7.2 Refuse a whitespace-only body in `packages/cms-core/src/types/article.ts` with a body-level check next to the byte limit and the message "Enter the body." (design D2), so it lands on the `body` field in `admin` and publish refuses it too. Verify one `article.test.ts` case (spaces only → `{ body: "Enter the body." }`)
 
 ## 8. Owner production check (manual)
 

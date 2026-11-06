@@ -35,19 +35,32 @@ function renderForm(
   return body.replace(/<!--[\s\S]*?-->/g, "");
 }
 
+// The visible text of each label, in the order the form renders them.
+function labelTexts(html: string): string[] {
+  return [...html.matchAll(/<label[^>]*>([\s\S]*?)<\/label>/g)].map((match) =>
+    (match[1] ?? "").replace(/<[^>]*>/g, ""),
+  );
+}
+
 describe("EntryForm", () => {
   it("shows the four labeled controls in the type's order", () => {
     const body = renderForm();
 
-    const labels = ["Title", "Slug", "Summary", "Body"];
-    const positions = labels.map((label) => body.indexOf(`>${label}</label>`));
+    const ids = [...body.matchAll(/for="([^"]+)"/g)].map((match) => match[1]);
 
-    expect(positions.every((position) => position >= 0)).toBe(true);
-    expect(positions).toEqual(
-      [...positions].sort((left, right) => left - right),
+    expect(ids).toEqual(["title", "slug", "summary", "body"]);
+  });
+
+  it("marks each required field with a hidden asterisk, in the type's order", () => {
+    const body = renderForm();
+
+    expect(labelTexts(body)).toEqual(["Title*", "Slug*", "Summary*", "Body*"]);
+    for (const { name } of description) {
+      expect(control(body, name)).toContain("required");
+    }
+    expect(body.match(/<span aria-hidden="true">\*<\/span>/g)).toHaveLength(
+      description.filter((field) => field.required).length,
     );
-    expect(body).toContain('for="title"');
-    expect(body).toContain('for="body"');
   });
 
   it("limits the title, slug and summary, and leaves the body unlimited", () => {

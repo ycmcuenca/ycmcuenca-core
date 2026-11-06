@@ -35,7 +35,12 @@
   {@const id = field.name}
   {@const message = errors[id]}
   <div class="space-y-2">
-    <Label for={id}>{field.label}</Label>
+    <!-- The asterisk is for sight only: the control's `required` attribute is
+         what assistive technology announces, so the star is hidden from it
+         (design D2, amendment 2). -->
+    <Label for={id}>
+      {field.label}{#if field.required}<span aria-hidden="true">*</span>{/if}
+    </Label>
     {#if field.editor === "markdown"}
       <!-- The limit counts bytes, so `maxlength`, which counts characters,
            would reject the wrong bodies (design D2). -->

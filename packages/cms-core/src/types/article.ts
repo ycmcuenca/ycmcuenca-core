@@ -13,6 +13,9 @@ export const bodyByteLimit = 32_768;
 /** The limit as the error message names it. */
 const bodyByteLimitMessage = `Use at most ${bodyByteLimit} bytes of Markdown.`;
 
+/** The message for a body with no visible text (design D2, amendment 2). */
+const emptyBodyMessage = "Enter the body.";
+
 /** A content type: the fields a form renders, and the blocks a body allows. */
 export interface ContentType {
   /** The name the type is stored and published under. */
@@ -61,7 +64,13 @@ export const article: ContentType = {
 const revisionFields = {
   title: titleField.schema,
   summary: summaryField.schema,
-  body: bodySchema.superRefine(checkBodyByteLimit),
+  // The text check comes first so a body of nothing but spaces reports
+  // "Enter the body." even when it also breaks the byte limit, which
+  // `errorsByPath` would otherwise hide behind the limit's message (design
+  // D3).
+  body: bodySchema
+    .superRefine(checkBodyHasText)
+    .superRefine(checkBodyByteLimit),
 };
 
 /** The validation of an article, including the body's limits (D2, D5). */
@@ -101,6 +110,17 @@ export function validateArticle(input: unknown): ArticleValidation {
 
 /** The Markdown of a body, as the byte limit measures it. */
 type BodySource = readonly { source: string }[];
+
+// A body must hold visible text: a list of blocks that are all whitespace is
+// not an article (design D2, amendment 2). Like the byte limit, it is checked
+// on the body itself, so the issue lands on the body field and publish
+// refuses the same content (design D3).
+function checkBodyHasText(body: BodySource, context: z.RefinementCtx): void {
+  const hasText = body.some((block) => block.source.trim() !== "");
+  if (!hasText) {
+    context.addIssue({ code: "custom", message: emptyBodyMessage });
+  }
+}
 
 // The spec's byte limit, checked on the body itself so it reports alongside
 // every other field's problem (design D3, D5). No path is given, so the issue
