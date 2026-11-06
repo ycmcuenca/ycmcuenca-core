@@ -85,8 +85,13 @@ export function articleInputFrom(
   return {
     title: postedValue(form, "title"),
     slug: source.slugLocked ? source.slug : postedValue(form, "slug"),
-    summary: postedValue(form, "summary"),
-    body: [{ type: "markdown", source: postedValue(form, "body") }],
+    summary: lineEndingsFrom(postedValue(form, "summary")),
+    body: [
+      {
+        type: "markdown",
+        source: lineEndingsFrom(postedValue(form, "body")),
+      },
+    ],
   };
 }
 
@@ -139,4 +144,12 @@ function bodySource(body: readonly Block[]): string {
 function postedValue(form: FormData, name: string): string {
   const value = form.get(name);
   return typeof value === "string" ? value : "";
+}
+
+// A browser posts a textarea's line breaks as CRLF, while a stored revision
+// holds LF, so saving an unchanged multi-line field would look like a change
+// and add a revision (design D3). Reading the form in the store's own line
+// endings keeps the comparison honest.
+function lineEndingsFrom(value: string): string {
+  return value.replaceAll("\r\n", "\n");
 }
