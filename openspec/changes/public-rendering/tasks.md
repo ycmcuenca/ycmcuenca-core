@@ -16,7 +16,7 @@
 
 ## 3. `welcome` end-to-end tests
 
-- [ ] 3.1 Add the `globalSetup` that seeds local KV with `--persist-to .wrangler/e2e-state`, the same `--persist-to` on `apps/welcome/playwright.config.ts`'s `wrangler dev` command, and `apps/welcome/e2e/articles.spec.ts` per design D5. Keep the existing `smoke.spec.ts` passing. Verify `bun run test:e2e` in `apps/welcome` passes, with no CSP violation reported on the article page
+- [x] 3.1 Add the `globalSetup` that seeds local KV with `--persist-to .wrangler/e2e-state`, the same `--persist-to` on `apps/welcome/playwright.config.ts`'s `wrangler dev` command, and `apps/welcome/e2e/articles.spec.ts` per design D5. Keep the existing `smoke.spec.ts` passing. Verify `bun run test:e2e` in `apps/welcome` passes, with no CSP violation reported on the article page
 
 ## 4. Publish path across both apps
 
