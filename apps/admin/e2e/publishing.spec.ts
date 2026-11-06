@@ -11,12 +11,14 @@ import {
   readIndexSnapshot,
 } from "@ycmcuenca/cms-core";
 import type { EntrySnapshot, IndexSnapshot } from "@ycmcuenca/cms-core";
-import { appendRevision, connectDatabase, createEntry } from "@ycmcuenca/db";
+import { appendRevision, createEntry } from "@ycmcuenca/db";
 import { expect, test } from "@playwright/test";
 import { sql } from "drizzle-orm";
 import { spawnSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
 import { signedAccessToken } from "./access-token";
+import { truncateEntries, withTestDatabase } from "./database";
+import { stateDirectory } from "./environment";
 
 const entryType = "article";
 const locale = "en";
@@ -115,8 +117,7 @@ test("a dirty entry shows published, not live, and retry makes it live", async (
 // Seeds the entry and its second revision through @ycmcuenca/db (design D7),
 // the same functions the app and the integration tests use.
 async function seedEntry(): Promise<string> {
-  let createdId = "";
-  await connectDatabase(databaseUrl(), async (database) => {
+  return withTestDatabase(async (database) => {
     const created = await createEntry(database, firstRevision);
     if (!created.ok) {
       throw new Error(`Seeding failed: ${JSON.stringify(created.errors)}`);
@@ -129,36 +130,19 @@ async function seedEntry(): Promise<string> {
     if (!appended.ok) {
       throw new Error(`Appending failed: ${JSON.stringify(appended.errors)}`);
     }
-    createdId = created.entry.id;
+    return created.entry.id;
   });
-  return createdId;
-}
-
-async function truncateEntries(): Promise<void> {
-  await connectDatabase(databaseUrl(), (database) =>
-    database.execute(sql`TRUNCATE revisions, entries CASCADE`),
-  );
 }
 
 // Sets the mark a failed projection leaves behind (design D2). The e2e writes
 // it directly, because the local KV accepts every write and the scenario needs
 // the state, not a broken store.
 async function markDirty(entryId: string): Promise<void> {
-  await connectDatabase(databaseUrl(), (database) =>
+  await withTestDatabase((database) =>
     database.execute(
       sql`UPDATE entries SET projection_state = 'dirty' WHERE id = ${entryId}`,
     ),
   );
-}
-
-function databaseUrl(): string {
-  const url = process.env.DATABASE_URL;
-  if (url === undefined || url === "") {
-    throw new Error(
-      "DATABASE_URL is not set; turbo.jsonc passes it through to test:e2e.",
-    );
-  }
-  return url;
 }
 
 function readEntry(): EntrySnapshot | undefined {
@@ -177,13 +161,25 @@ function readSnapshot<T>(
   return value === undefined ? undefined : read(value);
 }
 
-// Reads a key from the local KV `wrangler dev` serves (design D7). Both
-// commands default to `apps/admin/.wrangler/state`, so the CLI sees the
-// server's writes without a shared `--persist-to` (task 4.2).
+// Reads a key from the local KV `wrangler dev` serves (design D7). Both the
+// command and the server use the e2e state directory (design D5 in
+// openspec/changes/public-rendering/design.md), so the CLI sees the server's
+// writes and the `welcome` server of the publish-path test reads the same keys.
 function kvValue(key: string): unknown {
   const result = spawnSync(
     "bunx",
-    ["wrangler", "kv", "key", "get", "--local", "--binding", "SNAPSHOTS", key],
+    [
+      "wrangler",
+      "kv",
+      "key",
+      "get",
+      "--local",
+      "--persist-to",
+      stateDirectory,
+      "--binding",
+      "SNAPSHOTS",
+      key,
+    ],
     { cwd: adminDirectory, encoding: "utf8" },
   );
   if (result.status !== 0) {
