@@ -1,6 +1,5 @@
 <script lang="ts">
   import { enhance } from "$app/forms";
-  import type { PublishingStatus } from "@ycmcuenca/cms-core";
   import { BlockList } from "@ycmcuenca/cms-render";
   import {
     Alert,
@@ -14,7 +13,7 @@
   } from "@ycmcuenca/ui";
   import EntryForm from "#lib/components/EntryForm.svelte";
   import { keepEnteredValues } from "#lib/forms.js";
-  import { statusLabel } from "#lib/publishing-status.js";
+  import { statusLabel, statusVariant } from "#lib/publishing-status.js";
   import type { PageProps } from "./$types";
 
   let { data, form }: PageProps = $props();
@@ -28,15 +27,6 @@
   const status = $derived(
     statusLabel(data.status, data.publishedRevisionNumber),
   );
-
-  function statusVariant(
-    kind: PublishingStatus,
-  ): "default" | "secondary" | "outline" {
-    if (kind === "live") {
-      return "default";
-    }
-    return kind === "published-not-live" ? "secondary" : "outline";
-  }
 </script>
 
 <h1>{data.entry.slug}</h1>

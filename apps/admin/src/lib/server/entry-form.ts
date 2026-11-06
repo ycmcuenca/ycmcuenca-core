@@ -1,7 +1,14 @@
 // The one place that knows how an entry form meets the content model (design
 // D2, D3): the body is a single Markdown block, a published entry's slug is
 // the entry's own, and form values come back out of a stored revision.
-import type { ArticleErrors, Block, StoredContent } from "@ycmcuenca/cms-core";
+import type {
+  ArticleContent,
+  ArticleErrors,
+  Block,
+  EntryRecord,
+  StoredContent,
+} from "@ycmcuenca/cms-core";
+import { validateArticle } from "@ycmcuenca/cms-core";
 import type { DuplicateSlugError } from "@ycmcuenca/db";
 
 /** The values the form shows: one entry per field, plus the body's Markdown. */
@@ -26,6 +33,45 @@ export interface SlugSource {
   readonly slug: string;
   /** Whether the entry is published, which freezes its slug. */
   readonly slugLocked: boolean;
+}
+
+/** The slug source of a stored entry: a published entry's slug is frozen. */
+export function slugSourceFor(entry: EntryRecord): SlugSource {
+  return { slug: entry.slug, slugLocked: entry.firstPublishedAt !== null };
+}
+
+/** A posted form that validated: its input, its values and its content. */
+export interface ReadArticle {
+  readonly input: ArticleInput;
+  readonly values: EntryFormValues;
+  readonly content: ArticleContent;
+}
+
+/** A posted form, either read and validated or refused with its messages. */
+export type ArticleFormRead =
+  | ({ readonly ok: true } & ReadArticle)
+  | {
+      readonly ok: false;
+      readonly errors: ArticleErrors;
+      readonly values: EntryFormValues;
+    };
+
+/**
+ * Reads a posted form and validates it (design D3). Create, save and preview all
+ * start this way, so a refused form shows the same messages and the same
+ * entered values on every page.
+ */
+export function readArticleForm(
+  form: FormData,
+  source: SlugSource,
+): ArticleFormRead {
+  const input = articleInputFrom(form, source);
+  const values = formValuesFromInput(input);
+  const validated = validateArticle(input);
+  if (!validated.ok) {
+    return { ok: false, errors: validated.errors, values };
+  }
+  return { ok: true, input, values, content: validated.content };
 }
 
 /**

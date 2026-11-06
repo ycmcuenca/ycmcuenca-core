@@ -1,15 +1,27 @@
-import type { StoredContent } from "@ycmcuenca/cms-core";
+import type { EntryRecord, StoredContent } from "@ycmcuenca/cms-core";
 import { DuplicateSlugError } from "@ycmcuenca/db";
 import { describe, expect, it } from "vitest";
 import {
   articleInputFrom,
   formValuesFrom,
   formValuesFromInput,
+  readArticleForm,
+  slugSourceFor,
   takenSlugErrors,
 } from "./entry-form";
 
 const unlocked = { slug: "first-post", slugLocked: false };
 const locked = { slug: "first-post", slugLocked: true };
+
+const entry: EntryRecord = {
+  id: "6f1b6f5e-6f6a-4f6b-8f5e-6f6a4f6b8f5e",
+  type: "article",
+  slug: "first-post",
+  publishedRevisionId: null,
+  firstPublishedAt: null,
+  lastPublishedAt: null,
+  projectionState: "clean",
+};
 
 // The form's four fields as the browser posts them.
 function postedForm(slug: string): FormData {
@@ -69,6 +81,66 @@ describe("formValuesFromInput", () => {
       slug: "first-post",
       summary: "The first article.",
       body: "## Hello\n\nSome **Markdown**.",
+    });
+  });
+});
+
+describe("slugSourceFor", () => {
+  it("keeps an unpublished entry's slug free to change", () => {
+    expect(slugSourceFor(entry)).toEqual({
+      slug: "first-post",
+      slugLocked: false,
+    });
+  });
+
+  it("freezes the slug of an entry that has been published", () => {
+    const publishedAt = new Date("2026-11-06T09:00:00.000Z");
+
+    expect(slugSourceFor({ ...entry, firstPublishedAt: publishedAt })).toEqual({
+      slug: "first-post",
+      slugLocked: true,
+    });
+  });
+});
+
+describe("readArticleForm", () => {
+  it("reads a valid form into input, values and content", () => {
+    expect(readArticleForm(postedForm("first-post"), unlocked)).toEqual({
+      ok: true,
+      input: {
+        title: "First post",
+        slug: "first-post",
+        summary: "The first article.",
+        body: [{ type: "markdown", source: "## Hello\n\nSome **Markdown**." }],
+      },
+      values: {
+        title: "First post",
+        slug: "first-post",
+        summary: "The first article.",
+        body: "## Hello\n\nSome **Markdown**.",
+      },
+      content: {
+        title: "First post",
+        slug: "first-post",
+        summary: "The first article.",
+        body: [{ type: "markdown", source: "## Hello\n\nSome **Markdown**." }],
+      },
+    });
+  });
+
+  it("refuses an invalid form with its messages and the entered values", () => {
+    const form = postedForm("first-post");
+    form.set("title", "");
+
+    expect(readArticleForm(form, unlocked)).toEqual({
+      ok: false,
+      errors: { title: "Enter the title." },
+      values: {
+        title: "",
+        slug: "first-post",
+        summary: "The first article.",
+        body: "## Hello\n\nSome **Markdown**.",
+      },
     });
   });
 });

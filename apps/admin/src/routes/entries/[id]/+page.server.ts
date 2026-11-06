@@ -11,7 +11,6 @@ import {
   retryProjection,
   rollBack,
   unpublish,
-  validateArticle,
 } from "@ycmcuenca/cms-core";
 import type {
   Block,
@@ -31,9 +30,9 @@ import type { ActionFailure } from "@sveltejs/kit";
 import { env } from "cloudflare:workers";
 import { withDatabase } from "#lib/server/database.js";
 import {
-  articleInputFrom,
   formValuesFrom,
-  formValuesFromInput,
+  readArticleForm,
+  slugSourceFor,
 } from "#lib/server/entry-form.js";
 import { snapshotStoreFor } from "#lib/server/snapshot-store.js";
 import type { Actions, PageServerLoad } from "./$types";
@@ -126,21 +125,13 @@ async function saveEntry(entryId: string, request: Request) {
     if (latest === undefined) {
       throw new Error(`Entry ${entry.id} has no revision.`);
     }
-    const source = {
-      slug: entry.slug,
-      slugLocked: entry.firstPublishedAt !== null,
-    };
-    const input = articleInputFrom(form, source);
-    const values = formValuesFromInput(input);
-    const validated = validateArticle(input);
-    if (!validated.ok) {
-      return fail(400, { errors: validated.errors, values });
+    const source = slugSourceFor(entry);
+    const read = readArticleForm(form, source);
+    if (!read.ok) {
+      return fail(400, { errors: read.errors, values: read.values });
     }
-    const contentChanged = differsFrom(
-      validated.content,
-      latest.stored.content,
-    );
-    const slugChanged = !source.slugLocked && input.slug !== entry.slug;
+    const contentChanged = differsFrom(read.content, latest.stored.content);
+    const slugChanged = !source.slugLocked && read.input.slug !== entry.slug;
     if (!contentChanged && !slugChanged) {
       return fail(400, { message: "No changes to save." });
     }
@@ -148,17 +139,20 @@ async function saveEntry(entryId: string, request: Request) {
       const changed = await changeSlug(
         dependenciesFor(database, request),
         entry.id,
-        input.slug,
+        read.input.slug,
       );
       if (!changed.ok) {
-        return fail(400, { errors: { slug: changed.reason }, values });
+        return fail(400, {
+          errors: { slug: changed.reason },
+          values: read.values,
+        });
       }
     }
     if (contentChanged) {
       try {
-        const appended = await appendRevision(database, entry.id, input);
+        const appended = await appendRevision(database, entry.id, read.input);
         if (!appended.ok) {
-          return fail(400, { errors: appended.errors, values });
+          return fail(400, { errors: appended.errors, values: read.values });
         }
       } catch (thrown) {
         if (thrown instanceof ConcurrentRevisionError) {
@@ -185,17 +179,11 @@ async function previewEntry(entryId: string, request: Request) {
     if (entry === undefined) {
       return fail(400, { message: `No entry has the id ${entryId}.` });
     }
-    const source = {
-      slug: entry.slug,
-      slugLocked: entry.firstPublishedAt !== null,
-    };
-    const input = articleInputFrom(form, source);
-    const values = formValuesFromInput(input);
-    const validated = validateArticle(input);
-    if (!validated.ok) {
-      return fail(400, { errors: validated.errors, values });
+    const read = readArticleForm(form, slugSourceFor(entry));
+    if (!read.ok) {
+      return fail(400, { errors: read.errors, values: read.values });
     }
-    return { values, preview: renderBody(validated.content.body) };
+    return { values: read.values, preview: renderBody(read.content.body) };
   });
 }
 

@@ -3,6 +3,7 @@
   import type { PublishingStatus } from "@ycmcuenca/cms-core";
   import { Badge, Button } from "@ycmcuenca/ui";
   import { appName } from "#lib/app-meta.js";
+  import { statusVariant } from "#lib/publishing-status.js";
   import type { PageProps } from "./$types";
 
   let { data }: PageProps = $props();
@@ -16,15 +17,6 @@
     "not-published": "Not published",
     "published-not-live": "Published, not live",
   };
-
-  function statusVariant(
-    kind: PublishingStatus,
-  ): "default" | "secondary" | "outline" {
-    if (kind === "live") {
-      return "default";
-    }
-    return kind === "published-not-live" ? "secondary" : "outline";
-  }
 </script>
 
 <h1>{appName}</h1>
