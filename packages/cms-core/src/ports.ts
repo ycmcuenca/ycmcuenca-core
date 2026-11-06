@@ -46,6 +46,8 @@ export interface PublishedEntry {
   readonly title: string;
   readonly summary: string;
   readonly firstPublishedAt: Date;
+  /** When the entry was most recently published; the sitemap shows it. */
+  readonly lastPublishedAt: Date;
 }
 
 /**

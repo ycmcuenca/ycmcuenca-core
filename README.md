@@ -177,14 +177,16 @@ not a secret.
 The projection uses two key formats, built by
 [`packages/cms-core/src/snapshot-keys.ts`](packages/cms-core/src/snapshot-keys.ts):
 
-| Key                     | Value                                                          |
-| ----------------------- | -------------------------------------------------------------- |
-| `entry:<type>:<slug>`   | One entry: title, summary, rendered blocks, publish times      |
-| `index:<type>:<locale>` | Every published entry of that type, newest first publish first |
+| Key                     | Value                                                              |
+| ----------------------- | ------------------------------------------------------------------ |
+| `entry:<type>:<slug>`   | One entry: title, summary, rendered blocks, publish times          |
+| `index:<type>:<locale>` | Every published entry with its publish times, newest publish first |
 
-Each value is JSON with `snapshot_v: 1`. The index is rebuilt from Postgres on
-every publish, never patched in place, so the next publish repairs a missing or
-stale key.
+Each value is JSON with `snapshot_v: 1`. An index item's `updatedAt` is its
+entry's last-update date. The field is optional, so an index written before it
+existed still reads; the sitemap then shows that item's `publishedAt`. The index
+is rebuilt from Postgres on every publish, never patched in place, so the next
+publish repairs a missing or stale key.
 
 Moving the pointer and marking the entry as not yet projected are one database
 write. The entry stays marked until both the entry snapshot and the index are
@@ -245,7 +247,7 @@ a database outage cannot take the site down.
 | --------------------- | ------------------------------------------------------------------------- |
 | `/`                   | `Welcome`, the site introduction and the published articles, newest first |
 | `/en/articles/[slug]` | One published article; an unknown slug answers 404                        |
-| `/sitemap.xml`        | The home page and every published article                                 |
+| `/sitemap.xml`        | The home page and every published article, each with its last-update date |
 | `/en/feed.xml`        | An Atom feed of the published articles                                    |
 
 `apps/welcome/wrangler.jsonc` sets `SITE_ORIGIN`, the one origin behind every
@@ -265,7 +267,7 @@ bunx wrangler kv key put "entry:article:hello-world" \
   '{"snapshot_v":1,"type":"article","slug":"hello-world","title":"Hello, world","summary":"The first article.","blocks":[{"type":"markdown","html":"<p>First paragraph.</p>"}],"publishedAt":"2026-11-01T09:00:00.000Z","updatedAt":"2026-11-01T09:00:00.000Z"}' \
   --local --binding SNAPSHOTS
 bunx wrangler kv key put "index:article:en" \
-  '{"snapshot_v":1,"type":"article","locale":"en","items":[{"slug":"hello-world","title":"Hello, world","summary":"The first article.","publishedAt":"2026-11-01T09:00:00.000Z"}]}' \
+  '{"snapshot_v":1,"type":"article","locale":"en","items":[{"slug":"hello-world","title":"Hello, world","summary":"The first article.","publishedAt":"2026-11-01T09:00:00.000Z","updatedAt":"2026-11-01T09:00:00.000Z"}]}' \
   --local --binding SNAPSHOTS
 ```
 

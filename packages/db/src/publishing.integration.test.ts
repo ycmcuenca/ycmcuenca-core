@@ -217,12 +217,14 @@ describe("the entry store", () => {
         title: "B published",
         summary: "A short summary.",
         firstPublishedAt: secondPublish,
+        lastPublishedAt: secondPublish,
       },
       {
         slug: "a",
         title: "A first version",
         summary: "A short summary.",
         firstPublishedAt: firstPublish,
+        lastPublishedAt: firstPublish,
       },
     ]);
   });

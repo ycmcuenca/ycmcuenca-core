@@ -44,6 +44,7 @@ const index: IndexSnapshot = {
       title: "Hello, world",
       summary: "The first article.",
       publishedAt: "2026-11-01T00:00:00.000Z",
+      updatedAt: "2026-11-05T00:00:00.000Z",
     },
   ],
 };

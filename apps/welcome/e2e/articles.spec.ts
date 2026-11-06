@@ -116,9 +116,11 @@ test("the sitemap lists the home page and every article", async ({
   const body = await response.text();
   expect(body).toContain(`<loc>${siteOrigin}/</loc>`);
   for (const article of publishedArticles) {
-    expect(body).toContain(
-      `<loc>${siteOrigin}/en/articles/${article.slug}</loc>`,
-    );
+    const loc = `<loc>${siteOrigin}/en/articles/${article.slug}</loc>`;
+    expect(body).toContain(loc);
+    // Each article shows its last-update date (spec: Sitemap). For the
+    // updated article that date differs from its first publish.
+    expect(body).toContain(`${loc}<lastmod>${article.updatedAt}</lastmod>`);
   }
 });
 
