@@ -2,18 +2,36 @@
    Tailwind and the neutral theme, and this file adds only what admin owns. */
 @import "@ycmcuenca/ui/styles.css";
 
+/* The preview renders Markdown the way `welcome` serves it (spec: preview
+   without saving; design D7). `welcome` imports no reset (apps/welcome/src/
+   app.css:1-14), so the public page is the browser's own rendering, while
+   Tailwind's preflight here flattens headings, lists, tables and code. A revert
+   on each element hands it back to the browser's stylesheet, which is exactly
+   what welcome shows, instead of copying a list of browser defaults that would
+   drift. The public page also sets no type, so the block keeps the browser's
+   16px and normal line height; a card is 14px and would scale every heading
+   with it. */
+.block-markdown {
+  font-size: 1rem;
+  line-height: normal;
+}
+
+.block-markdown * {
+  all: revert;
+}
+
 /* cms-core renders a Markdown table cell's alignment as one of these classes,
    because the strict CSP allows no inline style except SvelteKit's announcer.
-   Copied from apps/welcome/src/app.css:1-13 until S5 gives the apps one shared
-   stylesheet (design D7). */
-.align-left {
+   They repeat apps/welcome/src/app.css:1-13 (design D7) and are scoped to the
+   block so they beat the revert above. */
+.block-markdown .align-left {
   text-align: left;
 }
 
-.align-center {
+.block-markdown .align-center {
   text-align: center;
 }
 
-.align-right {
+.block-markdown .align-right {
   text-align: right;
 }
