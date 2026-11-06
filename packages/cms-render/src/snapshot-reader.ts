@@ -71,27 +71,54 @@ async function readSnapshot<Snapshot>(
   read: SnapshotReader<Snapshot>,
   log: SnapshotLogger,
 ): Promise<Snapshot | undefined> {
-  const value = await kv.get(key, "json");
+  let value: unknown;
+  try {
+    value = await kv.get(key, "json");
+  } catch (error) {
+    reportUnreadable(key, error, log, isNotJson);
+    return undefined;
+  }
+
   if (value === null || value === undefined) {
     return undefined;
   }
+
   try {
     return read(value);
   } catch (error) {
-    if (!isUnreadableSnapshot(error)) {
-      throw error;
-    }
-    log.error("unreadable snapshot", { key, problem: describeProblem(error) });
+    reportUnreadable(key, error, log, isUnreadableSnapshot);
     return undefined;
   }
 }
 
-// The two failures the reader absorbs (design D2): a version this code does
-// not support, and a value that fails the snapshot schema.
+// A value the reader cannot use is one error line, whichever side failed to
+// read it (design D2). Every other error is rethrown, so an outage still fails
+// loudly through SvelteKit's `handleError`.
+function reportUnreadable(
+  key: string,
+  error: unknown,
+  log: SnapshotLogger,
+  isUnreadable: (error: unknown) => boolean,
+): void {
+  if (!isUnreadable(error)) {
+    throw error;
+  }
+  log.error("unreadable snapshot", { key, problem: describeProblem(error) });
+}
+
+// The two failures the parsed value may carry (design D2): a version this code
+// does not support, and a value that fails the snapshot schema.
 function isUnreadableSnapshot(error: unknown): boolean {
   return (
     error instanceof UnsupportedSnapshotVersionError || isValidationError(error)
   );
+}
+
+// `KVNamespace.get(key, "json")` parses the stored bytes itself and throws a
+// `SyntaxError` when they are not JSON. That is one bad value, not the KV
+// outage design D2 lets fail loudly, so it takes the unreadable path.
+function isNotJson(error: unknown): boolean {
+  return error instanceof SyntaxError;
 }
 
 /** A Zod error, as much of it as the log line needs. */

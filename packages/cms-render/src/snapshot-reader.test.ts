@@ -121,6 +121,25 @@ describe("readArticle", () => {
       readArticle(store, "hello-world", new CapturingLogger()),
     ).rejects.toThrow("KV unavailable");
   });
+
+  it("returns undefined and logs once when KV cannot parse the value", async () => {
+    const problem = "Unexpected token 'o', \"not json{\" is not valid JSON";
+    const store: SnapshotKeyValueStore = {
+      get: async () => {
+        throw new SyntaxError(problem);
+      },
+    };
+    const log = new CapturingLogger();
+
+    await expect(
+      readArticle(store, "hello-world", log),
+    ).resolves.toBeUndefined();
+
+    expect(log.lines).toHaveLength(1);
+    expect(log.lines[0]?.message).toBe("unreadable snapshot");
+    expect(log.lines[0]?.fields?.key).toBe(entryKey("article", "hello-world"));
+    expect(log.lines[0]?.fields?.problem).toBe(problem);
+  });
 });
 
 describe("readArticleIndex", () => {
