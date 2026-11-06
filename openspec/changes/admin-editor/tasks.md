@@ -13,9 +13,9 @@ Check: `bunx turbo run check lint --filter=@ycmcuenca/ui --filter=admin`
 
 Check: `bunx turbo run check lint test test:integration --filter=@ycmcuenca/cms-core --filter=@ycmcuenca/db`
 
-- [ ] 2.1 Add `renderBody(body)` in `packages/cms-core/src/render-body.ts` (design D5), export it from `packages/cms-core/src/index.ts`, and make `buildEntrySnapshot` in `packages/cms-core/src/projector.ts` call it instead of mapping blocks inline. Verify `render-body.test.ts` (one block renders to `{ type: "markdown", html }`) and the existing `projector.test.ts` pass unchanged
-- [ ] 2.2 Add `publishingStatus(entry)` in `packages/cms-core/src/status.ts` (design D6: `"live"`, `"not-published"`, `"published-not-live"`; a dirty entry with no pointer is `"not-published"`) and export it from `index.ts`. Verify `status.test.ts` covers the four combinations of pointer and projection state
-- [ ] 2.3 Add `listEntrySummaries(database)` to `packages/db/src/entries.ts` (design D5: one query joining each entry to its latest revision, newest save first, title through `readStoredContent`) and export it and its record type from `packages/db/src/index.ts`. Verify `entries.integration.test.ts` covers an entry with three revisions (latest title and save time), an entry published and one unpublished (pointer and projection state), and the order of two entries
+- [x] 2.1 Add `renderBody(body)` in `packages/cms-core/src/render-body.ts` (design D5), export it from `packages/cms-core/src/index.ts`, and make `buildEntrySnapshot` in `packages/cms-core/src/projector.ts` call it instead of mapping blocks inline. Verify `render-body.test.ts` (one block renders to `{ type: "markdown", html }`) and the existing `projector.test.ts` pass unchanged
+- [x] 2.2 Add `publishingStatus(entry)` in `packages/cms-core/src/status.ts` (design D6: `"live"`, `"not-published"`, `"published-not-live"`; a dirty entry with no pointer is `"not-published"`) and export it from `index.ts`. Verify `status.test.ts` covers the four combinations of pointer and projection state
+- [x] 2.3 Add `listEntrySummaries(database)` to `packages/db/src/entries.ts` (design D5: one query joining each entry to its latest revision, newest save first, title through `readStoredContent`) and export it and its record type from `packages/db/src/index.ts`. Verify `entries.integration.test.ts` covers an entry with three revisions (latest title and save time), an entry published and one unpublished (pointer and projection state), and the order of two entries
 
 ## 3. Generated form
 

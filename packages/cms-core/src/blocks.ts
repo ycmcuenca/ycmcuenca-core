@@ -19,17 +19,26 @@ export const blockTypes = ["markdown"] as const;
 export type BlockTypeName = (typeof blockTypes)[number];
 
 /**
+ * The block types a body may hold, told apart by their `type` (design D2). A
+ * new block type is one more member here.
+ */
+const blockSchema = z.discriminatedUnion("type", [markdownBlock], {
+  error: "Only markdown blocks are supported.",
+});
+
+/**
+ * One block a body may hold (design D5). It comes from the union, so a block
+ * type added there reaches every renderer as a compile error.
+ */
+export type Block = z.infer<typeof blockSchema>;
+
+/**
  * A body: an ordered list of one to `bodyBlockLimit` blocks, told apart by
  * their `type` (design D2, D5). Every problem, including a body that is not a
  * list or a block of an unknown type, carries the package's own message, so no
  * Zod default text reaches a form (design D3).
  */
 export const bodySchema = z
-  .array(
-    z.discriminatedUnion("type", [markdownBlock], {
-      error: "Only markdown blocks are supported.",
-    }),
-    { error: "Add at least one block." },
-  )
+  .array(blockSchema, { error: "Add at least one block." })
   .min(1, "Add at least one block.")
   .max(bodyBlockLimit, `Use at most ${bodyBlockLimit} blocks.`);

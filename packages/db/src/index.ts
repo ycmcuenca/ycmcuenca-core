@@ -12,6 +12,7 @@ export {
   findEntry,
   getRevision,
   listEntries,
+  listEntrySummaries,
   listRevisions,
   MissingEntryError,
   PublishedSlugError,
@@ -21,6 +22,7 @@ export type {
   AppendRevisionResult,
   CreateEntryResult,
   Entry,
+  EntrySummary,
   Revision,
   StoreFailure,
 } from "./entries.ts";

@@ -8,9 +8,13 @@ import {
   storedContent,
   validateArticle,
 } from "@ycmcuenca/cms-core";
-import type { ArticleErrors, StoredContent } from "@ycmcuenca/cms-core";
+import type {
+  ArticleErrors,
+  ProjectionState,
+  StoredContent,
+} from "@ycmcuenca/cms-core";
 import { article, articleSchema } from "@ycmcuenca/cms-core";
-import { and, asc, count, eq, isNull, sql } from "drizzle-orm";
+import { and, asc, count, desc, eq, isNull, sql } from "drizzle-orm";
 import type { Database } from "./client.ts";
 import { entries, revisions } from "./schema.ts";
 
@@ -20,6 +24,20 @@ export interface Entry {
   readonly type: string;
   readonly slug: string;
   readonly createdAt: Date;
+}
+
+/**
+ * One entry as the list shows it (design D5): its address, the title of its
+ * latest save and when that save happened, plus its publishing state.
+ */
+export interface EntrySummary {
+  readonly id: string;
+  readonly slug: string;
+  readonly title: string;
+  /** When the entry's latest revision was saved. */
+  readonly lastSavedAt: Date;
+  readonly publishedRevisionId: string | null;
+  readonly projectionState: ProjectionState;
 }
 
 /** A stored revision: its position, and its content through the reader. */
@@ -225,6 +243,54 @@ export async function listEntries(database: Database): Promise<Entry[]> {
   return rows.map(toEntry);
 }
 
+/**
+ * Lists every entry with the title of its latest revision and that revision's
+ * save time, newest save first (design D5). One query joins each entry to its
+ * highest-numbered revision; an unreadable content version throws, like
+ * `listPublished`, so a bad row never reaches the list silently.
+ */
+export async function listEntrySummaries(
+  database: Database,
+): Promise<EntrySummary[]> {
+  // The highest revision number per entry, as a correlated subquery: the join
+  // then names exactly one revision per entry, without a second round trip.
+  const latestNumber = sql`(
+    select max(${revisions.number})
+    from ${revisions}
+    where ${revisions.entryId} = ${entries.id}
+  )`;
+  const rows = await database
+    .select({
+      id: entries.id,
+      slug: entries.slug,
+      schemaV: revisions.schemaV,
+      content: revisions.content,
+      lastSavedAt: revisions.createdAt,
+      publishedRevisionId: entries.publishedRevisionId,
+      projectionState: entries.projectionState,
+    })
+    .from(entries)
+    .innerJoin(
+      revisions,
+      and(
+        eq(revisions.entryId, entries.id),
+        eq(revisions.number, latestNumber),
+      ),
+    )
+    .orderBy(desc(revisions.createdAt), asc(entries.slug));
+  return rows.map((row) => ({
+    id: row.id,
+    slug: row.slug,
+    title: readStoredContent({
+      schema_v: row.schemaV,
+      content: row.content,
+    }).content.title,
+    lastSavedAt: row.lastSavedAt,
+    publishedRevisionId: row.publishedRevisionId,
+    projectionState: toProjectionState(row.projectionState),
+  }));
+}
+
 /** Counts every entry: the proof the binding and the role work (design D11). */
 export async function countEntries(database: Database): Promise<number> {
   const rows = await database.select({ value: count() }).from(entries);
@@ -320,6 +386,14 @@ function toRevision(row: RevisionRow): Revision {
     createdAt: row.createdAt,
     stored: readStoredContent({ schema_v: row.schemaV, content: row.content }),
   };
+}
+
+/** Reads a `projection_state` column as the port's union (design D4). */
+export function toProjectionState(value: string): ProjectionState {
+  if (value === "clean" || value === "dirty") {
+    return value;
+  }
+  throw new Error(`Unknown projection state "${value}".`);
 }
 
 // A slug move changed no row for one of two reasons: the entry is missing, or
