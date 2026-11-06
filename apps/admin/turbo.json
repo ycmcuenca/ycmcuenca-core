@@ -1,0 +1,13 @@
+// The admin e2e runs the publish path across both apps (design D5 in
+// openspec/changes/public-rendering/design.md): the test publishes in `admin`
+// and reads the article on `welcome`, whose built worker starts beside it.
+// `welcome#build` therefore has to finish before the suite starts.
+{
+  "$schema": "https://turborepo.com/schema.json",
+  "extends": ["//"],
+  "tasks": {
+    "test:e2e": {
+      "dependsOn": ["build", "welcome#build"]
+    }
+  }
+}

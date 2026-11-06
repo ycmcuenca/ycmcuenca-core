@@ -20,8 +20,8 @@
 
 ## 4. Publish path across both apps
 
-- [ ] 4.1 **Spike (design D5):** start `admin` (8788) and `welcome` (8791) under two `wrangler dev` processes sharing `--persist-to apps/admin/.wrangler/e2e-state`, publish a seeded entry in `admin`, and request the article on `welcome`. Verify `welcome` returns 200 with the title. If it returns 404 after 5 seconds, **stop and ask the owner** (D5's options)
-- [ ] 4.2 Add `apps/admin/turbo.json` (`"extends": ["//"]`, `test:e2e` depending on `build` and `welcome#build`), the third `webServer` and the shared `--persist-to` in `apps/admin/playwright.config.ts`, and `apps/admin/e2e/publish-path.spec.ts` per design D5. Verify `bun run test:e2e` from the root passes both suites in parallel without a port clash, and that the test fails if `welcome`'s article route is made to always return 404 (then revert)
+- [x] 4.1 **Spike (design D5):** start `admin` (8788) and `welcome` (8791) under two `wrangler dev` processes sharing `--persist-to apps/admin/.wrangler/e2e-state`, publish a seeded entry in `admin`, and request the article on `welcome`. Verify `welcome` returns 200 with the title. If it returns 404 after 5 seconds, **stop and ask the owner** (D5's options)
+- [x] 4.2 Add `apps/admin/turbo.json` (`"extends": ["//"]`, `test:e2e` depending on `build` and `welcome#build`), the third `webServer` and the shared `--persist-to` in `apps/admin/playwright.config.ts`, and `apps/admin/e2e/publish-path.spec.ts` per design D5. Verify `bun run test:e2e` from the root passes both suites in parallel without a port clash, and that the test fails if `welcome`'s article route is made to always return 404 (then revert)
 
 ## 5. Documentation and integration check
 
