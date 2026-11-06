@@ -66,7 +66,14 @@ export interface EntryStore {
   getRevision(revisionId: string): Promise<RevisionRecord | undefined>;
   markPublished(entryId: string, revisionId: string, at: Date): Promise<void>;
   markUnpublished(entryId: string): Promise<void>;
-  markProjected(entryId: string): Promise<void>;
+  /**
+   * Clears the dirty mark after a projection, but only while the entry still
+   * points at the revision that was projected (design D2). An overlapping
+   * publish or rollback leaves the mark dirty, so Retry and W1 repair the
+   * snapshot this projection left behind. Pass `null` for an unpublished
+   * entry, whose snapshot was removed.
+   */
+  markProjected(entryId: string, revisionId: string | null): Promise<void>;
   listPublished(type: string): Promise<PublishedEntry[]>;
   /**
    * Moves an entry's slug (design D2). The database adds "only while never

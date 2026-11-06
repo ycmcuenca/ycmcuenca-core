@@ -115,7 +115,7 @@ describe("the entry store", () => {
       const store = entryStoreFor(db);
       await store.markPublished(entryId, revisionId, firstPublish);
       const dirty = await store.findEntry(entryId);
-      await store.markProjected(entryId);
+      await store.markProjected(entryId, revisionId);
       const clean = await store.findEntry(entryId);
       return { dirty, clean };
     });
@@ -123,6 +123,40 @@ describe("the entry store", () => {
     expect(states.dirty?.projectionState).toBe("dirty");
     expect(states.clean).toMatchObject({
       publishedRevisionId: revisionId,
+      projectionState: "clean",
+    });
+  });
+
+  it("keeps the dirty mark when the pointer moved to another revision", async () => {
+    const { entryId, revisionId } = await createArticle(
+      "hello-world",
+      "Hello world",
+    );
+    const newerRevisionId = await appendArticle(
+      entryId,
+      "Hello again",
+      "A newer summary.",
+    );
+
+    const states = await asRuntimeRole(async (db) => {
+      const store = entryStoreFor(db);
+      await store.markPublished(entryId, revisionId, firstPublish);
+      await store.markPublished(entryId, newerRevisionId, secondPublish);
+      // A slower projection of `revisionId` finishes after the pointer moved,
+      // so it must not mark the entry clean.
+      await store.markProjected(entryId, revisionId);
+      const afterStale = await store.findEntry(entryId);
+      await store.markProjected(entryId, newerRevisionId);
+      const afterCurrent = await store.findEntry(entryId);
+      return { afterStale, afterCurrent };
+    });
+
+    expect(states.afterStale).toMatchObject({
+      publishedRevisionId: newerRevisionId,
+      projectionState: "dirty",
+    });
+    expect(states.afterCurrent).toMatchObject({
+      publishedRevisionId: newerRevisionId,
       projectionState: "clean",
     });
   });
@@ -137,7 +171,7 @@ describe("the entry store", () => {
       const store = entryStoreFor(db);
       await store.markPublished(entryId, revisionId, firstPublish);
       await store.markPublished(entryId, revisionId, secondPublish);
-      await store.markProjected(entryId);
+      await store.markProjected(entryId, revisionId);
       await store.markUnpublished(entryId);
       return store.findEntry(entryId);
     });
