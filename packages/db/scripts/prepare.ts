@@ -8,9 +8,12 @@ import { applyMigrations } from "./migrate.ts";
 async function main(): Promise<void> {
   const migratorUrl = requireEnvironment("DATABASE_URL");
   const testUrl = requireEnvironment("DATABASE_URL_TEST");
+  // Local and e2e only (design D3): this is the one path that seeds the
+  // runtime login from the environment Bun loaded.
+  const runtimePassword = process.env.RUNTIME_ROLE_PASSWORD;
   await createDatabaseIfAbsent(migratorUrl, databaseName(testUrl));
-  await migrateDatabase(migratorUrl);
-  await migrateDatabase(testUrl);
+  await migrateDatabase(migratorUrl, runtimePassword);
+  await migrateDatabase(testUrl, runtimePassword);
 }
 
 async function createDatabaseIfAbsent(
@@ -34,11 +37,14 @@ async function createDatabaseIfAbsent(
   }
 }
 
-async function migrateDatabase(connectionString: string): Promise<void> {
+async function migrateDatabase(
+  connectionString: string,
+  runtimePassword: string | undefined,
+): Promise<void> {
   const client = new Client({ connectionString });
   await client.connect();
   try {
-    await applyMigrations(client);
+    await applyMigrations(client, { runtimePassword });
   } finally {
     await client.end();
   }

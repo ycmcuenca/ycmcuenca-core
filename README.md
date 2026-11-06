@@ -187,8 +187,10 @@ The credentials are not in the repository. Set them once:
 The first production run, in order:
 
 1. Run the migrations with the owner role's unpooled connection string:
-   `DATABASE_URL=<owner unpooled URL> bun packages/db/scripts/migrate.ts`.
-   Then set `cms_runtime`'s login password once, in the Neon SQL editor.
+   `DATABASE_URL=<owner unpooled URL> bun --no-env-file packages/db/scripts/migrate.ts`.
+   `--no-env-file` stops Bun from loading a developer's `.env`, so the run
+   cannot seed `cms_runtime` with a local password. Then set `cms_runtime`'s
+   login password once, in the Neon SQL editor.
 2. Create the Hyperdrive configuration with the `cms_runtime` unpooled
    connection string and `--caching-disabled`, so a save is visible to the next
    read. The id is not a secret; commit it in `apps/admin/wrangler.jsonc` and
