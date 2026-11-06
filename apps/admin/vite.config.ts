@@ -34,8 +34,8 @@ export default defineConfig(({ mode }) => {
 
     // Keep the database driver out of the SSR bundle: Vite 8 (rolldown) would
     // inline pg's CommonJS and emit createRequire(import.meta.url), which is
-    // undefined in workerd (vitejs/vite#20983). Wrangler bundles them instead;
-    // the root bunfig.toml makes them resolvable from this app.
+    // undefined in workerd (vitejs/vite#20983). Wrangler bundles them instead,
+    // and this app declares them so they resolve from its own node_modules.
     ssr: { external: ["pg", "drizzle-orm"] },
 
     // A4: fixed dev ports (welcome 5173, admin 5174), strictPort so a busy port
