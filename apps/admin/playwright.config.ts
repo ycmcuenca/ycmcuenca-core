@@ -12,6 +12,13 @@ export default defineConfig({
   // Never let a focused test slip into CI.
   forbidOnly: !!process.env.CI,
   retries: process.env.CI ? 2 : 0,
+  // Seeding, the browser flow and four Wrangler CLI reads fit well inside the
+  // default, but CI's cold `bunx wrangler` starts deserve room.
+  timeout: 60_000,
+  // The database and the local KV are singletons shared by every spec: the
+  // publishing test seeds and truncates the tables, and the smoke test
+  // expects them empty (design D7). One worker keeps the two deterministic.
+  workers: 1,
   use: {
     baseURL: "http://127.0.0.1:8788",
     trace: "on-first-retry",
