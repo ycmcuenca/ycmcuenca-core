@@ -21,9 +21,9 @@
 
 ## 4. End-to-end verification
 
-- [ ] 4.1 Add `DATABASE_URL` to `test:e2e`'s `passThroughEnv` in `turbo.jsonc`. Verify `bunx turbo run test:e2e --dry=json` lists it for both apps' tasks
-- [ ] 4.2 Spike: under the admin e2e's `wrangler dev` (port 8788), write a key through a publish, then run `bunx wrangler kv key get --local --binding SNAPSHOTS <key>` in `apps/admin`. Verify the value is returned. If not, add the same `--persist-to .wrangler/e2e-state` to both commands and verify again (design D7)
-- [ ] 4.3 Write `apps/admin/e2e/publishing.spec.ts` per design D7 (seed, publish, read KV, roll back, unpublish). Verify it passes locally and in the `e2e` CI job, and fails if `projector.ts` is changed to write the wrong title (then revert)
+- [x] 4.1 Add `DATABASE_URL` to `test:e2e`'s `passThroughEnv` in `turbo.jsonc`. Verify `bunx turbo run test:e2e --dry=json` lists it for both apps' tasks
+- [x] 4.2 Spike: under the admin e2e's `wrangler dev` (port 8788), write a key through a publish, then run `bunx wrangler kv key get --local --binding SNAPSHOTS <key>` in `apps/admin`. Verify the value is returned. If not, add the same `--persist-to .wrangler/e2e-state` to both commands and verify again (design D7)
+- [x] 4.3 Write `apps/admin/e2e/publishing.spec.ts` per design D7 (seed, publish, read KV, roll back, unpublish). Verify it passes locally and in the `e2e` CI job, and fails if `projector.ts` is changed to write the wrong title (then revert)
 
 ## 5. Documentation and integration check
 

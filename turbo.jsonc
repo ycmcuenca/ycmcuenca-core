@@ -31,13 +31,16 @@
 
     // End-to-end tests start a real server, so they are never cached. The
     // Hyperdrive local connection string reaches `wrangler dev` so `admin`
-    // can reach the local database (design D5, D6).
+    // can reach the local database (design D5, D6), and `DATABASE_URL` lets
+    // the admin e2e seed entries before it drives the published snapshots
+    // (design D7 in openspec/changes/revisions-publishing/design.md).
     "test:e2e": {
       "dependsOn": ["build"],
       "cache": false,
       "outputs": ["playwright-report/**", "test-results/**"],
       "passThroughEnv": [
         "CLOUDFLARE_HYPERDRIVE_LOCAL_CONNECTION_STRING_HYPERDRIVE",
+        "DATABASE_URL",
       ],
     },
 
