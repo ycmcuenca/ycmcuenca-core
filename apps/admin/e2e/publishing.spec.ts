@@ -92,6 +92,26 @@ test("publish writes the snapshot, rollback replaces it, unpublish removes it", 
   expect(readIndex()?.items).toEqual([]);
 });
 
+test("a dirty entry shows published, not live, and retry makes it live", async ({
+  page,
+}) => {
+  await page.setExtraHTTPHeaders({
+    "cf-access-jwt-assertion": await signedAccessToken(),
+  });
+  await page.goto(`/entries/${entryId}`);
+  await page.getByRole("button", { name: "Publish" }).click();
+  await expect(page.getByText("Live: revision 2")).toBeVisible();
+
+  await markDirty(entryId);
+  await page.reload();
+  await expect(page.getByText("Published, not live")).toBeVisible();
+  expect(readEntry()).toMatchObject({ title: secondRevision.title });
+
+  await page.getByRole("button", { name: "Retry" }).click();
+  await expect(page.getByText("Live: revision 2")).toBeVisible();
+  await expect(page.getByRole("button", { name: "Retry" })).toHaveCount(0);
+});
+
 // Seeds the entry and its second revision through @ycmcuenca/db (design D7),
 // the same functions the app and the integration tests use.
 async function seedEntry(): Promise<string> {
@@ -117,6 +137,17 @@ async function seedEntry(): Promise<string> {
 async function truncateEntries(): Promise<void> {
   await connectDatabase(databaseUrl(), (database) =>
     database.execute(sql`TRUNCATE revisions, entries CASCADE`),
+  );
+}
+
+// Sets the mark a failed projection leaves behind (design D2). The e2e writes
+// it directly, because the local KV accepts every write and the scenario needs
+// the state, not a broken store.
+async function markDirty(entryId: string): Promise<void> {
+  await connectDatabase(databaseUrl(), (database) =>
+    database.execute(
+      sql`UPDATE entries SET projection_state = 'dirty' WHERE id = ${entryId}`,
+    ),
   );
 }
 
