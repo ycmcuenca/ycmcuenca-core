@@ -26,7 +26,7 @@
 ## 5. Documentation and integration check
 
 - [x] 5.1 Add a "Public site" paragraph to the README (routes, `SITE_ORIGIN`, how to seed local KV for `bun run dev`). Verify the documented seeding command works as written and `scripts/docs/check-living-docs.sh` passes
-- [ ] 5.2 **Owner task:** after the release deploy of `welcome`, verify in production:
+- [x] 5.2 **Owner task:** after the release deploy of `welcome`, verify in production:
   - the home page shows `Welcome` and "No articles yet.";
   - `/en/articles/anything` returns 404;
   - `/sitemap.xml` and `/en/feed.xml` are valid and empty of articles;
