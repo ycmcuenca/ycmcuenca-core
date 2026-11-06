@@ -57,7 +57,7 @@ Current state, verified against the code on 2026-11-06 after `content-store`, `r
 - **Alternatives:** _Tailwind inside `apps/admin` only_ (Q2 names `@ycmcuenca/ui`, and S5's brand work would have to move it); _a different kit, such as Skeleton or Flowbite_ (Q2 decided shadcn-svelte); _plain CSS_ (simplest, but Q2 decided).
 - **Failure modes:**
   - _A chosen component renders an inline `style`:_ the e2e CSP check fails, and the component is replaced with plain markup plus classes.
-  - _Tailwind misses classes from the package:_ `@source "./"` in the package's stylesheet registers it, and an e2e assertion on a component's computed style (button background is not transparent) catches a miss.
+  - _Tailwind misses classes from the package:_ `@source "./"` in the package's stylesheet registers it. Task 1.3 checked this once, on the temporary route: all seven components rendered and the button's computed background was not transparent. No test guards a later miss; a component that loses its classes shows up by eye.
 
 ### D2. The generated form
 
@@ -133,4 +133,4 @@ The owner publishes an article whose body is close to 32 KB and reads that reque
 ## Assumptions
 
 - **A1.** shadcn-svelte's button, input, textarea, label, badge, alert and card render no `style` attribute on the server. Verified on 2026-11-06 by task 1.3: all seven rendered on a temporary route with no `securitypolicyviolation`, and the button's computed background was not transparent (the package's classes were found). The e2e suites keep the check on every page.
-- **A2.** Importing `BlockList` from `@ycmcuenca/cms-render` in an `admin` page adds no Content Security Policy violation. `cms-render`'s `index.ts` documents that its reader would, if bundled for the client; the package is `sideEffects: false` to prevent it. Unverified until the preview e2e test runs (task 4.1).
+- **A2.** Importing `BlockList` from `@ycmcuenca/cms-render` in an `admin` page adds no Content Security Policy violation. `cms-render`'s `index.ts` documents that its reader would, if bundled for the client; the package is `sideEffects: false` to prevent it. Verified on 2026-11-06 by task 5.1: the preview e2e tests collect policy violations and expect none.
