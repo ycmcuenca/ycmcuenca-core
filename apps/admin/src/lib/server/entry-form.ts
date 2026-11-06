@@ -5,12 +5,12 @@ import type { ArticleErrors, Block, StoredContent } from "@ycmcuenca/cms-core";
 import type { DuplicateSlugError } from "@ycmcuenca/db";
 
 /** The values the form shows: one entry per field, plus the body's Markdown. */
-export interface EntryFormValues {
+export type EntryFormValues = {
   readonly title: string;
   readonly slug: string;
   readonly summary: string;
   readonly body: string;
-}
+};
 
 /** What a posted form becomes: the input `validateArticle` reads (design D3). */
 export interface ArticleInput {
@@ -57,7 +57,21 @@ export function formValuesFrom(
     title: stored.content.title,
     slug,
     summary: stored.content.summary,
-    body: stored.content.body.map((block) => block.source).join("\n\n"),
+    body: bodySource(stored.content.body),
+  };
+}
+
+/**
+ * The values a posted form showed, read back from the input it produced, so a
+ * refused submission can show the form again with what the owner entered
+ * (design D3). A locked slug is the entry's own, which is what the form shows.
+ */
+export function formValuesFromInput(input: ArticleInput): EntryFormValues {
+  return {
+    title: input.title,
+    slug: input.slug,
+    summary: input.summary,
+    body: bodySource(input.body),
   };
 }
 
@@ -67,6 +81,11 @@ export function formValuesFrom(
  */
 export function takenSlugErrors(error: DuplicateSlugError): ArticleErrors {
   return { slug: error.message };
+}
+
+// The form's one body field, rebuilt from the blocks it was parsed into.
+function bodySource(body: readonly Block[]): string {
+  return body.map((block) => block.source).join("\n\n");
 }
 
 // A field the form did not post is empty, which validation then reports in the
