@@ -2,7 +2,12 @@
 // exercised as the runtime role. Every case truncates first, so they are
 // independent (design D2, D3).
 import { beforeEach, describe, expect, it } from "vitest";
-import type { CreateEntryResult, Entry, Revision } from "./index.ts";
+import type {
+  AppendRevisionResult,
+  CreateEntryResult,
+  Entry,
+  Revision,
+} from "./index.ts";
 import {
   appendRevision,
   countEntries,
@@ -11,10 +16,12 @@ import {
   findEntry,
   getRevision,
   listEntries,
+  listEntrySummaries,
   listRevisions,
   MissingEntryError,
   updateSlug,
 } from "./index.ts";
+import { entryStoreFor } from "./publishing.ts";
 import {
   articleInput,
   asRuntimeRole,
@@ -34,6 +41,16 @@ function creation(result: CreateEntryResult): {
     );
   }
   return { entry: result.entry, revision: result.revision };
+}
+
+// An append that must have succeeded; narrows the result for the test body.
+function appended(result: AppendRevisionResult): Revision {
+  if (!result.ok) {
+    throw new Error(
+      `expected append to succeed: ${JSON.stringify(result.errors)}`,
+    );
+  }
+  return result.revision;
 }
 
 describe("entries", () => {
@@ -202,5 +219,91 @@ describe("revisions", () => {
     expect(
       await asRuntimeRole((db) => listRevisions(db, entry.id)),
     ).toHaveLength(1);
+  });
+});
+
+describe("entry summaries", () => {
+  it("returns nothing when there are no entries", async () => {
+    expect(await asRuntimeRole((db) => listEntrySummaries(db))).toEqual([]);
+  });
+
+  it("shows the title and save time of the latest revision", async () => {
+    const { entry } = creation(
+      await asRuntimeRole((db) =>
+        createEntry(db, articleInput({ title: "First title" })),
+      ),
+    );
+    await asRuntimeRole((db) =>
+      appendRevision(db, entry.id, articleInput({ title: "Second title" })),
+    );
+    const third = appended(
+      await asRuntimeRole((db) =>
+        appendRevision(db, entry.id, articleInput({ title: "Third title" })),
+      ),
+    );
+
+    const summaries = await asRuntimeRole((db) => listEntrySummaries(db));
+
+    expect(summaries).toHaveLength(1);
+    expect(summaries[0]?.title).toBe("Third title");
+    expect(summaries[0]?.lastSavedAt).toEqual(third.createdAt);
+  });
+
+  it("carries the published pointer and the projection state of each entry", async () => {
+    const live = creation(
+      await asRuntimeRole((db) =>
+        createEntry(db, articleInput({ slug: "published" })),
+      ),
+    );
+    creation(
+      await asRuntimeRole((db) =>
+        createEntry(db, articleInput({ slug: "unpublished" })),
+      ),
+    );
+    await asRuntimeRole(async (db) => {
+      const store = entryStoreFor(db);
+      await store.markPublished(
+        live.entry.id,
+        live.revision.id,
+        new Date("2026-11-05T10:00:00.000Z"),
+      );
+      await store.markProjected(live.entry.id, live.revision.id);
+    });
+
+    const summaries = await asRuntimeRole((db) => listEntrySummaries(db));
+    const bySlug = new Map(summaries.map((summary) => [summary.slug, summary]));
+
+    expect(bySlug.get("published")?.publishedRevisionId).toBe(live.revision.id);
+    expect(bySlug.get("published")?.projectionState).toBe("clean");
+    expect(bySlug.get("unpublished")?.publishedRevisionId).toBeNull();
+    expect(bySlug.get("unpublished")?.projectionState).toBe("clean");
+  });
+
+  it("orders entries by their latest save, newest first", async () => {
+    const older = creation(
+      await asRuntimeRole((db) =>
+        createEntry(db, articleInput({ slug: "older" })),
+      ),
+    );
+    creation(
+      await asRuntimeRole((db) =>
+        createEntry(db, articleInput({ slug: "newer" })),
+      ),
+    );
+    // Saving the first entry again makes it the newest save.
+    await asRuntimeRole((db) =>
+      appendRevision(
+        db,
+        older.entry.id,
+        articleInput({ title: "Saved later" }),
+      ),
+    );
+
+    const summaries = await asRuntimeRole((db) => listEntrySummaries(db));
+
+    expect(summaries.map((summary) => summary.slug)).toEqual([
+      "older",
+      "newer",
+    ]);
   });
 });

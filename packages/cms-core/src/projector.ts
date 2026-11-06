@@ -3,7 +3,7 @@
 // here, at publish, and the result is parsed with the same schema welcome
 // reads, so a projector bug fails in admin instead of reaching a visitor.
 import type { EntryRecord, PublishedEntry, RevisionRecord } from "./ports.ts";
-import { renderMarkdown } from "./render-markdown.ts";
+import { renderBody } from "./render-body.ts";
 import { entrySnapshot, indexSnapshot, snapshotVersion } from "./snapshot.ts";
 import type { EntrySnapshot, IndexSnapshot } from "./snapshot.ts";
 import { readStoredContent } from "./stored-content.ts";
@@ -24,10 +24,7 @@ export function buildEntrySnapshot(
     slug: entry.slug,
     title: content.title,
     summary: content.summary,
-    blocks: content.body.map((block) => ({
-      type: "markdown",
-      html: renderMarkdown(block.source),
-    })),
+    blocks: renderBody(content.body),
     publishedAt: isoUtc(entry.firstPublishedAt, "first publish time"),
     updatedAt: isoUtc(entry.lastPublishedAt, "last publish time"),
   });

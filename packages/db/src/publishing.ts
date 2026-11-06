@@ -7,7 +7,6 @@ import { readStoredContent } from "@ycmcuenca/cms-core";
 import type {
   EntryRecord,
   EntryStore,
-  ProjectionState,
   PublishedEntry,
   RevisionRecord,
   SlugChange,
@@ -18,6 +17,7 @@ import {
   DuplicateSlugError,
   MissingEntryError,
   PublishedSlugError,
+  toProjectionState,
   updateSlug as moveSlug,
 } from "./entries.ts";
 import { entries, revisions } from "./schema.ts";
@@ -210,13 +210,6 @@ async function moveEntrySlug(
     }
     throw error;
   }
-}
-
-function toProjectionState(value: string): ProjectionState {
-  if (value === "clean" || value === "dirty") {
-    return value;
-  }
-  throw new Error(`Unknown projection state "${value}".`);
 }
 
 // A write that names an entry must have changed one row.

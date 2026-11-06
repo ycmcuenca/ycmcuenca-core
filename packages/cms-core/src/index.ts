@@ -8,7 +8,7 @@
 // Relative imports carry their `.ts` extension: the apps' Vite configs load
 // this package through Node's ESM loader, which resolves nothing extensionless.
 export { bodySchema, markdownBlock } from "./blocks.ts";
-export type { BlockTypeName } from "./blocks.ts";
+export type { Block, BlockTypeName } from "./blocks.ts";
 export { multilineField, slugField, textField } from "./fields.ts";
 export type { FieldDefinition, FieldEditor, FieldOptions } from "./fields.ts";
 export { formDescription } from "./form.ts";
@@ -36,6 +36,8 @@ export type {
   PublishingDependencies,
   PublishingResult,
 } from "./publishing.ts";
+export { renderBody } from "./render-body.ts";
+export type { RenderedBlock } from "./render-body.ts";
 export { renderMarkdown } from "./render-markdown.ts";
 export { entryKey, indexKey } from "./snapshot-keys.ts";
 export {
@@ -47,6 +49,8 @@ export {
   UnsupportedSnapshotVersionError,
 } from "./snapshot.ts";
 export type { EntrySnapshot, IndexSnapshot } from "./snapshot.ts";
+export { publishingStatus } from "./status.ts";
+export type { PublishingStatus, StatusEntry } from "./status.ts";
 export {
   readStoredContent,
   schemaVersion,
