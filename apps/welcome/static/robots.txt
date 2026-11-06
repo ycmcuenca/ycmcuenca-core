@@ -1,3 +1,7 @@
 # allow crawling everything by default
 User-agent: *
 Disallow:
+
+# The sitemap's absolute URL on the committed site origin (design D4). A unit
+# test keeps it equal to SITE_ORIGIN plus /sitemap.xml.
+Sitemap: https://welcome.ycmcuenca.workers.dev/sitemap.xml
