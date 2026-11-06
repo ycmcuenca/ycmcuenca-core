@@ -53,6 +53,11 @@ Three rules:
    bun run test:integration
    ```
 
+Drizzle applies a migration only when its journal `when` stamp is newer than
+the last applied one. After you rebase over a newer migration, generate yours
+again so its stamp is newer too. Never merge two migrations that were generated
+in parallel without regenerating the later one, or production skips it.
+
 A change that is not a schema change — grants, for example — uses a custom
 migration:
 
