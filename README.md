@@ -5,7 +5,7 @@
 The core monorepo for Yosef Christian Mercene Cuenca's personal platform: a
 portfolio site (`apps/welcome`), its CMS admin (`apps/admin`) and the base for
 future satellite projects. Both are SvelteKit applications built for Cloudflare
-Workers and currently serve placeholder pages.
+Workers. `welcome` renders the content `admin` publishes.
 
 ## Documentation
 
@@ -169,7 +169,7 @@ an extra right fails the command.
 
 Publishing moves an entry's published pointer in Postgres, then writes the
 entry's snapshot into the `snapshots` KV namespace. `admin` binds that
-namespace as `SNAPSHOTS`, and `welcome` will read only it, never the database
+namespace as `SNAPSHOTS`, and `welcome` reads only it, never the database
 ([C4, C5](docs/DECISIONS.md#cms-architecture)). One namespace serves both
 workers. Its id is committed in `apps/admin/wrangler.jsonc`, because an id is
 not a secret.
@@ -234,6 +234,44 @@ The first production run, in order:
 
 From then on the deploy applies the migrations and checks the privileges before
 it uploads `admin`.
+
+## Public site
+
+`welcome` serves the public site from the snapshots `admin` publishes. It reads
+only KV, never the database ([C4, C5](docs/DECISIONS.md#cms-architecture)), so
+a database outage cannot take the site down.
+
+| Route                 | What it serves                                                            |
+| --------------------- | ------------------------------------------------------------------------- |
+| `/`                   | `Welcome`, the site introduction and the published articles, newest first |
+| `/en/articles/[slug]` | One published article; an unknown slug answers 404                        |
+| `/sitemap.xml`        | The home page and every published article                                 |
+| `/en/feed.xml`        | An Atom feed of the published articles                                    |
+
+`apps/welcome/wrangler.jsonc` sets `SITE_ORIGIN`, the one origin behind every
+absolute URL: canonical links, the sitemap, the feed and the `Sitemap:` line in
+`static/robots.txt`. It names production under `bun run dev` too, so a local
+page or a preview URL never claims to be canonical. Changing the origin means
+changing both that variable and `static/robots.txt`; a unit test keeps them
+equal.
+
+To see an article under `bun run dev`, seed the local KV the dev server reads.
+Run these from `apps/welcome`, with values that match the snapshot shape
+described in [Publishing](#publishing):
+
+```sh
+cd apps/welcome
+bunx wrangler kv key put "entry:article:hello-world" \
+  '{"snapshot_v":1,"type":"article","slug":"hello-world","title":"Hello, world","summary":"The first article.","blocks":[{"type":"markdown","html":"<p>First paragraph.</p>"}],"publishedAt":"2026-11-01T09:00:00.000Z","updatedAt":"2026-11-01T09:00:00.000Z"}' \
+  --local --binding SNAPSHOTS
+bunx wrangler kv key put "index:article:en" \
+  '{"snapshot_v":1,"type":"article","locale":"en","items":[{"slug":"hello-world","title":"Hello, world","summary":"The first article.","publishedAt":"2026-11-01T09:00:00.000Z"}]}' \
+  --local --binding SNAPSHOTS
+```
+
+Then open <http://localhost:5173/en/articles/hello-world>. These commands write
+to `apps/welcome/.wrangler/state`, the directory `vite dev` reads. The e2e
+suite seeds its own state in `.wrangler/e2e-state`, so the two never mix.
 
 ## Commits
 
