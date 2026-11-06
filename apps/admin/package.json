@@ -16,6 +16,7 @@
     "gen": "wrangler types"
   },
   "dependencies": {
+    "@ycmcuenca/cms-core": "workspace:*",
     "@ycmcuenca/db": "workspace:*",
     "drizzle-orm": "0.45.4",
     "jose": "6.2.12",

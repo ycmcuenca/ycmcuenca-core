@@ -22,6 +22,7 @@
       "name": "admin",
       "version": "0.1.0",
       "dependencies": {
+        "@ycmcuenca/cms-core": "workspace:*",
         "@ycmcuenca/db": "workspace:*",
         "drizzle-orm": "0.45.4",
         "jose": "6.2.12",
