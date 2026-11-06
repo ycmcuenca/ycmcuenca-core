@@ -66,6 +66,8 @@ Current state, verified against the code on 2026-11-06 after `content-store`, `r
   - `textarea`: `Textarea` with `maxlength`;
   - `markdown`: a monospace `Textarea` with `rows=24`, and no `maxlength`, because the limit is in bytes.
 - Every control gets `id`, `name`, `required`, and, when there is an error, `aria-invalid="true"` and `aria-describedby="<id>-error"`.
+- A required field's label carries a visible `*` with `aria-hidden="true"`; the control's `required` attribute stays the accessible marker, so a screen reader hears one meaning, not two (amendment 2).
+- A body must hold at least one non-whitespace character (amendment 2). `articleSchema` checks the body as a whole, next to the byte limit, so the issue lands on the `body` field: the form shows "Enter the body." there and publish refuses the same content. A body that is only spaces is not an article.
 - The body is posted as one field, `body`. `src/lib/server/entry-form.ts` turns `FormData` into cms-core input (`{ title, slug, summary, body: [{ type: "markdown", source }] }`) and maps an existing entry back to form values. That is the only place that knows S2 edits one block.
 - `entry-form.ts` also maps a store refusal to a field error: a `DuplicateSlugError` (thrown by `createEntry` and `updateSlug`) becomes `{ slug: <the error's message> }`, so create and save show the same text. The text is the store's ("An article already uses the slug ..."), not a second message to keep in step.
 - When `slugLocked` is set, the slug renders as a read-only `Input` with the note "Published slugs cannot change.", and the server ignores any posted `slug` (spec).
@@ -85,7 +87,7 @@ Current state, verified against the code on 2026-11-06 after `content-store`, `r
   2. Read the latest revision and compare its title, summary and body with the submitted ones (deep equality). The submitted slug counts as changed only when the entry is unlocked and it differs from the entry's slug.
   3. Neither changed: return `fail(400, { message: "No changes to save." })`.
   4. Slug changed: call `changeSlug`. A refusal is shown at the slug field (the use case's reason, which is the store's message for a taken slug).
-  5. Content changed: `appendRevision`. A `ConcurrentRevisionError` returns `fail(409, { message: "Another save came first. Reload and try again." })`.
+  5. Content changed: `appendRevision`. A `ConcurrentRevisionError` returns `fail(409, { message: "Another save came first. Reload and try again.", values })`, so the form keeps the text the owner typed (amendment 2).
   - A slug-only change therefore updates the slug and adds no revision. If step 4 succeeds and step 5 then fails, the slug stays changed (a never-published entry has no snapshot, so nothing public depends on it) and the owner sees the 409 message.
 - **`preview`:** validate, then `renderBody` (D5) on the body, and return `{ values, preview: blocks }` without writing anything. The page renders `preview` with `cms-render`'s `BlockList`, so the preview and `welcome` share markup.
 - A taken slug is mapped to the slug field's error by `entry-form.ts` (D2) on both `create` and `save`.

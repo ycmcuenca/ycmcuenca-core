@@ -47,15 +47,23 @@ Depends: 5
 Check: `scripts/docs/check-living-docs.sh`
 
 - [x] 6.1 Add an "Editing content" paragraph to the README (the editor, the preview, the slug rule, the one-block form) and a short `packages/ui/README.md` (the CSP rule for components, how to add one). Verify `scripts/docs/check-living-docs.sh` passes
-- [x] 6.2 Run the local CI equivalent from `AGENTS.md` plus `bun run test:integration`. Verify all pass, `bunx openspec validate admin-editor --strict` passes, and `ci-ok` is green on the pull request
+- [x] 6.2 Run the local CI equivalent from `AGENTS.md` plus `bun run test:integration`. Verify all pass, `bunx openspec validate admin-editor --strict` passes, and `ci-ok` is green on the pull request (amendment 2: the `ci-ok` clause is now task 8.4)
 
-## 7. Owner production check (manual)
+## 7. Amendment 2 behaviours
+
+Check: `bunx turbo run check lint test --filter=@ycmcuenca/cms-core --filter=admin`
+
+- [ ] 7.1 Show a visible required marker on each required field's label in `apps/admin/src/lib/components/EntryForm.svelte`: an `aria-hidden` asterisk, with the control's `required` attribute left as the accessible marker (design D2). Verify `EntryForm.test.ts` shows one marker per required field, in order
+- [ ] 7.2 Refuse a whitespace-only body in `packages/cms-core/src/types/article.ts` with a body-level check next to the byte limit and the message "Enter the body." (design D2), so it lands on the `body` field in `admin` and publish refuses it too. Verify one `article.test.ts` case (spaces only → `{ body: "Enter the body." }`)
+
+## 8. Owner production check (manual)
 
 Phase: after-verify
 
-- [ ] 7.1 **Owner task (the Sprint 2 exit criteria without caching):** after the release deploy of `admin`, create and publish a real English article in production `admin`. Verify it appears at `https://welcome.ycmcuenca.workers.dev/en/articles/<slug>`, on the home page, in the sitemap and in the feed
-- [ ] 7.2 Edit that article in production `admin`. Verify the revision list grows and earlier revisions are unchanged
-- [ ] 7.3 Publish an article with a body close to 32 KB, and record the publish request's `cpuTimeMs` from Workers Logs in the design's facts table (design D4). Verify the value is recorded, and if it is consistently above 10 ms, open a follow-up to lower the limit
+- [ ] 8.1 **Owner task (the Sprint 2 exit criteria without caching):** after the release deploy of `admin`, create and publish a real English article in production `admin`. Verify it appears at `https://welcome.ycmcuenca.workers.dev/en/articles/<slug>`, on the home page, in the sitemap and in the feed
+- [ ] 8.2 Edit that article in production `admin`. Verify the revision list grows and earlier revisions are unchanged
+- [ ] 8.3 Publish an article with a body close to 32 KB, and record the publish request's `cpuTimeMs` from Workers Logs in the design's facts table (design D4). Verify the value is recorded, and if it is consistently above 10 ms, open a follow-up to lower the limit
+- [ ] 8.4 After `/ship` opens the pull request, verify `ci-ok` is green on it (moved here from task 6.2, amendment 2)
 
 ## Workflow follow-up
 
