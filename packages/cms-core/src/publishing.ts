@@ -133,6 +133,8 @@ export async function changeSlug(
 // The shared projection (design D2): read the entry again, which is the
 // source of truth, then write the entry snapshot or remove it, rebuild the
 // index from every published entry of the type, and only then clear the mark.
+// The mark clears only while the pointer still names the revision that was
+// projected, so an overlapping publish leaves it dirty for Retry and W1.
 async function project(
   dependencies: PublishingDependencies,
   entryId: string,
@@ -155,7 +157,7 @@ async function project(
   if (!(await writeIndex(dependencies, entry))) {
     return { ok: true, live: false };
   }
-  await dependencies.entries.markProjected(entry.id);
+  await dependencies.entries.markProjected(entry.id, entry.publishedRevisionId);
   return { ok: true, live: true };
 }
 

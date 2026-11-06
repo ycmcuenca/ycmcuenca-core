@@ -12,7 +12,7 @@ import type {
   RevisionRecord,
   SlugChange,
 } from "@ycmcuenca/cms-core";
-import { asc, desc, eq, sql } from "drizzle-orm";
+import { and, asc, desc, eq, isNull, sql } from "drizzle-orm";
 import type { Database } from "./client.ts";
 import {
   DuplicateSlugError,
@@ -30,7 +30,8 @@ export function entryStoreFor(database: Database): EntryStore {
     markPublished: (entryId, revisionId, at) =>
       markPublished(database, entryId, revisionId, at),
     markUnpublished: (entryId) => markUnpublished(database, entryId),
-    markProjected: (entryId) => markProjected(database, entryId),
+    markProjected: (entryId, revisionId) =>
+      markProjected(database, entryId, revisionId),
     listPublished: (type) => listPublished(database, type),
     updateSlug: (entryId, slug) => moveEntrySlug(database, entryId, slug),
   };
@@ -117,17 +118,23 @@ async function markUnpublished(
 }
 
 // One UPDATE clears the mark after the entry snapshot and the index are both
-// written (design D2).
+// written (design D2). It names the revision that was projected, so a publish
+// or rollback that landed in between leaves the mark dirty: that projection
+// owns the snapshot now, and Retry or W1 reprojects this entry from the
+// database of record.
 async function markProjected(
   database: Database,
   entryId: string,
+  revisionId: string | null,
 ): Promise<void> {
-  const rows = await database
+  const projectedPointer =
+    revisionId === null
+      ? isNull(entries.publishedRevisionId)
+      : eq(entries.publishedRevisionId, revisionId);
+  await database
     .update(entries)
     .set({ projectionState: "clean" })
-    .where(eq(entries.id, entryId))
-    .returning({ id: entries.id });
-  requireRow(rows, entryId);
+    .where(and(eq(entries.id, entryId), projectedPointer));
 }
 
 // The index's source of truth (design D4): every entry with a published

@@ -110,8 +110,14 @@ class MemoryEntryStore implements EntryStore {
     });
   }
 
-  async markProjected(entryId: string): Promise<void> {
+  async markProjected(
+    entryId: string,
+    revisionId: string | null,
+  ): Promise<void> {
     const entry = this.entry(entryId);
+    if (entry.publishedRevisionId !== revisionId) {
+      return;
+    }
     this.records.set(entryId, { ...entry, projectionState: "clean" });
   }
 
@@ -211,6 +217,38 @@ class MemorySnapshotStore implements SnapshotStore {
       throw new Error("The snapshot store is unavailable.");
     }
     this.indexes.set(indexKey(type, locale), index);
+  }
+}
+
+// Holds a step to run just before the next entry snapshot lands, so a test
+// can land another publish in the middle of a projection.
+class InterleavingSnapshotStore implements SnapshotStore {
+  private readonly inner: MemorySnapshotStore;
+  private readonly steps: Array<() => Promise<void>> = [];
+
+  constructor(inner: MemorySnapshotStore) {
+    this.inner = inner;
+  }
+
+  beforePutEntry(step: () => Promise<void>): void {
+    this.steps.push(step);
+  }
+
+  async putEntry(
+    type: string,
+    slug: string,
+    snapshot: EntrySnapshot,
+  ): Promise<void> {
+    await this.steps.shift()?.();
+    await this.inner.putEntry(type, slug, snapshot);
+  }
+
+  deleteEntry(type: string, slug: string): Promise<void> {
+    return this.inner.deleteEntry(type, slug);
+  }
+
+  putIndex(type: string, locale: string, index: IndexSnapshot): Promise<void> {
+    return this.inner.putIndex(type, locale, index);
   }
 }
 
@@ -320,6 +358,39 @@ describe("publishRevision", () => {
       second.id,
       third.id,
     ]);
+  });
+
+  it("keeps the mark dirty when another publish moves the pointer mid-projection", async () => {
+    const fixture = setup();
+    const { entries, snapshots, clock } = fixture;
+    const interleaved = new InterleavingSnapshotStore(snapshots);
+    const dependencies = { ...fixture.dependencies, snapshots: interleaved };
+    const entry = entries.createEntry("hello-world");
+    const first = entries.createRevision(entry.id, content("First"));
+    const second = entries.createRevision(entry.id, content("Second"));
+
+    // The pointer stays put, so the projection clears the mark as before.
+    await publishRevision(dependencies, entry.id, first.id);
+    expect(entries.entry(entry.id).projectionState).toBe("clean");
+
+    // Another tab publishes `second` while this one writes `first`'s
+    // snapshot, so this projection finishes with a pointer that moved on.
+    interleaved.beforePutEntry(() =>
+      entries.markPublished(entry.id, second.id, clock.now()),
+    );
+    await publishRevision(dependencies, entry.id, first.id);
+
+    expect(entries.entry(entry.id)).toMatchObject({
+      publishedRevisionId: second.id,
+      projectionState: "dirty",
+    });
+
+    // Retry reprojects what the pointer now names and clears the mark.
+    const repaired = await retryProjection(dependencies, entry.id);
+
+    expect(repaired).toEqual({ ok: true, live: true });
+    expect(entries.entry(entry.id).projectionState).toBe("clean");
+    expect(snapshots.entryFor("article", "hello-world")?.title).toBe("Second");
   });
 
   it("refuses a revision that belongs to another entry", async () => {
