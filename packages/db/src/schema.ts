@@ -2,7 +2,10 @@
 // addressable thing (a type and a slug, unique together); `revisions` is its
 // append-only history, numbered per entry. `gen_random_uuid()` is built into
 // Postgres 13 and later, so no extension is needed.
+import { sql } from "drizzle-orm";
 import {
+  type AnyPgColumn,
+  check,
   integer,
   jsonb,
   pgTable,
@@ -12,7 +15,12 @@ import {
   uuid,
 } from "drizzle-orm/pg-core";
 
-/** An addressable piece of content: a type and a slug, unique together. */
+/**
+ * An addressable piece of content: a type and a slug, unique together. The
+ * publishing columns are the database of record (design D4 in
+ * `revisions-publishing`): the published revision, the two publish times, and
+ * whether the projection to KV is still pending.
+ */
 export const entries = pgTable(
   "entries",
   {
@@ -22,8 +30,22 @@ export const entries = pgTable(
     createdAt: timestamp("created_at", { withTimezone: true })
       .notNull()
       .defaultNow(),
+    // `AnyPgColumn` breaks the type cycle: `revisions` references `entries`
+    // and the published pointer references `revisions` (design D4).
+    publishedRevisionId: uuid("published_revision_id").references(
+      (): AnyPgColumn => revisions.id,
+    ),
+    firstPublishedAt: timestamp("first_published_at", { withTimezone: true }),
+    lastPublishedAt: timestamp("last_published_at", { withTimezone: true }),
+    projectionState: text("projection_state").notNull().default("clean"),
   },
-  (table) => [unique("entries_type_slug_unique").on(table.type, table.slug)],
+  (table) => [
+    unique("entries_type_slug_unique").on(table.type, table.slug),
+    check(
+      "entries_projection_state_check",
+      sql`${table.projectionState} in ('clean', 'dirty')`,
+    ),
+  ],
 );
 
 /**
