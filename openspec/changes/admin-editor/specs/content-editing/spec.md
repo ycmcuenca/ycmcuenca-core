@@ -29,6 +29,11 @@ The create and edit forms SHALL show exactly the fields the content type describ
 - **WHEN** the owner opens the form to create an article
 - **THEN** it shows Title, Slug and Summary and a Markdown body area, in that order, each labeled
 
+#### Scenario: Required marker
+
+- **WHEN** the owner opens the form to create an article
+- **THEN** each required field's label shows a visible marker, and each control still carries the `required` attribute
+
 ### Requirement: Create an article
 
 Submitting a valid new-article form SHALL create the entry with its first revision and open the entry's page. An invalid submission SHALL create nothing and show the form again with the entered values.
@@ -70,6 +75,11 @@ When a submission fails validation, each error SHALL appear next to its field, t
 
 - **WHEN** the owner submits a form with an empty title and the slug `Bad Slug`
 - **THEN** the title and slug fields each show their message, are marked invalid, and keep the values entered, and the summary and body keep theirs
+
+#### Scenario: Blank body
+
+- **WHEN** the owner submits an article whose body holds only spaces
+- **THEN** nothing is created, the body field shows "Enter the body." next to it and is marked invalid, and every entered value is kept
 
 ### Requirement: Preview without saving
 
