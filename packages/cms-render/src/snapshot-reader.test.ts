@@ -17,6 +17,8 @@ const article = {
   updatedAt: "2026-10-19T10:00:00.000Z",
 };
 
+// An index written before its items carried `updatedAt`: the reader must still
+// accept it, so an older index never empties the home page (design D7).
 const index = {
   snapshot_v: 1,
   type: "article",

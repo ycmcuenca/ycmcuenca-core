@@ -47,12 +47,14 @@ function published(
   slug: string,
   title: string,
   firstPublishedAt: Date,
+  lastPublishedAt: Date = firstPublishedAt,
 ): PublishedEntry {
   return {
     slug,
     title,
     summary: `${title} summary.`,
     firstPublishedAt,
+    lastPublishedAt,
   };
 }
 
@@ -107,6 +109,19 @@ describe("buildIndexSnapshot", () => {
 
     expect(index.items.map((item) => item.slug)).toEqual(["newer", "older"]);
     expect(index.items[0]?.publishedAt).toBe("2026-11-02T09:00:00.000Z");
+  });
+
+  it("carries each entry's last-update date", () => {
+    const index = buildIndexSnapshot("article", [
+      published(
+        "hello-world",
+        "Hello",
+        new Date("2026-11-01T09:00:00.000Z"),
+        new Date("2026-11-05T09:00:00.000Z"),
+      ),
+    ]);
+
+    expect(index.items[0]?.updatedAt).toBe("2026-11-05T09:00:00.000Z");
   });
 
   it("orders entries that share a first-publish time by slug", () => {

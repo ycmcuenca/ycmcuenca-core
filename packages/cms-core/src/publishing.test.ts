@@ -127,7 +127,8 @@ class MemoryEntryStore implements EntryStore {
       if (
         entry.type !== type ||
         entry.publishedRevisionId === null ||
-        entry.firstPublishedAt === null
+        entry.firstPublishedAt === null ||
+        entry.lastPublishedAt === null
       ) {
         continue;
       }
@@ -141,6 +142,7 @@ class MemoryEntryStore implements EntryStore {
         title: content.title,
         summary: content.summary,
         firstPublishedAt: entry.firstPublishedAt,
+        lastPublishedAt: entry.lastPublishedAt,
       });
     }
     return published;
@@ -334,6 +336,7 @@ describe("publishRevision", () => {
         title: "Hello world",
         summary: "Hello world summary.",
         publishedAt: "2026-11-01T09:00:00.000Z",
+        updatedAt: "2026-11-01T09:00:00.000Z",
       },
     ]);
   });
@@ -491,12 +494,14 @@ describe("the type index", () => {
         title: "Newer",
         summary: "Newer summary.",
         publishedAt: "2026-11-02T09:00:00.000Z",
+        updatedAt: "2026-11-02T09:00:00.000Z",
       },
       {
         slug: "older",
         title: "Older",
         summary: "Older summary.",
         publishedAt: "2026-11-01T09:00:00.000Z",
+        updatedAt: "2026-11-01T09:00:00.000Z",
       },
     ]);
   });

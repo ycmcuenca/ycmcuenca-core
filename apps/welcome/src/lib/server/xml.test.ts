@@ -41,16 +41,42 @@ describe("sitemapXml", () => {
     const xml = sitemapXml("https://example.test/", [
       {
         url: "https://example.test/en/articles/b",
-        lastModified: "2026-11-02T00:00:00.000Z",
+        publishedAt: "2026-11-02T00:00:00.000Z",
+        updatedAt: "2026-11-02T00:00:00.000Z",
       },
       {
         url: "https://example.test/en/articles/a",
-        lastModified: "2026-11-01T00:00:00.000Z",
+        publishedAt: "2026-11-01T00:00:00.000Z",
+        updatedAt: "2026-11-01T00:00:00.000Z",
       },
     ]);
     expect(xml.match(/<url>/g)).toHaveLength(3);
     expect(xml).toContain("<loc>https://example.test/en/articles/b</loc>");
     expect(xml).toContain("<lastmod>2026-11-02T00:00:00.000Z</lastmod>");
+  });
+
+  it("shows the update date when it differs from the first publish", () => {
+    const xml = sitemapXml("https://example.test/", [
+      {
+        url: "https://example.test/en/articles/a",
+        publishedAt: "2026-11-01T00:00:00.000Z",
+        updatedAt: "2026-11-05T00:00:00.000Z",
+      },
+    ]);
+
+    expect(xml).toContain("<lastmod>2026-11-05T00:00:00.000Z</lastmod>");
+    expect(xml).not.toContain("<lastmod>2026-11-01T00:00:00.000Z</lastmod>");
+  });
+
+  it("falls back to the first publish when an older index has no update date", () => {
+    const xml = sitemapXml("https://example.test/", [
+      {
+        url: "https://example.test/en/articles/a",
+        publishedAt: "2026-11-01T00:00:00.000Z",
+      },
+    ]);
+
+    expect(xml).toContain("<lastmod>2026-11-01T00:00:00.000Z</lastmod>");
   });
 });
 

@@ -41,12 +41,15 @@ export const articleIndex: IndexSnapshot = {
   snapshot_v: 1,
   type: "article",
   locale: "en",
-  items: publishedArticles.map(({ slug, title, summary, publishedAt }) => ({
-    slug,
-    title,
-    summary,
-    publishedAt,
-  })),
+  items: publishedArticles.map(
+    ({ slug, title, summary, publishedAt, updatedAt }) => ({
+      slug,
+      title,
+      summary,
+      publishedAt,
+      updatedAt,
+    }),
+  ),
 };
 
 /**

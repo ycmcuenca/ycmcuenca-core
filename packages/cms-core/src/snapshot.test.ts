@@ -29,12 +29,14 @@ const index = {
       title: "Hello world",
       summary: "A short summary.",
       publishedAt: "2026-10-19T09:00:00.000Z",
+      updatedAt: "2026-10-19T09:00:00.000Z",
     },
     {
       slug: "second-entry",
       title: "Second entry",
       summary: "Another summary.",
       publishedAt: "2026-10-19T10:00:00.000Z",
+      updatedAt: "2026-10-20T10:00:00.000Z",
     },
   ],
 };
@@ -88,6 +90,16 @@ describe("readIndexSnapshot", () => {
   it("reads back an index snapshot with both items in order", () => {
     expect(indexSnapshot.safeParse(index).success).toBe(true);
     expect(readIndexSnapshot(storedInKv(index))).toEqual(index);
+  });
+
+  it("reads an index written before its items carried an update date", () => {
+    const stored = storedInKv(index);
+    const items = stored.items as { updatedAt?: string }[];
+    for (const item of items) {
+      delete item.updatedAt;
+    }
+
+    expect(readIndexSnapshot(stored).items).toHaveLength(2);
   });
 
   it("refuses snapshot version 2, naming it", () => {

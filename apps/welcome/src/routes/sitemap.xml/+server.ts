@@ -15,7 +15,8 @@ export const GET: RequestHandler = async ({ request }) => {
   );
   const articles = (index?.items ?? []).map((item) => ({
     url: absoluteUrl(`/en/articles/${item.slug}`),
-    lastModified: item.publishedAt,
+    publishedAt: item.publishedAt,
+    updatedAt: item.updatedAt,
   }));
   return new Response(sitemapXml(absoluteUrl("/"), articles), {
     headers: { "content-type": "application/xml" },

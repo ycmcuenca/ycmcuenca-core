@@ -138,7 +138,8 @@ async function markProjected(
 }
 
 // The index's source of truth (design D4): every entry with a published
-// revision, joined to that revision for its title and summary. An unreadable
+// revision, joined to that revision for its title and summary, with both
+// publish times so the index can carry its last-update date. An unreadable
 // content version throws, so the whole projection fails loudly instead of
 // dropping the entry silently.
 async function listPublished(
@@ -150,6 +151,7 @@ async function listPublished(
       id: entries.id,
       slug: entries.slug,
       firstPublishedAt: entries.firstPublishedAt,
+      lastPublishedAt: entries.lastPublishedAt,
       schemaV: revisions.schemaV,
       content: revisions.content,
     })
@@ -161,6 +163,9 @@ async function listPublished(
     if (row.firstPublishedAt === null) {
       throw new Error(`Published entry ${row.id} has no first publish time.`);
     }
+    if (row.lastPublishedAt === null) {
+      throw new Error(`Published entry ${row.id} has no last publish time.`);
+    }
     const content = readStoredContent({
       schema_v: row.schemaV,
       content: row.content,
@@ -170,6 +175,7 @@ async function listPublished(
       title: content.title,
       summary: content.summary,
       firstPublishedAt: row.firstPublishedAt,
+      lastPublishedAt: row.lastPublishedAt,
     };
   });
 }

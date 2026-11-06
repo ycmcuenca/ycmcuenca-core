@@ -36,6 +36,9 @@ const indexItem = z.object({
   title: z.string(),
   summary: z.string(),
   publishedAt: z.iso.datetime(),
+  // Optional so an index written before the field existed still reads; the
+  // reader falls back to `publishedAt` for its last-update date (design D7).
+  updatedAt: z.iso.datetime().optional(),
 });
 
 /** The list of one type's published entries (design D7). */

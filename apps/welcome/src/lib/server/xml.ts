@@ -23,17 +23,18 @@ export function escapeXml(value: string): string {
 export interface SitemapArticle {
   /** The article's absolute URL. */
   readonly url: string;
+  /** The article's first-publish date, ISO 8601. */
+  readonly publishedAt: string;
   /**
-   * The last date the index carries for the article, ISO 8601. The index is
-   * built from first-publish times (design D3), so that is the date shown
-   * until the index also carries the last-publish time.
+   * The article's last-update date, ISO 8601. An index written before this
+   * field existed lacks it, so that article shows its first-publish date.
    */
-  readonly lastModified: string;
+  readonly updatedAt?: string;
 }
 
 /**
  * The XML sitemap (sitemaps.org 0.9, design D3): the home page and every
- * published article, each article with its available last update date.
+ * published article, each article with its last-update date.
  */
 export function sitemapXml(
   homeUrl: string,
@@ -43,7 +44,7 @@ export function sitemapXml(
     `<url><loc>${escapeXml(homeUrl)}</loc></url>`,
     ...articles.map(
       (article) =>
-        `<url><loc>${escapeXml(article.url)}</loc><lastmod>${escapeXml(article.lastModified)}</lastmod></url>`,
+        `<url><loc>${escapeXml(article.url)}</loc><lastmod>${escapeXml(lastModified(article))}</lastmod></url>`,
     ),
   ];
   return [
@@ -53,6 +54,12 @@ export function sitemapXml(
     `</urlset>`,
     ``,
   ].join("\n");
+}
+
+// The sitemap's last-update date: the index's update time, or the first-publish
+// time when an older index carries none (design D3).
+function lastModified(article: SitemapArticle): string {
+  return article.updatedAt ?? article.publishedAt;
 }
 
 /** One entry in the Atom feed (design D3). */
@@ -100,8 +107,9 @@ export function atomFeed(
   return lines.join("\n");
 }
 
-// One feed entry. Atom requires an `updated` time, so the first-publish time
-// stands in for it: a snapshot keeps no per-entry change beyond that (D3).
+// One feed entry. Atom requires an `updated` time, and the spec dates the feed
+// entry by its first-publish time, so both times use `publishedAt` even though
+// an entry snapshot also carries a later update time (D3).
 function entryXml(entry: FeedEntry): string {
   return [
     `<entry>`,

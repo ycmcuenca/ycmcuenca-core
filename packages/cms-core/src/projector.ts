@@ -34,9 +34,9 @@ export function buildEntrySnapshot(
 }
 
 /**
- * Builds the index of one type (design D3): every published entry, newest
- * first publish first, and by slug when two share a first-publish time, so
- * the order is stable.
+ * Builds the index of one type (design D3): every published entry with its
+ * first-publish and last-update times, newest first publish first, and by slug
+ * when two share a first-publish time, so the order is stable.
  */
 export function buildIndexSnapshot(
   type: string,
@@ -47,6 +47,7 @@ export function buildIndexSnapshot(
     title: entry.title,
     summary: entry.summary,
     publishedAt: entry.firstPublishedAt.toISOString(),
+    updatedAt: entry.lastPublishedAt.toISOString(),
   }));
   return indexSnapshot.parse({
     snapshot_v: snapshotVersion,
