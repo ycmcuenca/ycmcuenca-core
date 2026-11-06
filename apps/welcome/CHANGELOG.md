@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.2.0](https://github.com/ycmcuenca/ycmcuenca-core/compare/welcome-v0.1.0...welcome-v0.2.0) (2026-11-06)
+
+
+### Features
+
+* **welcome:** date sitemap entries by their last update ([36fb957](https://github.com/ycmcuenca/ycmcuenca-core/commit/36fb957fce1592c28d1e7b17a50152aaae2dae78))
+* **welcome:** read and render published snapshots ([681cef4](https://github.com/ycmcuenca/ycmcuenca-core/commit/681cef408e54aed5cc958524276280d4428784bc))
+
 ## [0.1.0](https://github.com/ycmcuenca/ycmcuenca-core/compare/welcome-v0.0.1...welcome-v0.1.0) (2026-10-18)
 
 

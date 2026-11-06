@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.3.0](https://github.com/ycmcuenca/ycmcuenca-core/compare/admin-v0.2.0...admin-v0.3.0) (2026-11-06)
+
+
+### Features
+
+* **welcome:** date sitemap entries by their last update ([36fb957](https://github.com/ycmcuenca/ycmcuenca-core/commit/36fb957fce1592c28d1e7b17a50152aaae2dae78))
+
 ## [0.2.0](https://github.com/ycmcuenca/ycmcuenca-core/compare/admin-v0.1.0...admin-v0.2.0) (2026-11-06)
 
 
