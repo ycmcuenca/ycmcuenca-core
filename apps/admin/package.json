@@ -18,6 +18,7 @@
   "dependencies": {
     "@ycmcuenca/cms-core": "workspace:*",
     "@ycmcuenca/db": "workspace:*",
+    "@ycmcuenca/ui": "workspace:*",
     "drizzle-orm": "0.45.4",
     "jose": "6.2.12",
     "pg": "8.23.1"
@@ -27,6 +28,7 @@
     "@sveltejs/adapter-cloudflare": "8.0.1",
     "@sveltejs/kit": "3.1.0",
     "@sveltejs/vite-plugin-svelte": "7.3.1",
+    "@tailwindcss/vite": "4.3.4",
     "@types/node": "24.9.2",
     "@ycmcuenca/edge": "workspace:*",
     "@ycmcuenca/eslint-config": "workspace:*",

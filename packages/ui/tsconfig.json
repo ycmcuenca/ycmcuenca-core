@@ -1,0 +1,24 @@
+{
+  // A source-only Svelte package (design D1): the consuming app bundles the
+  // components through Vite, so they are type-checked here but never emitted
+  // on their own. It extends the same strictness as @ycmcuenca/edge, and adds
+  // Svelte's ambient types so `svelte-check` understands components.
+  "extends": "@ycmcuenca/tsconfig/base.json",
+  "compilerOptions": {
+    "target": "esnext",
+    "lib": ["esnext", "dom", "dom.iterable"],
+    "module": "esnext",
+    "moduleResolution": "bundler",
+    // Relative imports carry their extension so Node's ESM loader (which the
+    // apps' Vite configs use) can resolve this package's source (design D1).
+    "allowImportingTsExtensions": true,
+    "verbatimModuleSyntax": true,
+    "isolatedModules": true,
+    "skipLibCheck": true,
+    "noEmit": true,
+    // Svelte's own types, and only those: the package has no DOM test runner
+    // and no Node-only API.
+    "types": ["svelte"]
+  },
+  "include": ["src"]
+}

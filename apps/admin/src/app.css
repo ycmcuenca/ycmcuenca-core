@@ -1,0 +1,19 @@
+/* The admin app's stylesheet (design D1): the shared UI package brings
+   Tailwind and the neutral theme, and this file adds only what admin owns. */
+@import "@ycmcuenca/ui/styles.css";
+
+/* cms-core renders a Markdown table cell's alignment as one of these classes,
+   because the strict CSP allows no inline style except SvelteKit's announcer.
+   Copied from apps/welcome/src/app.css:1-13 until S5 gives the apps one shared
+   stylesheet (design D7). */
+.align-left {
+  text-align: left;
+}
+
+.align-center {
+  text-align: center;
+}
+
+.align-right {
+  text-align: right;
+}
