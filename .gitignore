@@ -22,6 +22,9 @@ test-results/
 # but still key material: never committed)
 .access-fixture/
 
+# Personal CV (phone number and address: this repo is public, so never committed)
+cv_resume/
+
 # Editor and OS noise
 .DS_Store
 *.log
