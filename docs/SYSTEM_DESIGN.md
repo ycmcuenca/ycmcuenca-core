@@ -47,6 +47,7 @@ A reference such as `ci D9` points to decision D9 in an archived change's
   - [Cache invalidation by tag](#cache-invalidation-by-tag)
   - [Branch-per-PR database testing](#branch-per-pr-database-testing)
   - [Expand and contract migrations](#expand-and-contract-migrations)
+  - [Data-driven forms from the content model](#data-driven-forms-from-the-content-model)
 - [Sprint 3: Media, inbox and backups](#sprint-3-media-inbox-and-backups)
   - [Content-addressed storage](#content-addressed-storage)
   - [Upload protocols and integrity checks](#upload-protocols-and-integrity-checks)
@@ -134,6 +135,7 @@ flowchart LR
         tags["Cache invalidation by tag"]:::planned
         branches["Branch-per-PR<br/>database testing"]:::built
         expand["Expand and contract<br/>migrations"]:::built
+        forms["Data-driven forms<br/>from the content model"]:::built
     end
     subgraph S3["S3 Media, inbox and backups"]
         direction TB
@@ -1062,6 +1064,9 @@ flowchart LR
   hashes it. The policy allows that one style by its hash, with
   `'unsafe-hashes'`, which CSP3 requires for a style attribute.
 - An inline `style` in `app.html` broke the hash-based policy and was removed.
+- A component library under this policy must draw from an external stylesheet.
+  A component that writes a `style` attribute cannot join `@ycmcuenca/ui`,
+  because the policy allows only the announcer's hash.
 - HSTS has no `preload` flag, because a `workers.dev` subdomain cannot be
   submitted to the browsers' preload list.
 
@@ -1487,7 +1492,9 @@ they are the write and read sides of publishing. Next,
 old data readable. Finish with
 [cache invalidation by tag](#cache-invalidation-by-tag),
 [branch-per-PR database testing](#branch-per-pr-database-testing) and
-[expand and contract migrations](#expand-and-contract-migrations). After the
+[expand and contract migrations](#expand-and-contract-migrations). Finish with
+[data-driven forms](#data-driven-forms-from-the-content-model), the concept the
+admin editor applies. After the
 sprint, each entry is completed when its change is archived.
 
 ### Hexagonal architecture (ports and adapters)
@@ -2101,6 +2108,116 @@ flowchart LR
 - [Evolutionary Database Design](https://martinfowler.com/articles/evodb.html),
   Pramod Sadalage and Martin Fowler. Read on 2026-10-19.
 
+### Data-driven forms from the content model
+
+**Status:** built (S2)
+
+**What it is**
+
+A content model defines an entry's fields, such as a title, a slug, a summary
+and a body. A data-driven form reads that definition and builds its controls
+from it. The form is then a view of the model, not a second copy: a field added
+to the model appears in the form with no change to the form's code. The limits
+and labels live in one place, so the form, the validator and the store cannot
+disagree.
+
+```mermaid
+flowchart LR
+    type["Content type<br/>fields, editors, limits, labels"]:::built
+    description["Its description<br/>(cms-core)"]:::built
+    form["Entry form<br/>one control per field"]:::built
+    input["FormData"]:::built
+    validator["The same schema<br/>validates it"]:::built
+    errors["One message<br/>per field"]:::built
+
+    type --> description --> form -- "submit" --> input --> validator
+    validator -- "invalid" --> errors
+    errors -- "values kept" --> form
+
+    classDef built fill:#d1fae5,stroke:#047857,color:#111827
+```
+
+**Trade-offs**
+
+- A generated form gives up a bespoke layout. One component draws every form,
+  so a type cannot ask for a special arrangement. A hand-written form per type
+  keeps full control, but it repeats the model's limits and drifts from them
+  on the first change.
+- The browser's validation is a convenience, not a gate. `required` and
+  `maxlength` help the owner sooner, but a request can bypass them, so the
+  server validates again with the same schema. The server keeps one rule and
+  the browser keeps a copy; a copy can lag, which is the cost.
+- A generic form library driven by a general schema would add machinery that
+  one editor and one content type do not need yet.
+
+**How this repository applies it**
+
+`formDescription(article)` in `packages/cms-core/src/form.ts` describes each
+field: its label, whether it is required, its limit and which editor it wants.
+`apps/admin/src/lib/components/EntryForm.svelte` loops over that description and
+renders a label and the matching control: an input for a single line, a
+textarea for the summary, and a monospace textarea for the Markdown body. The
+route owns the `<form>` element and its buttons, so the form works without
+JavaScript and `use:enhance` only improves it.
+
+`apps/admin/src/lib/server/entry-form.ts` reads the posted form and validates it
+with `validateArticle`, the same schema the store uses. A refused submission
+returns the entered values with one message per field, and each control points
+at its message with `aria-describedby`. The body's byte limit is checked on the
+server only, because `maxlength` counts characters, not bytes.
+
+**What we learned here**
+
+> Draft: awaiting the owner's rewrite.
+
+- The form and the store must validate with one schema. A second validator
+  would have drifted on the first change.
+- A visible required marker belongs to the label. The asterisk is hidden from
+  assistive technology, which reads the control's `required` attribute instead.
+- `maxlength` counts characters, so it cannot express a byte limit. The body
+  relies on the server check.
+- A refused submission must return the entered values. A validation error or a
+  lost race that empties the fields loses the owner's work.
+
+**Check yourself**
+
+1. What changes when a field is added to the article type?
+
+   <details><summary>Answer</summary>
+
+   The description gains a field, so the form renders one more control with its
+   label and limit. No Svelte change is needed.
+
+   </details>
+
+2. Why keep the form in the app and the description in `cms-core`?
+
+   <details><summary>Answer</summary>
+
+   The description is part of the content model, and the model stays free of UI
+   code. The form is one view of it, and another consumer can read the same
+   description.
+
+   </details>
+
+3. Why does the server validate the form again?
+
+   <details><summary>Answer</summary>
+
+   A browser attribute is easy to bypass. The server check is the rule, and the
+   browser's copy only helps the owner sooner.
+
+   </details>
+
+**Further reading**
+
+- [Basic usage](https://zod.dev/basics), Zod documentation. Read on
+  2026-11-07.
+- [Using HTML form validation and the Constraint Validation API](https://developer.mozilla.org/en-US/docs/Web/HTML/Guides/Constraint_validation),
+  MDN Web Docs. Read on 2026-11-07.
+- [Form actions](https://svelte.dev/docs/kit/form-actions), Svelte
+  documentation. Read on 2026-10-18.
+
 ## Sprint 3: Media, inbox and backups
 
 **Study path:** study before the sprint starts. Read
@@ -2504,6 +2621,13 @@ A design token is a named design value, such as `color.text.primary` or
 Semantic tokens name a purpose and point at a brand token. A theme, such as a
 dark mode, changes what the semantic tokens point at, and every component
 follows without being edited.
+
+**Applied so far**
+
+The S2 admin editor ships the first theme layer. The stylesheet in
+`@ycmcuenca/ui` maps a set of neutral values to the shadcn-svelte CSS
+variables, and every component reads them. The brand sprint replaces the values
+and adds semantic tokens on top; the components do not change.
 
 **Check yourself**
 

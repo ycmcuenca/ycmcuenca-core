@@ -164,7 +164,11 @@ marked _(audit)_ came from the stack audit on the same day (see
   sanitized HTML per locale in the snapshot, so `welcome` only renders
   templates. The change that builds it verifies that a long article renders
   within `admin`'s 10 ms; if not, the browser renders on save and the server
-  sanitizes.
+  sanitizes. The 32 KB body limit comes from a scratch benchmark
+  (`content-model` D5: about 2.5 ms at 30 KB on Bun 1.4.2). The production
+  measurement of a publish close to the limit is the owner's open task in
+  `admin-editor` (8.3), and it amends this entry if the request is
+  consistently over 10 ms.
 - **C10 Workers Cache in front of `welcome`** _(audit)_. Responses carry cache
   tags per entry, type and locale. Each Worker's cache is private, so `welcome`
   exposes an RPC entrypoint that `admin` calls through a service binding to
@@ -298,6 +302,13 @@ marked _(audit)_ came from the stack audit on the same day (see
   migrations). A Neon development branch was rejected: the container works
   offline, costs nothing and resets quickly. The major version follows Neon's,
   and Renovate proposes the digest updates.
+- **Q7 UI components render no inline `style` attribute** _(admin-editor D1)_.
+  The strict CSP allows only its own hashes, so a component that writes a
+  `style` attribute cannot join `@ycmcuenca/ui`; it is replaced with plain
+  markup and classes. Tailwind arrives as one external stylesheet built from a
+  source-only package, and a new component is checked in the `admin` smoke
+  harness before it is used.
+  Concept: [security headers and CSP](SYSTEM_DESIGN.md#browser-security-headers-and-csp).
 
 ## Parking lot
 

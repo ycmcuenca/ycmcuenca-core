@@ -64,13 +64,16 @@ locale.
 Shared design values reach the apps in layers. Tailwind and shadcn-svelte
 components arrive first, in `@ycmcuenca/ui`, with the first admin screens in S2.
 Brand tokens arrive later, in S5, and the components pick them up
-([Q2](DECISIONS.md#quality)).
+([Q2](DECISIONS.md#quality)). The package ships a neutral light theme: the
+shadcn-svelte CSS variables, with grey borders, a white surface and a near-black
+primary action. S5 replaces those values with brand and semantic tokens; the
+components stay.
 
 ```mermaid
 flowchart LR
     brand["Brand tokens<br/>colour, type, spacing<br/>(S5 brand-identity)"]:::planned
     semantic["Semantic tokens<br/>roles such as text,<br/>surface and action<br/>(S5 brand-identity)"]:::planned
-    ui["@ycmcuenca/ui<br/>Tailwind and shadcn-svelte<br/>components<br/>(S2 admin-editor)"]:::planned
+    ui["@ycmcuenca/ui<br/>Tailwind and shadcn-svelte<br/>components<br/>(S2 admin-editor)"]:::built
     welcome["welcome app"]:::built
     admin["admin app"]:::built
 
@@ -87,27 +90,40 @@ it.
 
 ## Current visual state
 
-Checked on 2026-10-18 with `bun run dev`; both apps are also deployed and look
-the same. `welcome` runs on <http://localhost:5173> and `admin` on
-<http://localhost:5174>.
+Checked on 2026-11-07 with `bun run dev`; both apps are also deployed. `welcome`
+runs on <http://localhost:5173> and `admin` on <http://localhost:5174>.
 
-- Each app shows one heading, "Welcome" or "Admin", and nothing else.
+`welcome` has not changed since S1:
+
+- It shows one heading, "Welcome", and nothing else.
 - The heading uses the browser's default serif typeface in black on a white
   background, with the browser's default margins.
-- There is no layout, navigation, colour, custom font, logo or dark theme.
+- It has no layout, navigation, colour, custom font, logo or dark theme.
 - The pages have no title, so the browser tab shows only the address.
 - Both browser tabs show SvelteKit's default favicon, the Svelte logo.
+
+`admin` now draws its screens with `@ycmcuenca/ui`:
+
+- The entry list shows the "Admin" heading, the entry count and a "New article"
+  button, and lists each entry's title, slug, status and last save time.
+- Forms and the entry page use the neutral light theme: grey borders, rounded
+  controls, a near-black primary button and white surfaces. Required fields
+  carry a visible asterisk, and the body is a monospace textarea.
+- There is no page container, navigation, custom font, logo or dark theme yet:
+  controls sit at the page's own margins, and the pages have no title.
 - A failed request shows a minimal error page: the status as a heading and the
   request id, never the error's message.
 
-The apps carry no styles of their own, so they follow the browser's defaults. No
-automated accessibility check exists yet.
+No automated accessibility check exists yet.
 
 ## Open design choices
 
+The admin editor's look is settled for now: the neutral theme in
+`@ycmcuenca/ui`, with no page container, navigation or page title
+(`admin-editor` D1). The brand sprint may restyle it on top.
+
 | Choice                                                          | Decided in           |
 | --------------------------------------------------------------- | -------------------- |
-| Layout and look of the admin editor                             | S2 `admin-editor`    |
 | Brand identity: colour palette, logo and favicon                | S5 `brand-identity`  |
 | Typefaces that cover Latin Extended-A                           | S5 `brand-identity`  |
 | Token names, and the split between brand and semantic tokens    | S5 `brand-identity`  |

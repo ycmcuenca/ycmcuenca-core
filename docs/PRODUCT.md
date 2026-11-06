@@ -31,7 +31,8 @@ The owner builds the CMS by hand on purpose, to learn how such a system works.
 Everything else uses managed services ([P1](DECISIONS.md#platform-and-scope)).
 
 Today `welcome` serves the published articles, a sitemap and an Atom feed,
-and `admin` shows the number of entries it reads from the database. Both are live on `workers.dev`: `welcome`
+and `admin` lists the stored entries and lets the owner write, preview and
+publish them. Both are live on `workers.dev`: `welcome`
 is public, and `admin` sits behind Cloudflare Access
 ([A1](DECISIONS.md#identity-and-access)).
 
