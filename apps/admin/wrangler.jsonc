@@ -28,10 +28,8 @@
   "preview_urls": true,
 
   // The database connection (design D5). The id is a public identifier, not a
-  // secret: it is useless without the account's credentials. The placeholder
-  // of 32 zeros is replaced by the real Hyperdrive id in the owner's setup
-  // (task 6.3); the connection string lives only in that configuration, never
-  // here.
+  // secret: it is useless without the account's credentials. The connection
+  // string lives only in that configuration, never here.
   "hyperdrive": [
     { "binding": "HYPERDRIVE", "id": "746de69576294fbcbc1f6916eaab3c22" },
   ],
