@@ -27,9 +27,9 @@
 
 ## 5. Documentation and integration check
 
-- [ ] 5.1 Add a "Publishing" paragraph to the README's database section: the KV namespace, the two key formats, the dirty state and retry, and the slug rule. Verify `scripts/docs/check-living-docs.sh` passes
+- [x] 5.1 Add a "Publishing" paragraph to the README's database section: the KV namespace, the two key formats, the dirty state and retry, and the slug rule. Verify `scripts/docs/check-living-docs.sh` passes
 - [ ] 5.2 **Owner task:** after the release deploy of `admin`, verify the deploy log shows the publishing migration applied and the privilege check passed, `bunx wrangler kv namespace list` shows `snapshots`, and the signed-in home page still loads (assumption A2: the first real publish happens with `admin-editor`)
-- [ ] 5.3 Run the local CI equivalent from `AGENTS.md` plus `bun run test:integration`. Verify all pass, `bunx openspec validate revisions-publishing --strict` passes, and `ci-ok` is green on the pull request
+- [x] 5.3 Run the local CI equivalent from `AGENTS.md` plus `bun run test:integration`. Verify all pass, `bunx openspec validate revisions-publishing --strict` passes, and `ci-ok` is green on the pull request
 
 ## Workflow follow-up
 

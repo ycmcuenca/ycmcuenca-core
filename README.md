@@ -165,6 +165,38 @@ and the steps for adding a migration. Three rules apply to every migration:
 by the deploy. It ends by checking `cms_runtime`'s privileges, so a missing or
 an extra right fails the command.
 
+### Publishing
+
+Publishing moves an entry's published pointer in Postgres, then writes the
+entry's snapshot into the `snapshots` KV namespace. `admin` binds that
+namespace as `SNAPSHOTS`, and `welcome` will read only it, never the database
+([C4, C5](docs/DECISIONS.md#cms-architecture)). One namespace serves both
+workers. Its id is committed in `apps/admin/wrangler.jsonc`, because an id is
+not a secret.
+
+The projection uses two key formats, built by
+[`packages/cms-core/src/snapshot-keys.ts`](packages/cms-core/src/snapshot-keys.ts):
+
+| Key                     | Value                                                          |
+| ----------------------- | -------------------------------------------------------------- |
+| `entry:<type>:<slug>`   | One entry: title, summary, rendered blocks, publish times      |
+| `index:<type>:<locale>` | Every published entry of that type, newest first publish first |
+
+Each value is JSON with `snapshot_v: 1`. The index is rebuilt from Postgres on
+every publish, never patched in place, so the next publish repairs a missing or
+stale key.
+
+Moving the pointer and marking the entry as not yet projected are one database
+write. The entry stays marked until both the entry snapshot and the index are
+written. If the KV write fails, `admin` shows the entry as **published, not
+live** and offers a retry. A retry reads the published state from Postgres
+again, so running it twice leaves the same result. Until the reconciler of
+[W1](docs/DECISIONS.md#publishing-workflow) arrives, the owner presses retry.
+
+An entry's slug can change only until its first publish. A published URL
+outlives the entry's title, and changing it needs redirects. `admin` refuses
+the change, and so does the database.
+
 ### Production (owner)
 
 Production and CI each use their own Neon project, both on Postgres 18. CI
