@@ -2,14 +2,14 @@
 // It runs as the migrator, before the migrations, because the grant migration
 // names the role, and it is idempotent: a second run changes nothing.
 import { Client } from "pg";
-import { isMain, requireEnvironment } from "./main.ts";
 import { runtimeRole } from "./runtime-role.ts";
 
 /**
  * Ensures `cms_runtime` exists (NOLOGIN, so it cannot log in until a password
  * is set), that the current user may assume it, and — when `password` is given
  * — that it can log in with that password. Production sets the password by
- * hand once; local runs and CI seed it from the environment.
+ * hand once; local runs and CI pass it from the environment. It arrives as an
+ * argument, so this module never reads the environment itself (design D3).
  */
 export async function ensureRuntimeRole(
   client: Client,
@@ -38,20 +38,4 @@ export async function ensureRuntimeRole(
     }
     await client.query(statement);
   }
-}
-
-async function main(): Promise<void> {
-  const connectionString = requireEnvironment("DATABASE_URL");
-  const client = new Client({ connectionString });
-  await client.connect();
-  try {
-    await ensureRuntimeRole(client, process.env.RUNTIME_ROLE_PASSWORD);
-    console.log(`Ensured the ${runtimeRole} role.`);
-  } finally {
-    await client.end();
-  }
-}
-
-if (isMain(import.meta.url)) {
-  await main();
 }
