@@ -237,6 +237,28 @@ The first production run, in order:
 From then on the deploy applies the migrations and checks the privileges before
 it uploads `admin`.
 
+## Editing content
+
+Open `admin` at <http://localhost:5174> to write and publish. Its home page lists
+every entry with the title of its latest revision, its slug, its status and the
+time of its latest save. **New article** opens the editor.
+
+The editor shows the fields the article type describes, in that type's order, so
+a new field appears with no page change. The body is one Markdown block in a
+plain text area, posted as one `body` field; a body stored as several blocks is
+joined back into that one field. **Preview** renders the current, unsaved text
+with the same rendering a publish uses, so the preview and the public page share
+their markup. A preview writes nothing and adds no revision.
+
+**Save** appends a revision and leaves every earlier revision unchanged. Saving
+without a change adds nothing and says "No changes to save.". A slug can change
+until the entry's first publish. After that the form shows it read-only with the
+note "Published slugs cannot change." and ignores a posted value. A save that
+changes only the slug updates the slug and adds no revision.
+
+The components live in [`packages/ui`](packages/ui/README.md), whose README
+states the security policy every component must keep.
+
 ## Public site
 
 `welcome` serves the public site from the snapshots `admin` publishes. It reads
