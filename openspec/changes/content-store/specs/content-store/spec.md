@@ -50,7 +50,7 @@ Every revision SHALL store content that passed the content model's validation, t
 
 ### Requirement: The running app has least privilege
 
-The database role the running app uses SHALL NOT be able to create, alter or drop any database object, and SHALL have only the table rights its operations need. Schema changes SHALL use a separate role that the running app never holds.
+The database role the running app uses SHALL NOT be able to create, alter or drop any persistent database object, and SHALL have only the table rights its operations need. A temporary table is outside this rule. Schema changes SHALL use a separate role that the running app never holds.
 
 #### Scenario: DDL refused
 

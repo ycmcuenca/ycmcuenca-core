@@ -52,8 +52,8 @@ Current state, observed on 2026-10-19:
 ### D1. Drizzle 0.45.4 with the core query builder only (Q5)
 
 - `@ycmcuenca/db` depends on `drizzle-orm` 0.45.4 and `pg` 8.23.1, with dev dependencies `drizzle-kit` 0.31.11 and `@types/pg` 8.23.1.
-- Code uses `pgTable`, `db.select()`, `db.insert()`, `db.update()` and `db.transaction()`. It never calls `db.query.*` or defines `relations()`, the Relational Queries v1 API that Drizzle 1.0 removes. A `no-restricted-syntax` ESLint rule in `packages/db/eslint.config.js` flags member access `.query.` on the database object, and `no-restricted-imports` blocks `drizzle-orm/relations`.
-- **Pattern:** [hexagonal architecture (ports and adapters)](../../../docs/SYSTEM_DESIGN.md#hexagonal-architecture-ports-and-adapters). Drizzle lives only in this adapter package, so the upgrade's reach is one package.
+- Code uses `pgTable`, `db.select()`, `db.insert()`, `db.update()` and `db.transaction()`. It never calls `db.query.*` or defines `relations()`, the Relational Queries v1 API that Drizzle 1.0 removes. A `no-restricted-syntax` ESLint rule in `packages/db/eslint.config.js` flags member access `.query.` on the database object, and `no-restricted-imports` blocks the `drizzle-orm/relations` path and the `relations` name from `drizzle-orm` itself.
+- **Pattern:** [hexagonal architecture (ports and adapters)](../../../docs/SYSTEM_DESIGN.md#hexagonal-architecture-ports-and-adapters). Drizzle is used only in this adapter package. `apps/admin` declares the same versions so its server build can resolve the modules Vite externalises, and no other package uses them, so the upgrade's reach is one package plus one version pin.
 - **Why not the RC (Q5's original lean):** the RC line has been quiet for four months while 0.x ships fixes, and the repository pins every version exactly, so an RC pin would freeze a pre-release. The owner chose 0.45.4.
 - **Alternatives:** _`1.0.0-rc.4`_ (see above); _Kysely_ (a good query builder, but DECISIONS and the roadmap name Drizzle, and its migrations tooling is thinner); _raw SQL with `pg`_ (the most transparent, but typed results and migration generation would be hand-written).
 - **Failure modes:** _Drizzle 1.0 ships and Renovate proposes it:_ the upgrade is `drizzle-kit up` plus the version bump inside this package, and CI's `database` job proves the migrations still apply.
@@ -91,16 +91,16 @@ revisions id uuid pk default gen_random_uuid()
   - `SELECT, INSERT, UPDATE` on `entries`;
   - `SELECT, INSERT` on `revisions`.
 
-  Postgres 15 and later no longer give `PUBLIC` the right to create objects in `public`, so `cms_runtime` cannot run DDL.
+  Postgres 15 and later no longer give `PUBLIC` the right to create objects in `public`, so `cms_runtime` cannot run DDL. It can still create a temporary table, which the spec allows.
 
 - `packages/db/scripts/ensure-runtime-role.ts` (Bun, `pg`) runs as the migrator before migrations:
   1. Create `cms_runtime NOLOGIN` if it is absent.
   2. `GRANT cms_runtime TO CURRENT_USER`, so tests and the privilege check can `SET ROLE cms_runtime`.
-  3. If `RUNTIME_ROLE_PASSWORD` is set (locally and in CI's `e2e` job only), `ALTER ROLE cms_runtime LOGIN PASSWORD …`.
+  3. Change the login password only when the caller passes one explicitly: `prepare.ts` (local and CI's `e2e` job) passes `RUNTIME_ROLE_PASSWORD`, and the production entry point passes none. The password is never read from the environment by the entry point itself, so a production run from a developer checkout cannot pick up the local value.
 
   In production the owner sets the login password once, by hand (owner task), and the password goes only into the Hyperdrive configuration.
 
-- `packages/db/scripts/check-privileges.ts` uses only read-only `has_table_privilege` and `has_schema_privilege` calls for `cms_runtime`. It compares them with the expected set (above, plus "no `CREATE` on `public`", "no `UPDATE`/`DELETE`/`TRUNCATE` on `revisions`" and "no `DELETE`/`TRUNCATE` on `entries`"), prints one line per right, and exits non-zero on any difference.
+- `packages/db/scripts/check-privileges.ts` compares `cms_runtime`'s rights with the expected set by reading the catalog: `aclexplode` over `pg_class.relacl`, `pg_attribute.attacl`, `pg_namespace.nspacl` and `pg_default_acl`, `has_database_privilege` for `CREATE`, plus role attributes and memberships. The expected set is the one above, plus "no `CREATE` on `public`", "no `UPDATE`/`DELETE`/`TRUNCATE` on `revisions`" and "no `DELETE`/`TRUNCATE` on `entries`". A table, column, sequence, database or role right outside it is a named drift line, so a column-level `UPDATE` on `revisions` fails too. It prints one line per difference and exits non-zero on any of them. Temporary tables are allowed (the spec accepts them), and `pg_temp_*` schemas are skipped.
 - **Pattern:** [least privilege](../../../docs/SYSTEM_DESIGN.md#least-privilege). Append-only is enforced where it cannot be bypassed by app code.
 - **Alternatives:** _a Console-created runtime role_ (Neon gives it `neon_superuser`, far too much); _a trigger that rejects updates_ (the table owner could still disable it, and privileges are simpler and reported by the check).
 - **Failure modes:** _someone grants `cms_runtime` extra rights by hand:_ the deploy's privilege check fails before the upload (deployment spec). _The runtime password leaks:_ the role can only read and append content, and the owner rotates it with `ALTER ROLE` plus `wrangler hyperdrive update`.
@@ -108,14 +108,14 @@ revisions id uuid pk default gen_random_uuid()
 ### D4. Migrations: generated, forward-only, expand then contract
 
 - Authoring: `packages/db/drizzle.config.ts` (`dialect: "postgresql"`, `schema: "./src/schema.ts"`, `out: "./migrations"`), with `bun run --filter @ycmcuenca/db db:generate` running `drizzle-kit generate`. Grants live in a custom migration (`drizzle-kit generate --custom --name runtime-grants`), because Drizzle's schema does not model privileges.
-- Applying: `packages/db/scripts/migrate.ts` runs `ensure-runtime-role`, then `migrate(db, { migrationsFolder })` from `drizzle-orm/node-postgres/migrator`, then the privilege check. It reads `DATABASE_URL` (a migrator connection) and is the only migration entry point, used locally, in CI and in the deploy.
+- Applying: `packages/db/scripts/migrate.ts` runs `ensure-runtime-role`, then `migrate(db, { migrationsFolder })` from `drizzle-orm/node-postgres/migrator`, then the privilege check. It reads `DATABASE_URL` (a migrator connection) and is the only migration entry point, used locally, in CI and in the deploy. The production run uses `bun --no-env-file`, so no local `.env` value reaches it.
 - **Rules,** written in `packages/db/README.md`:
   - **Forward-only:** never edit or delete a merged migration.
   - **Expand, then contract:** add columns as nullable or with a default; remove a column or table only in a later release, after no released `admin` reads it.
   - **One concern per migration.**
 - **Pattern:** [expand and contract migrations](../../../docs/SYSTEM_DESIGN.md#expand-and-contract-migrations). The notebook has no entry yet, so this change adds a planned one to `docs/SYSTEM_DESIGN.md` (config rule).
 - **Alternatives:** _`drizzle-kit push`_ (no migration history, unsafe for production); _down migrations_ (Drizzle has none, and a rollback that drops data is worse than a backward-compatible schema).
-- **Failure modes:** _a migration that only works for the new code:_ the rule review in the PR, plus the Rollback deploy scenario that `revisions-publishing`'s first expand migration exercises (task in that change). _Two branches add migrations in parallel:_ rebase-merging serializes them, and the `database` CI job applies them in order on a fresh branch.
+- **Failure modes:** _a migration that only works for the new code:_ the rule review in the PR, plus the Rollback deploy scenario that `revisions-publishing`'s first expand migration exercises (task in that change). _Two branches add migrations in parallel:_ rebase-merging orders the commits but keeps each migration's original journal `when`, and Drizzle applies a migration only when its stamp is newer than the last applied one, so an older-stamped migration is skipped in silence. The rule in `packages/db/README.md` is therefore to regenerate a migration after rebasing over a newer one; the `database` CI job applies them in order on a fresh branch and cannot catch the skip.
 
 ### D5. `admin` connects through Hyperdrive with caching disabled
 
