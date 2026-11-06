@@ -10,7 +10,7 @@ import {
 } from "@ycmcuenca/cms-core";
 import type { ArticleErrors, StoredContent } from "@ycmcuenca/cms-core";
 import { article, articleSchema } from "@ycmcuenca/cms-core";
-import { and, asc, count, eq, sql } from "drizzle-orm";
+import { and, asc, count, eq, isNull, sql } from "drizzle-orm";
 import type { Database } from "./client.ts";
 import { entries, revisions } from "./schema.ts";
 
@@ -71,6 +71,20 @@ export class ConcurrentRevisionError extends Error {
       `Another save added a revision to entry ${entryId} at the same time; retry.`,
     );
     this.name = "ConcurrentRevisionError";
+    this.entryId = entryId;
+  }
+}
+
+/** A slug move was refused because the entry has been published (spec). */
+export class PublishedSlugError extends Error {
+  /** The entry whose address may no longer change. */
+  readonly entryId: string;
+
+  constructor(entryId: string) {
+    super(
+      `Entry ${entryId} has been published, so its slug cannot change (design D2).`,
+    );
+    this.name = "PublishedSlugError";
     this.entryId = entryId;
   }
 }
@@ -247,7 +261,9 @@ export async function getRevision(
  * Moves an entry's slug (design D2: the slug lives on the entry so it can be
  * unique per type). An invalid slug is returned as the same failure a write
  * returns, because the slug becomes the entry's public address; a taken slug
- * throws `DuplicateSlugError`, and an unknown id throws `MissingEntryError`.
+ * throws `DuplicateSlugError`, an entry published at least once throws
+ * `PublishedSlugError` (design D2: the database is the second guard), and an
+ * unknown id throws `MissingEntryError`.
  */
 export async function updateSlug(
   database: Database,
@@ -265,11 +281,13 @@ export async function updateSlug(
     const rows = await database
       .update(entries)
       .set({ slug })
-      .where(eq(entries.id, entryId))
+      // A publish that races the use case's check cannot slip past: the
+      // address only moves while the entry has never been published (D2).
+      .where(and(eq(entries.id, entryId), isNull(entries.firstPublishedAt)))
       .returning();
     const row = rows[0];
     if (!row) {
-      throw new MissingEntryError(entryId);
+      throw await refusalForMissingRow(database, entryId);
     }
     return { ok: true, entry: toEntry(row) };
   } catch (error) {
@@ -302,6 +320,21 @@ function toRevision(row: RevisionRow): Revision {
     createdAt: row.createdAt,
     stored: readStoredContent({ schema_v: row.schemaV, content: row.content }),
   };
+}
+
+// A slug move changed no row for one of two reasons: the entry is missing, or
+// it has been published and the guard refused it (design D2).
+async function refusalForMissingRow(
+  database: Database,
+  entryId: string,
+): Promise<Error> {
+  const rows = await database
+    .select({ id: entries.id })
+    .from(entries)
+    .where(eq(entries.id, entryId));
+  return rows.length === 0
+    ? new MissingEntryError(entryId)
+    : new PublishedSlugError(entryId);
 }
 
 // The one row a `returning()` insert must produce.

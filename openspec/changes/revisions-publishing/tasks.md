@@ -9,9 +9,9 @@
 
 ## 2. Database adapter and migration
 
-- [ ] 2.1 Add the four columns to `packages/db/src/schema.ts` per design D4 and generate the migration (`bun run --filter @ycmcuenca/db db:generate -- --name publishing`). Verify the SQL only adds nullable or defaulted columns plus the check constraint, and that `bun run db:prepare` applies it and the privilege check still passes
-- [ ] 2.2 Verify backward compatibility: check out the `admin` commit released by `content-store`, build it, and run its e2e against the database migrated by this branch. Verify the old smoke test still passes (spec "Schema changes are forward-only and backward-compatible" from content-store), then return to this branch
-- [ ] 2.3 Implement `entryStoreFor(db)` in `packages/db/src/publishing.ts` (the `EntryStore` port, with `markPublished` as one `UPDATE` setting the pointer, `coalesce`d first publish, last publish and `dirty`), and add `WHERE first_published_at IS NULL` to `updateSlug` in `src/entries.ts`. Verify `src/publishing.integration.test.ts` (running as `cms_runtime`) covers one `UPDATE` moving the pointer and the mark together, `listPublished` joining the published revision, and `updateSlug` refused after a publish; and that `bun run test:integration` passes
+- [x] 2.1 Add the four columns to `packages/db/src/schema.ts` per design D4 and generate the migration (`bun run --filter @ycmcuenca/db db:generate -- --name publishing`). Verify the SQL only adds nullable or defaulted columns plus the check constraint, and that `bun run db:prepare` applies it and the privilege check still passes
+- [x] 2.2 Verify backward compatibility: check out the `admin` commit released by `content-store`, build it, and run its e2e against the database migrated by this branch. Verify the old smoke test still passes (spec "Schema changes are forward-only and backward-compatible" from content-store), then return to this branch
+- [x] 2.3 Implement `entryStoreFor(db)` in `packages/db/src/publishing.ts` (the `EntryStore` port, with `markPublished` as one `UPDATE` setting the pointer, `coalesce`d first publish, last publish and `dirty`), and add `WHERE first_published_at IS NULL` to `updateSlug` in `src/entries.ts`. Verify `src/publishing.integration.test.ts` (running as `cms_runtime`) covers one `UPDATE` moving the pointer and the mark together, `listPublished` joining the published revision, and `updateSlug` refused after a publish; and that `bun run test:integration` passes
 
 ## 3. `admin`: KV adapter, entry page and actions
 

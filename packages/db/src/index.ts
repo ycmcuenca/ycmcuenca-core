@@ -14,6 +14,7 @@ export {
   listEntries,
   listRevisions,
   MissingEntryError,
+  PublishedSlugError,
   updateSlug,
 } from "./entries.ts";
 export type {
@@ -23,4 +24,5 @@ export type {
   Revision,
   StoreFailure,
 } from "./entries.ts";
+export { entryStoreFor } from "./publishing.ts";
 export { entries, revisions } from "./schema.ts";
