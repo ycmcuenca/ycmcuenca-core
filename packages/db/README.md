@@ -77,8 +77,12 @@ there.
   never update or delete a revision, which is what makes the history
   append-only (design D3).
 
-`scripts/check-privileges.ts` reports every expected right and exits non-zero
-on any difference. The deploy runs it before uploading `admin`.
+`scripts/check-privileges.ts` reads the catalog and compares every right
+`cms_runtime` or `PUBLIC` holds — on tables, columns, sequences and schemas in
+non-system schemas, plus its database rights, role attributes and memberships —
+with an allow-list. It names each missing or unexpected right and exits
+non-zero, so a grant made by hand is caught even when it is column-level. The
+deploy runs it before uploading `admin`.
 
 ## Scripts
 
