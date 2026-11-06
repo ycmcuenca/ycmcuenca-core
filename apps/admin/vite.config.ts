@@ -1,5 +1,6 @@
 import adapter from "@sveltejs/adapter-cloudflare";
 import { sveltekit } from "@sveltejs/kit/vite";
+import tailwindcss from "@tailwindcss/vite";
 import { cspDirectives } from "@ycmcuenca/edge";
 // `vitest/config` re-exports Vite's `defineConfig` and adds the `test` key.
 import { defineConfig } from "vitest/config";
@@ -18,6 +19,9 @@ export default defineConfig(({ mode }) => {
 
   return {
     plugins: [
+      // Tailwind compiles the stylesheet the layout imports, including the
+      // shared package's components through its `@source` rule (design D1).
+      tailwindcss(),
       sveltekit({
         compilerOptions: {
           // Force runes mode for the project, except for libraries. Can be removed in svelte 6.
