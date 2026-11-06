@@ -47,7 +47,8 @@ flowchart LR
         cm["content-model, content-store"]:::archived
         rp["revisions-publishing"]:::archived
         pr["public-rendering"]:::archived
-        s2["admin-editor, edge-cache"]:::proposed
+        ae["admin-editor"]:::archived
+        s2["edge-cache"]:::proposed
     end
     subgraph S3["S3 Media, inbox, backups"]
         s3["media uploads, contact inbox,<br/>data backups"]:::planned
@@ -114,14 +115,14 @@ The changes are built in this order, each on the one before it (owner
 decision). `edge-cache` was split out of `public-rendering`, because caching
 needs a hand-written entry around SvelteKit's worker.
 
-| Change                 | Status   | What it delivers                                                                                                                                                                                                                                                                                      |
-| ---------------------- | -------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `content-model`        | archived | `@ycmcuenca/cms-core`: field, block and type layers (C2), the English-only `article` type with a block-list body, validation with field errors, safe Markdown rendering with a 32 KB limit (C9), the versioned stored-content and snapshot contracts (C8) and form descriptions. Archived 2026-10-19. |
-| `content-store`        | archived | `@ycmcuenca/db` on Drizzle 0.45.4 (Q5), append-only revisions enforced by privileges, two roles (I6), migrations in the deploy, Hyperdrive with caching disabled, a local Postgres 18 container, and Neon branches in a separate CI project (Q1, amended). Archived 2026-11-06.                       |
-| `revisions-publishing` | archived | Publish, unpublish and roll back as pointer moves, the KV projector with an index rebuilt from Neon (C4 to C6), automatic publish times, and a visible dirty state with a manual retry until W1. Archived 2026-11-06.                                                                                 |
-| `public-rendering`     | archived | `@ycmcuenca/cms-render`, `welcome` reading KV only (C5) at `/en/articles/{slug}` with an article list, tolerant snapshots, SEO basics (Q4) including canonical links, a sitemap and an Atom feed (C13), and a two-worker end-to-end test of the publish path. Archived 2026-11-06.                    |
-| `admin-editor`         | proposed | `@ycmcuenca/ui` with Tailwind and shadcn-svelte (Q2), the entry list, forms generated from the type definition, a textarea editor with a server-rendered preview, and the first production publish.                                                                                                   |
-| `edge-cache`           | proposed | Workers Cache in front of `welcome` through a wrapper entry with a cached `Site` entrypoint, slug-based cache tags, purge over a service binding after every projection (C10), and a 60-second edge lifetime with stale-while-revalidate.                                                             |
+| Change                 | Status   | What it delivers                                                                                                                                                                                                                                                                                           |
+| ---------------------- | -------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `content-model`        | archived | `@ycmcuenca/cms-core`: field, block and type layers (C2), the English-only `article` type with a block-list body, validation with field errors, safe Markdown rendering with a 32 KB limit (C9), the versioned stored-content and snapshot contracts (C8) and form descriptions. Archived 2026-10-19.      |
+| `content-store`        | archived | `@ycmcuenca/db` on Drizzle 0.45.4 (Q5), append-only revisions enforced by privileges, two roles (I6), migrations in the deploy, Hyperdrive with caching disabled, a local Postgres 18 container, and Neon branches in a separate CI project (Q1, amended). Archived 2026-11-06.                            |
+| `revisions-publishing` | archived | Publish, unpublish and roll back as pointer moves, the KV projector with an index rebuilt from Neon (C4 to C6), automatic publish times, and a visible dirty state with a manual retry until W1. Archived 2026-11-06.                                                                                      |
+| `public-rendering`     | archived | `@ycmcuenca/cms-render`, `welcome` reading KV only (C5) at `/en/articles/{slug}` with an article list, tolerant snapshots, SEO basics (Q4) including canonical links, a sitemap and an Atom feed (C13), and a two-worker end-to-end test of the publish path. Archived 2026-11-06.                         |
+| `admin-editor`         | archived | `@ycmcuenca/ui` with Tailwind and shadcn-svelte (Q2, Q7), the entry list with each entry's status, forms generated from the type definition, a textarea editor with a server-rendered preview, field errors kept next to their fields, and the slug rule before and after publishing. Archived 2026-11-07. |
+| `edge-cache`           | proposed | Workers Cache in front of `welcome` through a wrapper entry with a cached `Site` entrypoint, slug-based cache tags, purge over a service binding after every projection (C10), and a 60-second edge lifetime with stale-while-revalidate.                                                                  |
 
 **Exit criteria:** publishing an English entry makes it visible on `welcome`
 with no database binding on `welcome`; editing creates a new revision and never

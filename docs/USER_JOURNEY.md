@@ -107,29 +107,33 @@ journey
     title The owner publishes an entry
     section Write
       Sign in (today): 5: Owner
-      Write in English (planned S2): 4: Owner
+      Write in English (today): 4: Owner
       Add images (planned S3): 3: Owner
       Translate (planned S4): 3: Owner
     section Preview
-      Preview draft (planned S4): 4: Owner
+      Preview the body (today): 4: Owner
+      Preview the draft page (planned S4): 4: Owner
     section Publish
-      Publish now (planned S2): 4: Owner
+      Publish now (today): 4: Owner
       Schedule (planned S4): 4: Owner
     section Live
-      See it live (planned S2): 5: Owner, Visitor
+      See it live (today): 5: Owner, Visitor
 ```
 
-| Step                              | Status       | Capability                                                                                                 |
-| --------------------------------- | ------------ | ---------------------------------------------------------------------------------------------------------- |
-| Sign in to `admin` through Access | today        | Cloudflare Access guards `admin`; its home page shows the number of stored entries (`content-store`).      |
-| Write the entry in English        | planned (S2) | `admin-editor`, `content-model`                                                                            |
-| Add images                        | planned (S3) | `media-uploads`                                                                                            |
-| Fill in Filipino and Esperanto    | planned (S4) | `content-localization`                                                                                     |
-| Preview the draft inside `admin`  | planned (S4) | `draft-preview`                                                                                            |
-| Publish now                       | planned (S2) | `revisions-publishing`: the entry page exists, reached by its URL until `admin-editor` adds the entry list |
-| Schedule a later time             | planned (S4) | `scheduled-publishing`                                                                                     |
-| See the page on the public site   | today        | `public-rendering`: the home page lists published articles, each article has its page, sitemap and feed    |
+| Step                              | Status       | Capability                                                                                                   |
+| --------------------------------- | ------------ | ------------------------------------------------------------------------------------------------------------ |
+| Sign in to `admin` through Access | today        | Cloudflare Access guards `admin`; its home page lists the stored entries with their status (`admin-editor`). |
+| Write the entry in English        | today        | `admin-editor`, `content-model`: a form generated from the type, with field errors next to their fields      |
+| Add images                        | planned (S3) | `media-uploads`                                                                                              |
+| Fill in Filipino and Esperanto    | planned (S4) | `content-localization`                                                                                       |
+| Preview the body inside `admin`   | today        | `admin-editor`: the form's Preview renders the body with the renderer the publish uses                       |
+| Preview the draft page            | planned (S4) | `draft-preview`                                                                                              |
+| Publish now                       | today        | `revisions-publishing`: the entry page carries the publish panel, reached from the entry list                |
+| Schedule a later time             | planned (S4) | `scheduled-publishing`                                                                                       |
+| See the page on the public site   | today        | `public-rendering`: the home page lists published articles, each article has its page, sitemap and feed      |
 
 English must be ready before any publish, and a locale that is not ready stays
-hidden ([L3](DECISIONS.md#localization)). The first end-to-end publish happens
-in S2. Images, other languages, preview and scheduling join it in S3 and S4.
+hidden ([L3](DECISIONS.md#localization)). S2 delivers the write and publish
+path; the owner's production publish is the last check of `admin-editor`.
+Images, other languages, the full-page preview and scheduling join it in S3 and
+S4.
