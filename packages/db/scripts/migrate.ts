@@ -14,9 +14,22 @@ const migrationsFolder = fileURLToPath(
   new URL("../migrations", import.meta.url),
 );
 
-/** Applies every pending migration and verifies the runtime rights (D4). */
-export async function applyMigrations(client: Client): Promise<void> {
-  await ensureRuntimeRole(client, process.env.RUNTIME_ROLE_PASSWORD);
+/** What the caller may seed besides the schema. */
+export interface MigrationOptions {
+  /** The runtime login password to set; production passes none (D3). */
+  runtimePassword?: string;
+}
+
+/**
+ * Applies every pending migration and verifies the runtime rights (D4). The
+ * runtime password arrives as an argument, never from the environment, so the
+ * production entry point cannot seed it from a developer's `.env` (D3).
+ */
+export async function applyMigrations(
+  client: Client,
+  { runtimePassword }: MigrationOptions,
+): Promise<void> {
+  await ensureRuntimeRole(client, runtimePassword);
   await migrate(drizzle({ client }), { migrationsFolder });
   if (!(await checkPrivileges(client))) {
     throw new Error("The runtime privileges differ from the expected set.");
@@ -28,7 +41,8 @@ async function main(): Promise<void> {
   const client = new Client({ connectionString });
   await client.connect();
   try {
-    await applyMigrations(client);
+    // No runtime password: production sets it by hand once (D3).
+    await applyMigrations(client, {});
     console.log("Migrations applied and privileges checked.");
   } finally {
     await client.end();

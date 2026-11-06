@@ -20,7 +20,7 @@ async function migrateScratch(): Promise<void> {
   const client = new Client({ connectionString: scratchUrl() });
   await client.connect();
   try {
-    await applyMigrations(client);
+    await applyMigrations(client, {});
   } finally {
     await client.end();
   }
