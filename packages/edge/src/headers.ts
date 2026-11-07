@@ -66,7 +66,12 @@ export function securityHeaders(extra: Record<string, string> = {}): Handle {
     withHeaders(await resolve(event), headers);
 }
 
-function withHeaders(
+/**
+ * Sets headers on a response, cloning it first when its own headers are
+ * immutable (a redirect, for example). Both apps share this guard so every
+ * header hook behaves the same (design D8).
+ */
+export function withHeaders(
   response: Response,
   headers: Record<string, string>,
 ): Response {

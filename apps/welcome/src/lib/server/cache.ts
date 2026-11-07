@@ -2,6 +2,7 @@
 // headers they carry, and how a publish purges them (design D2, D3 and D4 in
 // openspec/changes/edge-cache/design.md).
 import type { PurgeOutcome } from "@ycmcuenca/cms-core";
+import { withHeaders } from "@ycmcuenca/edge";
 import type { Handle } from "@sveltejs/kit/hooks";
 
 /** The edge may keep a page for a minute, then refresh it in the background. */
@@ -87,27 +88,3 @@ export const cachePolicy: Handle = async ({ event, resolve }) => {
       : { "Cache-Control": noStore },
   );
 };
-
-/**
- * Sets headers, cloning a response whose own headers are immutable (the same
- * guard `securityHeaders` uses in `@ycmcuenca/edge`).
- */
-function withHeaders(
-  response: Response,
-  headers: Record<string, string>,
-): Response {
-  try {
-    setHeaders(response, headers);
-    return response;
-  } catch {
-    const clone = new Response(response.body, response);
-    setHeaders(clone, headers);
-    return clone;
-  }
-}
-
-function setHeaders(response: Response, headers: Record<string, string>): void {
-  for (const [name, value] of Object.entries(headers)) {
-    response.headers.set(name, value);
-  }
-}
