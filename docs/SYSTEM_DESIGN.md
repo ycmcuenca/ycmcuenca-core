@@ -132,7 +132,7 @@ flowchart LR
         revisions["Append-only revisions"]:::built
         upcasters["Schema versioning<br/>with upcasters"]:::planned
         contracts["Versioned contracts<br/>and tolerant readers"]:::built
-        tags["Cache invalidation by tag"]:::planned
+        tags["Cache invalidation by tag"]:::built
         branches["Branch-per-PR<br/>database testing"]:::built
         expand["Expand and contract<br/>migrations"]:::built
         forms["Data-driven forms<br/>from the content model"]:::built
@@ -1901,7 +1901,7 @@ flowchart LR
 
 ### Cache invalidation by tag
 
-**Status:** planned (S2)
+**Status:** built (S2)
 
 **What it is**
 
@@ -1910,6 +1910,58 @@ The hard part is invalidation: removing a copy when its content changes.
 Tagging labels each cached response with the things it contains, such as an
 entry, a content type and a locale. A change then purges every response with
 a matching tag, without knowing their addresses.
+
+```mermaid
+flowchart LR
+    visitor["visitor"] --> entry["default entrypoint:<br/>is the request cacheable?"]
+    entry -->|"production GET or HEAD"| site["Site entrypoint<br/>cache on"]
+    entry -->|"preview, POST,<br/>other methods"| kit["SvelteKit directly,<br/>no cache"]
+    site --> cache[("edge cache<br/>60 s, stale 300 s")]
+    cache -->|"hit"| visitor
+    publish["admin publishes"] --> purge["purge the entry tag<br/>and the index tag"]
+    purge --> cache
+```
+
+**Trade-offs**
+
+- The edge lifetime uses `Cloudflare-CDN-Cache-Control`, because `s-maxage`
+  turns off `stale-while-revalidate`. The cost is a second header to read.
+- Only the production host fills the cache. A preview URL then never shows
+  another version's page, and the cache key ignores the host.
+- A purge is best effort. A failure is logged and the page goes fresh within
+  60 seconds, or 360 seconds at worst while it is served stale.
+
+**How this repository applies it**
+
+- [edge-cache D1](../openspec/changes/archive/2026-11-07-edge-cache/design.md#d1-a-hand-written-entry-around-sveltekit-with-two-wrangler-files):
+  `welcome` deploys a hand-written `src/worker.ts` whose `default` entrypoint
+  sends cacheable requests to the cached `Site` entrypoint, and whose `purge`
+  method is the only way to remove a tag.
+- [edge-cache D3](../openspec/changes/archive/2026-11-07-edge-cache/design.md#d3-cache-headers-and-tags-from-one-hook):
+  one hook sets the headers and the `Cache-Tag` value from the tags each route
+  records, so a route cannot forget one of them.
+- [edge-cache D4](../openspec/changes/archive/2026-11-07-edge-cache/design.md#d4-tags-and-the-purge-port-in-cms-core-the-purge-in-site):
+  `cms-core` builds the tags and calls the purge port after the projector
+  writes KV; a failed purge becomes one warning line.
+- [edge-cache D5](../openspec/changes/archive/2026-11-07-edge-cache/design.md#d5-admin-calls-site-through-a-service-binding):
+  `admin` reaches `Site.purge` through the `WELCOME` service binding, which a
+  visitor's HTTP request cannot reach.
+
+**What we learned here**
+
+> Draft: awaiting the owner's rewrite.
+
+- The wrapper entry and the two Wrangler files were unproven here. The
+  adapter's platform proxy reads `wrangler.sveltekit.jsonc` by default, so
+  `bun run dev` served 500 until `platformProxy.configPath` pointed back at
+  `wrangler.jsonc` for its vars and KV bindings.
+- `ctx.cache` exists as a key but is `undefined` under local `wrangler dev`,
+  and a local service binding cannot reach a named entrypoint. The local tests
+  prove the failure paths; only production proves a real purge.
+- A cache hit costs one more request ("worker-to-worker invocations"), so
+  caching adds to the daily request count as well as saving rebuilds.
+- `s-maxage` disables `stale-while-revalidate` on Cloudflare, which is why the
+  edge lifetime lives in its own header.
 
 **Check yourself**
 
