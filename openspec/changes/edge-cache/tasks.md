@@ -2,8 +2,8 @@
 
 ## 1. Spikes
 
-- [ ] 1.1 **Spike (design D1):** in `apps/welcome`, add `wrangler.sveltekit.jsonc`, point the adapter at it in `vite.config.ts`, switch `wrangler.jsonc`'s `main` to a minimal `src/worker.ts` that re-exports SvelteKit's default handler, and add `enable_ctx_exports`. Verify that `bun run build`, `bunx wrangler deploy --dry-run --outdir .scratch/edge-cache/dry`, `bunx wrangler dev` (home page 200) and `bun run dev` (home page 200 with KV readable) all work. If any fails, **stop and ask the owner**, and revert
-- [ ] 1.2 **Spike (design D4, D7):** with the full `Site` class and the per-entrypoint `cache`/`exports` config in place, call `Site.purge(["x"])` from a temporary `admin` route over the `WELCOME` service binding, with both apps under `wrangler dev`. Record whether `this.ctx.cache` exists locally (design D7 depends on it), then remove the temporary route
+- [x] 1.1 **Spike (design D1):** in `apps/welcome`, add `wrangler.sveltekit.jsonc`, point the adapter at it in `vite.config.ts`, switch `wrangler.jsonc`'s `main` to a minimal `src/worker.ts` that re-exports SvelteKit's default handler, and add `enable_ctx_exports`. Verify that `bun run build`, `bunx wrangler deploy --dry-run --outdir .scratch/edge-cache/dry`, `bunx wrangler dev` (home page 200) and `bun run dev` (home page 200 with KV readable) all work. If any fails, **stop and ask the owner**, and revert
+- [x] 1.2 **Spike (design D4, D7):** with the full `Site` class and the per-entrypoint `cache`/`exports` config in place, call `Site.purge(["x"])` from a temporary `admin` route over the `WELCOME` service binding, with both apps under `wrangler dev`. Record whether `this.ctx.cache` exists locally (design D7 depends on it), then remove the temporary route
 
 ## 2. Tags and the purge port in cms-core
 

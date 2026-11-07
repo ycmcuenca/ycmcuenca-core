@@ -1,0 +1,20 @@
+// The Wrangler file the adapter reads while building (design D1 in
+// openspec/changes/edge-cache/design.md). It holds only what the adapter
+// needs, so the deploy file can own the entry and the cache configuration
+// without the adapter mistaking it for the file to write.
+{
+  "$schema": "./node_modules/wrangler/config-schema.json",
+
+  "name": "welcome",
+
+  // Where the adapter writes SvelteKit's Workers build.
+  "main": ".svelte-kit/cloudflare/_worker.js",
+  "assets": {
+    "binding": "ASSETS",
+    "directory": ".svelte-kit/cloudflare",
+  },
+
+  // Must match the deploy file: the adapter pins the build's runtime behavior
+  // to this date (design D1, and the worker-config test in task 3.2).
+  "compatibility_date": "2026-10-17",
+}
