@@ -297,6 +297,51 @@ Then open <http://localhost:5173/en/articles/hello-world>. These commands write
 to `apps/welcome/.wrangler/state`, the directory `vite dev` reads. The e2e
 suite seeds its own state in `.wrangler/e2e-state`, so the two never mix.
 
+### Caching
+
+`welcome` caches its public pages at Cloudflare's edge. A cache hit runs no
+site code and reads no KV.
+
+The Worker entry is `apps/welcome/src/worker.ts`. Its `Site` class runs
+SvelteKit and owns the cache. Its `default` handler sends only production `GET`
+and `HEAD` requests through `Site`; every other request, including a preview
+URL, goes straight to SvelteKit, so an unreleased page never fills the cache.
+`wrangler.jsonc` is the deploy file: its `main` is `src/worker.ts`, and it
+turns the cache on for `Site` only. `wrangler.sveltekit.jsonc` holds what the
+adapter reads while it builds. A unit test keeps the two files' `name`,
+`assets` and `compatibility_date` equal.
+
+A cacheable page carries three headers. `Cloudflare-CDN-Cache-Control:
+max-age=60, stale-while-revalidate=300` lets the edge keep it for a minute and
+refresh it in the background. `Cache-Control: public, max-age=0` makes the
+browser revalidate every time. `Cache-Tag` names what the page contains.
+Cloudflare strips the first and last headers before the browser sees them.
+Every other response, including each 404 and error, carries
+`Cache-Control: no-store`.
+
+An article page is tagged with its entry, its type and its locale, for example
+`entry:article:hello-world`, `type:article` and `locale:en`. The home page, the
+sitemap and the feed have no entry tag: they carry the type's index tag,
+`index:article:en`, plus `type:article` and `locale:en`.
+
+After a publish, rollback, unpublish or retry writes the snapshots, `admin`
+purges the entry's tag and the type's index tag through the `WELCOME` service
+binding. The published page and the home page refresh on their next request,
+and every other article stays cached. A purge that fails logs a `cache purge
+failed` warning and leaves the publish successful; the page then refreshes
+within 60 seconds. No public URL can purge.
+
+Caching does not reduce the request count the Free plan bills. Every request
+still counts, including a cache hit, a static asset and the internal call into
+`Site`. The monthly usage check
+([P3](docs/DECISIONS.md#parking-lot)) watches this: any Free limit at 70% or
+more for 3 days triggers the Workers Paid review.
+
+To roll back, deploy the previous `welcome` version through the Deploy workflow
+([Deploying](#deploying)). It has no cache configuration, so caching stops at
+once. Deploying the previous `admin` version stops the purge calls, which are
+harmless either way.
+
 ## Commits
 
 - Pre-commit formats and lints only the staged files with Lefthook and
