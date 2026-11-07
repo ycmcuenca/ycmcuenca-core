@@ -1,5 +1,15 @@
 # Changelog
 
+## [0.4.0](https://github.com/ycmcuenca/ycmcuenca-core/compare/admin-v0.3.0...admin-v0.4.0) (2026-11-06)
+
+
+### Features
+
+* **admin:** add the entry list, create page and edit actions ([44cd1d0](https://github.com/ycmcuenca/ycmcuenca-core/commit/44cd1d070fde572e80362ca41eb7f3d6214f26a8))
+* **admin:** generate the entry form from the type's description ([42644e2](https://github.com/ycmcuenca/ycmcuenca-core/commit/42644e2e38b2978b7947d8837b7cc2b8c3ae7500))
+* **admin:** mark required fields and refuse blank bodies ([76beacb](https://github.com/ycmcuenca/ycmcuenca-core/commit/76beacb26c4d86ed069d7e25e661ffe6a1c8792d))
+* **ui:** add the shared component package with Tailwind styling ([bb03b32](https://github.com/ycmcuenca/ycmcuenca-core/commit/bb03b32171c3d3d83d1404fe7876383b540e9eea))
+
 ## [0.3.0](https://github.com/ycmcuenca/ycmcuenca-core/compare/admin-v0.2.0...admin-v0.3.0) (2026-11-06)
 
 
