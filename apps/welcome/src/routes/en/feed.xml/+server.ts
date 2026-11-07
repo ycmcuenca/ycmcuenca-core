@@ -6,9 +6,10 @@ import { env } from "cloudflare:workers";
 import { appName } from "#lib/app-meta.js";
 import { absoluteUrl } from "#lib/server/seo.js";
 import { atomFeed } from "#lib/server/xml.js";
+import { articleIndexTags } from "#lib/server/tags.js";
 import type { RequestHandler } from "./$types";
 
-export const GET: RequestHandler = async ({ request }) => {
+export const GET: RequestHandler = async ({ locals, request }) => {
   const index = await readArticleIndex(
     env.SNAPSHOTS,
     createLogger("welcome", request),
@@ -28,6 +29,8 @@ export const GET: RequestHandler = async ({ request }) => {
     },
     entries,
   );
+  // The feed lists the article index, so a publish purges it (design D3).
+  locals.cacheTags = articleIndexTags();
   return new Response(feed, {
     headers: { "content-type": "application/atom+xml" },
   });

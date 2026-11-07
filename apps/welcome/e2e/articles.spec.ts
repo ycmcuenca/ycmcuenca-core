@@ -166,3 +166,44 @@ test("the article page leaves no Content Security Policy violation", async ({
   expect(await collectedViolations(page)).toEqual([]);
   expect(cspWithoutHashes(response)).toEqual(expectedCsp);
 });
+
+// The edge keeps a cacheable page for a minute and refreshes it in the
+// background, while browsers revalidate every time (design D3). Nothing strips
+// these headers locally, so the tests check their values directly (design D7).
+const edgeLifetime = "max-age=60, stale-while-revalidate=300";
+const browserLifetime = "public, max-age=0";
+/** The tags of every page that lists the article index (design D3). */
+const articleIndexTags = "index:article:en,type:article,locale:en";
+
+test("an article page carries the edge, browser and tag headers", async ({
+  request,
+}) => {
+  const response = await request.get(`/en/articles/${updatedArticle.slug}`);
+  expect(response.status()).toBe(200);
+  const headers = response.headers();
+  expect(headers["cloudflare-cdn-cache-control"]).toBe(edgeLifetime);
+  expect(headers["cache-control"]).toBe(browserLifetime);
+  expect(headers["cache-tag"]).toBe(
+    `entry:article:${updatedArticle.slug},type:article,locale:en`,
+  );
+});
+
+test("the home page, the sitemap and the feed carry the index headers", async ({
+  request,
+}) => {
+  for (const path of ["/", "/sitemap.xml", "/en/feed.xml"]) {
+    const response = await request.get(path);
+    expect(response.status(), path).toBe(200);
+    const headers = response.headers();
+    expect(headers["cloudflare-cdn-cache-control"], path).toBe(edgeLifetime);
+    expect(headers["cache-control"], path).toBe(browserLifetime);
+    expect(headers["cache-tag"], path).toBe(articleIndexTags);
+  }
+});
+
+test("an unknown article is never cached", async ({ request }) => {
+  const response = await request.get("/en/articles/does-not-exist");
+  expect(response.status()).toBe(404);
+  expect(response.headers()["cache-control"]).toBe("no-store");
+  expect(response.headers()["cache-tag"]).toBeUndefined();
+});

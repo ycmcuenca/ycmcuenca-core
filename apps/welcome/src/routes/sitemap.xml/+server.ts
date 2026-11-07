@@ -6,9 +6,10 @@ import { createLogger } from "@ycmcuenca/edge";
 import { env } from "cloudflare:workers";
 import { absoluteUrl } from "#lib/server/seo.js";
 import { sitemapXml } from "#lib/server/xml.js";
+import { articleIndexTags } from "#lib/server/tags.js";
 import type { RequestHandler } from "./$types";
 
-export const GET: RequestHandler = async ({ request }) => {
+export const GET: RequestHandler = async ({ locals, request }) => {
   const index = await readArticleIndex(
     env.SNAPSHOTS,
     createLogger("welcome", request),
@@ -18,6 +19,8 @@ export const GET: RequestHandler = async ({ request }) => {
     publishedAt: item.publishedAt,
     updatedAt: item.updatedAt,
   }));
+  // The sitemap lists the article index, so a publish purges it (design D3).
+  locals.cacheTags = articleIndexTags();
   return new Response(sitemapXml(absoluteUrl("/"), articles), {
     headers: { "content-type": "application/xml" },
   });
