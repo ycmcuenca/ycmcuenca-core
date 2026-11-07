@@ -88,3 +88,15 @@ export const cachePolicy: Handle = async ({ event, resolve }) => {
       : { "Cache-Control": noStore },
   );
 };
+
+/**
+ * Gives the response a cache policy when it reaches the Worker with none
+ * (spec, "Other responses are never cached"). SvelteKit answers a
+ * trailing-slash redirect before `cachePolicy` runs, so the Worker itself
+ * keeps that response out of every cache (design D3).
+ */
+export function ensureNoStore(response: Response): Response {
+  return response.headers.has("Cache-Control")
+    ? response
+    : withHeaders(response, { "Cache-Control": noStore });
+}
