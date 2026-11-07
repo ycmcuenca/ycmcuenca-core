@@ -65,3 +65,12 @@ Every projection that fails SHALL write one error-level log line with the reques
 
 - **WHEN** a publish's entry snapshot write fails
 - **THEN** one error-level JSON log line names the entry id, the step `entry-snapshot` and the error message, and contains no title, summary or body text
+
+### Requirement: Failed purges are logged
+
+Every cache purge that fails or cannot run SHALL write one warning-level log line with the request id, the tags it tried to purge and the reason.
+
+#### Scenario: Purge refused
+
+- **WHEN** the site's purge reports a failure for the tags `entry:article:hello-world` and `index:article:en`
+- **THEN** one warning-level JSON log line in `admin` names both tags and the reason

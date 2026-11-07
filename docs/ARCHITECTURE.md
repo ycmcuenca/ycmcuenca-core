@@ -49,7 +49,7 @@ flowchart TB
 
     subgraph cf["Cloudflare Workers (Free plan)"]
         access["Cloudflare Access"]:::built
-        cache["Workers Cache<br/>(S2 edge-cache)"]:::planned
+        cache["Workers Cache<br/>(S2 edge-cache)"]:::built
         welcome["welcome worker<br/>public site: articles,<br/>sitemap and feed"]:::built
         admin["admin worker<br/>CMS, shows the entry count"]:::built
         edge["Security headers, CSP,<br/>logs and traces"]:::built
@@ -93,6 +93,12 @@ flowchart TB
   lists the stored entries and lets the owner write, preview and publish
   them, read from and written to Neon. They share one workspace and task graph
   ([monorepo task graphs and caching](SYSTEM_DESIGN.md#monorepo-task-graphs-and-caching)).
+- Workers Cache sits in front of `welcome` for the home page, articles, the
+  sitemap and the feed: a 60-second edge lifetime with a 300-second stale
+  window, tags per entry, type and locale, and a purge from `admin` after each
+  projection ([C10](DECISIONS.md#cms-architecture);
+  [cache invalidation by tag](SYSTEM_DESIGN.md#cache-invalidation-by-tag)).
+  Preview URLs and non-GET requests skip the cache.
 - Both apps are live on `*.ycmcuenca.workers.dev`
   ([P4](DECISIONS.md#platform-and-scope)); locally they run through `wrangler`.
   `welcome` is public; every `admin` address sits behind Cloudflare Access, and
@@ -120,14 +126,14 @@ flowchart TB
   The deploy applies pending migrations before it uploads `admin`
   ([C12](DECISIONS.md#cms-architecture);
   [expand and contract migrations](SYSTEM_DESIGN.md#expand-and-contract-migrations)).
-  `welcome` still has no storage binding.
+  `welcome` binds KV for the published snapshot, not the database.
 - `admin` publishes: it moves an entry's published pointer in Neon in one
   write, then the projector writes the entry snapshot and the type index to KV
   ([C4, C5, C6](DECISIONS.md#cms-architecture);
   [CQRS-lite read projections](SYSTEM_DESIGN.md#cqrs-lite-read-projections)).
   A failed write leaves the entry marked dirty and `admin` offers Retry; S4's
   reconciler will automate the same path ([W1](DECISIONS.md#publishing-workflow)).
-  `welcome` does not read KV yet.
+  `welcome` reads that snapshot from KV.
 - The repository's delivery pipeline (see
   [How a change reaches users](#how-a-change-reaches-users)).
 
@@ -135,7 +141,6 @@ flowchart TB
 
 | Component                          | Planned in                | What it does                                                                                                                                                   | Decisions                                     | Concepts                                                                                                                                                          |
 | ---------------------------------- | ------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Workers Cache                      | S2 `edge-cache`           | Caches `welcome` responses, tagged by entry, type and locale. `admin` purges tags after it writes KV.                                                          | [C10](DECISIONS.md#cms-architecture)          | [cache invalidation by tag](SYSTEM_DESIGN.md#cache-invalidation-by-tag)                                                                                           |
 | Cron reconciler                    | S4 `scheduled-publishing` | One scheduled job publishes entries that are due and retries snapshots that failed to write.                                                                   | [W1](DECISIONS.md#publishing-workflow)        | [reconciliation loops](SYSTEM_DESIGN.md#reconciliation-loops-and-at-most-once-claims), [eventual consistency](SYSTEM_DESIGN.md#eventual-consistency-and-its-slos) |
 | R2 media bucket and Images binding | S3 `media-uploads`        | R2 is Cloudflare's object storage. `admin` stores the original image and creates three web-ready widths.                                                       | [M1, M3, M4](DECISIONS.md#media)              | [content-addressed storage](SYSTEM_DESIGN.md#content-addressed-storage), [upload protocols](SYSTEM_DESIGN.md#upload-protocols-and-integrity-checks)               |
 | Contact inbox                      | S3 `contact-inbox`        | Stores contact-form messages in the CMS, protected by Turnstile and rate limiting. The change decides which worker receives the form, so the diagram omits it. | [I1](DECISIONS.md#integrations-and-longevity) | [abuse prevention](SYSTEM_DESIGN.md#abuse-prevention)                                                                                                             |

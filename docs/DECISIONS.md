@@ -172,7 +172,10 @@ marked _(audit)_ came from the stack audit on the same day (see
 - **C10 Workers Cache in front of `welcome`** _(audit)_. Responses carry cache
   tags per entry, type and locale. Each Worker's cache is private, so `welcome`
   exposes an RPC entrypoint that `admin` calls through a service binding to
-  purge tags after the projector writes KV.
+  purge tags after the projector writes KV. A cached response lives 60 seconds
+  at the edge and is served stale for up to 300 seconds while it refreshes;
+  only the production host fills the cache, and a failed purge is logged as a
+  warning and never fails the publish (`edge-cache` D2, D3, D4).
   Concept: [cache invalidation by tag](SYSTEM_DESIGN.md#cache-invalidation-by-tag).
 - **C11 Hyperdrive with caching disabled for `admin`** _(content-store D5)_. The
   default cache holds identical reads for 60 seconds and does not invalidate
