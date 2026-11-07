@@ -16,7 +16,13 @@ declare global {
       seo?: PageSeo;
     }
 
-    // interface Locals {}
+    interface Locals {
+      // The tags this response names, set by each cacheable page's `load` or
+      // `GET` (design D3). `cachePolicy` turns them into the `Cache-Tag`
+      // header on a 200; a route that leaves it unset is never cached.
+      cacheTags?: string[];
+    }
+
     // interface PageState {}
   }
 }

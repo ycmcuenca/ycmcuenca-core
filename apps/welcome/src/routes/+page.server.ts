@@ -6,9 +6,10 @@ import { env } from "cloudflare:workers";
 import { siteIntroduction } from "#lib/app-meta.js";
 import { absoluteUrl } from "#lib/server/seo.js";
 import type { PageSeo } from "#lib/server/seo.js";
+import { articleIndexTags } from "#lib/server/tags.js";
 import type { PageServerLoad } from "./$types";
 
-export const load: PageServerLoad = async ({ request }) => {
+export const load: PageServerLoad = async ({ locals, request }) => {
   const index = await readArticleIndex(
     env.SNAPSHOTS,
     createLogger("welcome", request),
@@ -20,5 +21,7 @@ export const load: PageServerLoad = async ({ request }) => {
     canonical: absoluteUrl("/"),
     description: siteIntroduction,
   };
+  // The page lists the article index, so a publish purges it (design D3).
+  locals.cacheTags = articleIndexTags();
   return { articles, seo };
 };

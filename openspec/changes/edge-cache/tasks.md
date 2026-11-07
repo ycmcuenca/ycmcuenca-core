@@ -12,10 +12,10 @@
 
 ## 3. `welcome`: entrypoint, routing and headers
 
-- [ ] 3.1 Complete `apps/welcome/src/worker.ts` (`Site` with `fetch` and `purge`, and the `default` handler with `isCacheable`) and `src/sveltekit-worker.d.ts` per design D1, D2 and D4, and finish the `cache`/`exports` config in `wrangler.jsonc` with comments citing the design. Run `bun run gen`. Verify `bun run check` passes, and unit tests cover `isCacheable` (production host GET and HEAD true; preview host, POST and DELETE false) and `Site.purge` (invalid tag, missing `ctx.cache`, fake success and failure)
-- [ ] 3.2 Add `src/lib/worker-config.test.ts` per design D1. Verify it passes, and fails when `wrangler.sveltekit.jsonc`'s `assets.directory` or `compatibility_date` differs from `wrangler.jsonc`'s (then revert)
-- [ ] 3.3 Implement `cachePolicy()` in `src/lib/server/cache.ts`, add it to `src/hooks.server.ts` after `securityHeaders()`, add `cacheTags` to `App.Locals` in `src/app.d.ts`, and set `locals.cacheTags` in the home, article, sitemap and feed handlers, per design D3. Verify unit tests for a tagged 200, an untagged 200 and a 404, and that `curl -sI` against `wrangler dev` shows the edge, browser and tag headers on an article and `Cache-Control: no-store` on `/en/articles/nope`
-- [ ] 3.4 Extend `apps/welcome/e2e/articles.spec.ts` with the header assertions from design D7. Verify `bun run test:e2e` passes in `apps/welcome`
+- [x] 3.1 Complete `apps/welcome/src/worker.ts` (`Site` with `fetch` and `purge`, and the `default` handler with `isCacheable`) and `src/sveltekit-worker.d.ts` per design D1, D2 and D4, and finish the `cache`/`exports` config in `wrangler.jsonc` with comments citing the design. Run `bun run gen`. Verify `bun run check` passes, and unit tests cover `isCacheable` (production host GET and HEAD true; preview host, POST and DELETE false) and `Site.purge` (invalid tag, missing `ctx.cache`, fake success and failure)
+- [x] 3.2 Add `src/lib/worker-config.test.ts` per design D1. Verify it passes, and fails when `wrangler.sveltekit.jsonc`'s `assets.directory` or `compatibility_date` differs from `wrangler.jsonc`'s (then revert)
+- [x] 3.3 Implement `cachePolicy()` in `src/lib/server/cache.ts`, add it to `src/hooks.server.ts` after `securityHeaders()`, add `cacheTags` to `App.Locals` in `src/app.d.ts`, and set `locals.cacheTags` in the home, article, sitemap and feed handlers, per design D3. Verify unit tests for a tagged 200, an untagged 200 and a 404, and that `curl -sI` against `wrangler dev` shows the edge, browser and tag headers on an article and `Cache-Control: no-store` on `/en/articles/nope`
+- [x] 3.4 Extend `apps/welcome/e2e/articles.spec.ts` with the header assertions from design D7. Verify `bun run test:e2e` passes in `apps/welcome`
 
 ## 4. `admin`: service binding and purger
 
