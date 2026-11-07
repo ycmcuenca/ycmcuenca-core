@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.5.0](https://github.com/ycmcuenca/ycmcuenca-core/compare/admin-v0.4.0...admin-v0.5.0) (2026-11-07)
+
+
+### Features
+
+* **admin:** purge the edge cache through the WELCOME binding ([f3c3115](https://github.com/ycmcuenca/ycmcuenca-core/commit/f3c3115097401efb06ca4e956cd6d16546bb8a7e))
+
 ## [0.4.0](https://github.com/ycmcuenca/ycmcuenca-core/compare/admin-v0.3.0...admin-v0.4.0) (2026-11-06)
 
 
