@@ -28,6 +28,8 @@ import { createLogger } from "@ycmcuenca/edge";
 import { error, fail } from "@sveltejs/kit";
 import type { ActionFailure } from "@sveltejs/kit";
 import { env } from "cloudflare:workers";
+import { cachePurgerFor } from "#lib/server/cache-purger.js";
+import type { CachePurgeBinding } from "#lib/server/cache-purger.js";
 import { withDatabase } from "#lib/server/database.js";
 import {
   formValuesFrom,
@@ -241,6 +243,10 @@ function dependenciesFor(
     snapshots: snapshotStoreFor(env.SNAPSHOTS),
     clock: systemClock,
     log: createLogger("admin", request),
+    // Wrangler's generated type knows the binding only as a `Service`, whose
+    // surface is `fetch`; the entrypoint's RPC methods are not reflected, so
+    // the one method admin calls is named here (design D5).
+    purger: cachePurgerFor(env.WELCOME as unknown as CachePurgeBinding),
   };
 }
 

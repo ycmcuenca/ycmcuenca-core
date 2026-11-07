@@ -19,7 +19,7 @@
 
 ## 4. `admin`: service binding and purger
 
-- [ ] 4.1 Add the `WELCOME` service binding to `apps/admin/wrangler.jsonc` per design D5 and run `bun run gen`. Implement `apps/admin/src/lib/server/cache-purger.ts`, and add the purger to `dependenciesFor` in `src/routes/entries/[id]/+page.server.ts`. Verify `bun run check` passes, and a unit test shows a thrown binding error becoming `{ purged: false, reason }`
+- [x] 4.1 Add the `WELCOME` service binding to `apps/admin/wrangler.jsonc` per design D5 and run `bun run gen`. Implement `apps/admin/src/lib/server/cache-purger.ts`, and add the purger to `dependenciesFor` in `src/routes/entries/[id]/+page.server.ts`. Verify `bun run check` passes, and a unit test shows a thrown binding error becoming `{ purged: false, reason }`
 - [ ] 4.2 Write `apps/admin/e2e/cache-purge.spec.ts` per design D7, using the two-worker setup in `apps/admin/playwright.config.ts`. Verify the publish succeeds and is live, and that the purge outcome logged matches what task 1.2 recorded
 
 ## 5. Documentation and production check

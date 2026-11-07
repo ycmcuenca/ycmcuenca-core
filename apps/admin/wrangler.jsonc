@@ -42,6 +42,15 @@
     { "binding": "SNAPSHOTS", "id": "c18b4b7d16494320b81857cf96a4b715" },
   ],
 
+  // The public site's `Site` entrypoint, which owns Workers Cache and can
+  // purge it (design D5 in openspec/changes/edge-cache/design.md). RPC is
+  // reachable only through a binding, so no public URL can purge the cache
+  // (spec, "Only admin can purge"). The service name is resolved at deploy
+  // time; under `wrangler dev` the binding attaches only when `welcome` runs.
+  "services": [
+    { "binding": "WELCOME", "service": "welcome", "entrypoint": "Site" },
+  ],
+
   // Workers Logs with invocation logs and traces at full sampling (D4, I9).
   // A refusal writes one warning line and a 404 no application line, so the
   // Free plan's log volume stays proportional to real traffic.
