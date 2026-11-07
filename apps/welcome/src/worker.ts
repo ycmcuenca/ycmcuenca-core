@@ -5,7 +5,7 @@
 import { WorkerEntrypoint } from "cloudflare:workers";
 import type { PurgeOutcome } from "@ycmcuenca/cms-core";
 import sveltekit from "../.svelte-kit/cloudflare/_worker.js";
-import { isCacheable, purgeTags } from "./lib/server/cache.js";
+import { ensureNoStore, isCacheable, purgeTags } from "./lib/server/cache.js";
 
 /**
  * The site's own entrypoint (design D1, D4). A request routed here runs
@@ -14,8 +14,8 @@ import { isCacheable, purgeTags } from "./lib/server/cache.js";
  * purge").
  */
 export class Site extends WorkerEntrypoint<Env> {
-  fetch(request: Request): Promise<Response> {
-    return sveltekit.fetch(request, this.env, this.ctx);
+  async fetch(request: Request): Promise<Response> {
+    return ensureNoStore(await sveltekit.fetch(request, this.env, this.ctx));
   }
 
   purge(tags: string[]): Promise<PurgeOutcome> {
@@ -24,9 +24,14 @@ export class Site extends WorkerEntrypoint<Env> {
 }
 
 export default {
-  fetch(request: Request, env: Env, ctx: ExecutionContext): Promise<Response> {
-    return isCacheable(request, env)
+  async fetch(
+    request: Request,
+    env: Env,
+    ctx: ExecutionContext,
+  ): Promise<Response> {
+    const response = isCacheable(request, env)
       ? ctx.exports.Site.fetch(request)
       : sveltekit.fetch(request, env, ctx);
+    return ensureNoStore(await response);
   },
 } satisfies ExportedHandler<Env>;

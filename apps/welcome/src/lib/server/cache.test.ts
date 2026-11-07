@@ -2,7 +2,7 @@
 // openspec/changes/edge-cache/design.md), tested without a Worker: the
 // functions take the request or the cache the Worker would hand them.
 import { describe, expect, it } from "vitest";
-import { cachePolicy, isCacheable, purgeTags } from "./cache";
+import { cachePolicy, ensureNoStore, isCacheable, purgeTags } from "./cache";
 
 const origin = "https://welcome.ycmcuenca.workers.dev";
 
@@ -170,5 +170,28 @@ describe("cachePolicy (design D3)", () => {
     const response = await policyResponse(404, ["entry:article:hello-world"]);
     expect(response.headers.get("cache-control")).toBe("no-store");
     expect(response.headers.get("cache-tag")).toBeNull();
+  });
+});
+
+describe("ensureNoStore (design D3)", () => {
+  it("keeps a trailing-slash redirect out of every cache", () => {
+    const redirect = new Response(null, {
+      status: 308,
+      headers: { location: "/en/articles/hello-world" },
+    });
+    const response = ensureNoStore(redirect);
+    expect(response.status).toBe(308);
+    expect(response.headers.get("cache-control")).toBe("no-store");
+  });
+
+  it("keeps a cached page's three headers", async () => {
+    const response = ensureNoStore(
+      await policyResponse(200, ["entry:article:hello-world"]),
+    );
+    expect(response.headers.get("cloudflare-cdn-cache-control")).toBe(
+      "max-age=60, stale-while-revalidate=300",
+    );
+    expect(response.headers.get("cache-control")).toBe("public, max-age=0");
+    expect(response.headers.get("cache-tag")).toBe("entry:article:hello-world");
   });
 });
