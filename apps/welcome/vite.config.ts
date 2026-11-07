@@ -12,7 +12,14 @@ export default defineConfig({
         runes: ({ filename }) =>
           filename.split(/[/\\]/).includes("node_modules") ? undefined : true,
       },
-      adapter: adapter(),
+      // The adapter reads its own Wrangler file, while the dev platform proxy
+      // reads the deploy file's `vars` and KV bindings (design D1 in
+      // openspec/changes/edge-cache/design.md). The adapter spreads
+      // `platformProxy` after `configPath`, so both reach it.
+      adapter: adapter({
+        config: "wrangler.sveltekit.jsonc",
+        platformProxy: { configPath: "wrangler.jsonc" },
+      }),
       // The enforced Content Security Policy (design D8, decision I10). Hash
       // mode keeps the policy identical for every visitor, so a cached page
       // stays valid when Workers Cache arrives (C10).

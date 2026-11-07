@@ -7,9 +7,10 @@
   // Becomes welcome.ycmcuenca.workers.dev at deploy time.
   "name": "welcome",
 
-  // SvelteKit's Workers build: the entry script and the static assets
-  // directory it serves (the ASSETS binding is created by the adapter).
-  "main": ".svelte-kit/cloudflare/_worker.js",
+  // The hand-written entry around SvelteKit's build (design D1 in
+  // openspec/changes/edge-cache/design.md), and the static assets directory
+  // the adapter fills (the ASSETS binding is created by the adapter).
+  "main": "src/worker.ts",
   "assets": {
     "binding": "ASSETS",
     "directory": ".svelte-kit/cloudflare",
@@ -19,7 +20,18 @@
   "compatibility_date": "2026-10-17",
   // nodejs_als provides AsyncLocalStorage, which this ecosystem expects;
   // `nodejs_compat` waits until a library actually needs it (A5).
-  "compatibility_flags": ["nodejs_als"],
+  // enable_ctx_exports exposes the `Site` entrypoint as `ctx.exports.Site`
+  // (design D1, D2).
+  "compatibility_flags": ["nodejs_als", "enable_ctx_exports"],
+
+  // Workers Cache (design D1 in openspec/changes/edge-cache/design.md): the
+  // default entrypoint never caches, because SvelteKit's handler receives no
+  // context and so could not purge; `Site` owns the cache and its purge (D4).
+  "cache": { "enabled": true },
+  "exports": {
+    "default": { "type": "worker", "cache": { "enabled": false } },
+    "Site": { "type": "worker", "cache": { "enabled": true } },
+  },
 
   // Serve on welcome.ycmcuenca.workers.dev and give every version a preview
   // URL; there is no route or custom domain (D4, P4).

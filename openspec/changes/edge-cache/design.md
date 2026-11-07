@@ -50,7 +50,7 @@ Current state, observed on 2026-11-07 after `admin-editor` was archived:
 
 ### D1. A hand-written entry around SvelteKit, with two Wrangler files
 
-- `apps/welcome/wrangler.sveltekit.jsonc` holds only what the adapter reads: `name`, `main: ".svelte-kit/cloudflare/_worker.js"`, `assets` and `compatibility_date`. `apps/welcome/vite.config.ts` passes `adapter({ config: "wrangler.sveltekit.jsonc" })`.
+- `apps/welcome/wrangler.sveltekit.jsonc` holds only what the adapter reads: `name`, `main: ".svelte-kit/cloudflare/_worker.js"`, `assets` and `compatibility_date`. `apps/welcome/vite.config.ts` passes `adapter({ config: "wrangler.sveltekit.jsonc", platformProxy: { configPath: "wrangler.jsonc" } })`. The adapter spreads `options.platformProxy` after `configPath`, so the build reads the adapter file while the dev platform proxy reads `wrangler.jsonc` with its `vars` and KV bindings.
 - `apps/welcome/wrangler.jsonc`, the deploy file, changes:
   - `main` becomes `"src/worker.ts"`;
   - `enable_ctx_exports` joins `compatibility_flags`;
@@ -84,7 +84,7 @@ Current state, observed on 2026-11-07 after `admin-editor` was archived:
   - _The Cache API (`caches.default`) inside a hook_: no tag purge, and Cloudflare's docs describe its operations as working on custom domains.
   - _Patching the adapter's output after the build_: fragile against adapter upgrades.
   - _Dropping C10 from S2_: the owner chose to keep it as its own change.
-- **Failure modes:** _Wrangler cannot bundle an import of the adapter's built `_worker.js`, or `vite dev` breaks because the adapter's platform proxy now reads the other file:_ task 1.1 spikes both first and **stops for the owner** if either fails.
+- **Failure modes:** _Wrangler cannot bundle an import of the adapter's built `_worker.js`, or `vite dev` breaks because the adapter's platform proxy now reads the other file:_ task 1.1 spikes both first and **stops for the owner** if either fails. _Observed 2026-11-07:_ the dev break happened (`bun run dev` returned 500 because `SITE_ORIGIN` and `SNAPSHOTS` were undefined); the `platformProxy` option above resolved it, and `build`, `wrangler deploy --dry-run`, `wrangler dev` and `check` pass.
 
 ### D2. Only production `GET`/`HEAD` requests go through the cache
 
