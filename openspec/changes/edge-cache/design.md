@@ -143,7 +143,7 @@ The pull request carries `feat(welcome)` and `feat(admin)` commits, so one relea
 - **Unit (cms-core):** the tag builders, and `publishing.ts` calling the purger with exactly the two tags, logging and still succeeding when it fails.
 - **e2e:**
   - `apps/welcome/e2e/articles.spec.ts` asserts the cache headers on an article, the home page, the sitemap and the feed, and `no-store` on a 404. Locally nothing strips the headers, so their values are checked directly.
-  - `apps/admin/e2e/cache-purge.spec.ts`, running in the two-worker setup from `public-rendering`, publishes and asserts the entry is live. `admin`'s output then has one `cache purge failed` warning with reason `cache unavailable`, or none if local `ctx.cache` exists; task 1.2 records which.
+  - `apps/admin/e2e/cache-purge.spec.ts`, running in the two-worker setup from `public-rendering`, publishes and asserts the entry is live. `admin`'s output then has one `cache purge failed` warning that names both tags (`entry:article:<slug>` and `index:article:en`) and carries a non-empty reason. Locally the warning comes from a thrown binding error: `wrangler dev` 4.151.1 cannot reach a named entrypoint over a service binding (`Worker does not export an entrypoint named "Site"`, observed in task 1.2), so the purger turns the throw into `{ purged: false, reason }` (D5). The test does not pin the reason text, which belongs to Wrangler. `Site.purge` and its `cache unavailable` reason are covered by the `welcome` unit tests, and the real purge by the production check. Task 1.2 also recorded that local `ctx.cache` exists as a key but is `undefined`.
 - **Production (owner, task 5.2):** `Cf-Cache-Status` `MISS` then `HIT` on an article; publish an edit; the next request is `MISS` with the new title; another article stays `HIT`; no `Cache-Tag` or `Cloudflare-CDN-Cache-Control` header reaches the browser; a 404 is never `HIT`; a preview URL shows its own version while production still serves the cached page.
 - **Pattern:** [testing the production artifact](../../../docs/SYSTEM_DESIGN.md#testing-the-production-artifact). Only production has a real edge cache, so the decisive check is the owner's.
 
@@ -152,7 +152,7 @@ The pull request carries `feat(welcome)` and `feat(admin)` commits, so one relea
 - **The wrapper entry and the two Wrangler files are unproven here** → spiked first, with a stop (D1).
 - **Cache hits and static assets now count toward 100,000 requests a day** → the monthly usage check; the Workers Paid trigger in the parking lot.
 - **KV propagation can refill a purged page with old content** → the 60-second lifetime bounds it (owner decision).
-- [`ctx.cache` may be missing locally] → `Site.purge` handles it, and the production check covers the real purge.
+- [`ctx.cache` is `undefined` locally, and a local service binding cannot reach `Site`] → `Site.purge` handles the first, the purger turns the second into a logged warning, and the production check covers the real purge.
 
 ## Migration Plan
 

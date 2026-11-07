@@ -10,6 +10,7 @@
 // e2e servers cannot race for one).
 import { defineConfig, devices } from "@playwright/test";
 import {
+  adminOutputLog,
   stateDirectory,
   stateDirectoryFromWelcome,
   welcomeOrigin,
@@ -64,11 +65,17 @@ export default defineConfig({
       // so with both apps' e2e suites starting in parallel both servers would
       // pick 9229 and the second one would fail to bind. `--persist-to` is the
       // state the welcome server reads, so a publish reaches the site.
+      //
+      // Playwright only forwards a server's output, so `tee` also keeps a copy
+      // in `adminOutputLog`, which the cache-purge test reads (design D7 in
+      // openspec/changes/edge-cache/design.md).
       command:
-        "bunx wrangler dev --port 8788 --inspector-port 9230" +
+        "mkdir -p .wrangler/e2e" +
+        " && bunx wrangler dev --port 8788 --inspector-port 9230" +
         ` --persist-to ${stateDirectory}` +
         " --var ACCESS_TEAM_DOMAIN:http://127.0.0.1:8799" +
-        " --var ACCESS_AUD:e2e-audience",
+        " --var ACCESS_AUD:e2e-audience" +
+        ` 2>&1 | tee ${adminOutputLog}`,
       url: "http://127.0.0.1:8788",
       // Reuse an already-running dev server locally; always start fresh in CI.
       reuseExistingServer: !process.env.CI,

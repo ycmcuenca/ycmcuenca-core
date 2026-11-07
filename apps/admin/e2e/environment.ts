@@ -12,3 +12,11 @@ export const stateDirectoryFromWelcome = "../admin/.wrangler/e2e-state";
 
 /** The port `welcome` serves the publish-path test on (design D5). */
 export const welcomeOrigin = "http://127.0.0.1:8791";
+
+/**
+ * Where `admin`'s `wrangler dev` leaves its console output (design D7 in
+ * openspec/changes/edge-cache/design.md). The config sends it through `tee`,
+ * because Playwright only forwards a server's output and the cache-purge test
+ * reads the worker's warning lines from this file. Relative to `apps/admin`.
+ */
+export const adminOutputLog = ".wrangler/e2e/admin-output.log";
