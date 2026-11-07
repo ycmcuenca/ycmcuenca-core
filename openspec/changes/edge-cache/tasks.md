@@ -24,7 +24,7 @@
 
 ## 5. Documentation and production check
 
-- [ ] 5.1 Add a "Caching" paragraph to the README's "Public site" section: the wrapper entry and the two Wrangler files, the headers, the tags, purge after publish, the request-billing note for the monthly usage check, and how to roll back (design Migration Plan). Verify `scripts/docs/check-living-docs.sh` passes
+- [x] 5.1 Add a "Caching" paragraph to the README's "Public site" section: the wrapper entry and the two Wrangler files, the headers, the tags, purge after publish, the request-billing note for the monthly usage check, and how to roll back (design Migration Plan). Verify `scripts/docs/check-living-docs.sh` passes
 - [ ] 5.2 **Owner task (Sprint 2's last exit criterion):** after both release deploys, verify in production with `curl -sI`:
   - an article returns `MISS`, then `HIT`;
   - after publishing an edit in `admin`, the next request returns `MISS` with the new title;
@@ -37,7 +37,7 @@
 
   Record the observed `Cf-Cache-Status` sequence in the design's facts table. If a purge fails or `ctx.cache` is missing in production (assumption A1), **stop and ask the owner**
 
-- [ ] 5.3 Run the local CI equivalent from `AGENTS.md` plus `bun run test:integration`. Verify all pass, `bunx openspec validate edge-cache --strict` passes, and `ci-ok` is green on the pull request
+- [x] 5.3 Run the local CI equivalent from `AGENTS.md` plus `bun run test:integration`. Verify all pass, `bunx openspec validate edge-cache --strict` passes, and `ci-ok` is green on the pull request
 
 ## Workflow follow-up
 
