@@ -300,7 +300,8 @@ suite seeds its own state in `.wrangler/e2e-state`, so the two never mix.
 ### Caching
 
 `welcome` caches its public pages at Cloudflare's edge. A cache hit runs no
-site code and reads no KV.
+SvelteKit code and reads no KV. Only the small `default` wrapper runs, to
+decide whether the request is cacheable.
 
 The Worker entry is `apps/welcome/src/worker.ts`. Its `Site` class runs
 SvelteKit and owns the cache. Its `default` handler sends only production `GET`
@@ -329,7 +330,7 @@ purges the entry's tag and the type's index tag through the `WELCOME` service
 binding. The published page and the home page refresh on their next request,
 and every other article stays cached. A purge that fails logs a `cache purge
 failed` warning and leaves the publish successful; the page then refreshes
-within 60 seconds. No public URL can purge.
+within 60 seconds, or up to 360 seconds when a request is served stale. No public URL can purge.
 
 Caching does not reduce the request count the Free plan bills. Every request
 still counts, including a cache hit, a static asset and the internal call into
