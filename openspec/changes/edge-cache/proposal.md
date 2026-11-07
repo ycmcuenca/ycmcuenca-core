@@ -27,7 +27,7 @@ So caching needs a hand-written entry around SvelteKit, which the owner chose to
 
 - **Everything else is explicitly `no-store`,** including 404s. Workers Cache stores responses that carry no `Cache-Control` (200 for 2 hours, 404 for 3 minutes), so leaving the header out would not opt out (verified).
 - **Cache tags.** An article page carries `entry:article:<slug>`, `type:article` and `locale:en`. The home page, sitemap and feed carry `index:article:en`, `type:article` and `locale:en`. Slugs are fixed after the first publish (`revisions-publishing`), so a slug-based tag is stable, and it equals the KV key.
-- **Purge after every projection.** After a successful publish, rollback, unpublish or retry, `admin` calls `Site.purge([entry tag, index tag])` through a service binding (`WELCOME`, entrypoint `Site`). A purge failure is logged as a warning and does not fail the publish, because the 60-second lifetime bounds the staleness.
+- **Purge after every projection.** After a successful publish, rollback, unpublish or retry, `admin` calls `Site.purge([entry tag, index tag])` through a service binding (`WELCOME`, entrypoint `Site`). A purge failure is logged as a warning and does not fail the publish, because the 60-second lifetime, plus up to 300 seconds served stale, bounds the staleness.
 - **A `CachePurger` port in cms-core,** with the shared tag builders, so `welcome` and `admin` agree on tag names.
 - **Owner check in production.** `Cf-Cache-Status` is `HIT` on a repeated request, and after a publish the next request is a `MISS` with the new content, while unrelated articles stay `HIT`.
 

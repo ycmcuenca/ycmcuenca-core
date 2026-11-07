@@ -37,7 +37,7 @@
 
   Record the observed `Cf-Cache-Status` sequence in the design's facts table. If a purge fails or `ctx.cache` is missing in production (assumption A1), **stop and ask the owner**
 
-- [x] 5.3 Run the local CI equivalent from `AGENTS.md` plus `bun run test:integration`. Verify all pass, `bunx openspec validate edge-cache --strict` passes, and `ci-ok` is green on the pull request
+- [x] 5.3 Run the local CI equivalent from `AGENTS.md` plus `bun run test:integration`. Verify all pass, `bunx openspec validate edge-cache --strict` passes, and note that the `ci-ok` pull-request check is confirmed by `/ship`, which creates the pull request
 
 ## Workflow follow-up
 

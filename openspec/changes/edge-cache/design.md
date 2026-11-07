@@ -37,7 +37,7 @@ Current state, observed on 2026-11-07 after `admin-editor` was archived:
 
 **Goals:**
 
-- A cache hit runs no code and reads no KV.
+- A cache hit runs no SvelteKit code and reads no KV. Only the small `default` wrapper runs, to decide whether the request is cacheable (D1, D2).
 - A publish affects only the pages that show the published entry.
 - Nothing about caching can leak an unreleased version or let a visitor purge.
 
@@ -128,11 +128,11 @@ Everything else, including Access-protected preview and version URLs, calls Svel
 - `apps/admin/src/lib/server/cache-purger.ts`: `cachePurgerFor(env.WELCOME)` calls `binding.purge(tags)` and converts a thrown error into `{ purged: false, reason }`. It describes the binding with a minimal local interface (`{ purge(tags: string[]): Promise<PurgeOutcome> }`) rather than importing `welcome`'s code, so neither app depends on the other's sources.
 - `dependenciesFor` in the entry page adds the purger, so publish, roll back, unpublish and retry share it. `changeSlug` never projects (it only runs before the first publish), so it never purges.
 - **Who can purge:** `purge` is an RPC method, and RPC is reachable only through a binding. `welcome` has no route that purges, so no HTTP request from a visitor can reach it (spec, "Only admin can purge").
-- **Failure modes:** _`admin` is deployed before `welcome` has `Site`:_ the call throws, the purger turns it into a warning, and pages refresh within 60 seconds (D6).
+- **Failure modes:** _`admin` is deployed before `welcome` has `Site`:_ the call throws, the purger turns it into a warning, and pages refresh within 60 seconds, or up to 360 when served stale (D6).
 
 ### D6. Release order
 
-The pull request carries `feat(welcome)` and `feat(admin)` commits, so one release PR releases both, and the two deploy jobs run in parallel (deployment spec). Until `welcome`'s deploy finishes, an `admin` purge fails with a logged warning and staleness is bounded by the 60-second lifetime. Nothing breaks, so no forced order is needed. The owner's production check (task 5.2) runs after both deploys.
+The pull request carries `feat(welcome)` and `feat(admin)` commits, so one release PR releases both, and the two deploy jobs run in parallel (deployment spec). Until `welcome`'s deploy finishes, an `admin` purge fails with a logged warning and staleness is bounded by the 60-second lifetime, plus up to 300 seconds served stale. Nothing breaks, so no forced order is needed. The owner's production check (task 5.2) runs after both deploys.
 
 ### D7. Tests
 
@@ -151,7 +151,7 @@ The pull request carries `feat(welcome)` and `feat(admin)` commits, so one relea
 
 - **The wrapper entry and the two Wrangler files are unproven here** → spiked first, with a stop (D1).
 - **Cache hits and static assets now count toward 100,000 requests a day** → the monthly usage check; the Workers Paid trigger in the parking lot.
-- **KV propagation can refill a purged page with old content** → the 60-second lifetime bounds it (owner decision).
+- **KV propagation can refill a purged page with old content** → the 60-second lifetime, plus up to 300 seconds served stale, bounds it (owner decision).
 - [`ctx.cache` is `undefined` locally, and a local service binding cannot reach `Site`] → `Site.purge` handles the first, the purger turns the second into a logged warning, and the production check covers the real purge.
 
 ## Migration Plan

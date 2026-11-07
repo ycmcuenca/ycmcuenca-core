@@ -18,7 +18,7 @@ Successful responses of the home page, article pages, the sitemap and the feed S
 #### Scenario: Repeated request
 
 - **WHEN** the same article page is requested twice within 60 seconds in production
-- **THEN** the second response is served from the edge cache without running the site's code
+- **THEN** the second response is served from the edge cache without running SvelteKit and without reading KV; only the thin `default` entrypoint runs, to decide that the request is cacheable
 
 ### Requirement: Other responses are never cached
 
