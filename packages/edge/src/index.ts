@@ -10,5 +10,6 @@ export {
   baselineSecurityHeaders,
   cspDirectives,
   securityHeaders,
+  withHeaders,
 } from "./headers.ts";
 export type { CspSource } from "./headers.ts";
