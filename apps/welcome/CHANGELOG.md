@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.3.0](https://github.com/ycmcuenca/ycmcuenca-core/compare/welcome-v0.2.0...welcome-v0.3.0) (2026-11-07)
+
+
+### Features
+
+* **welcome:** cache public pages and tag them for purging ([3d81477](https://github.com/ycmcuenca/ycmcuenca-core/commit/3d814774f14eeee6c7f1b53a95183360cb403738))
+* **welcome:** route the site through a cache-enabled worker entry ([c60aba5](https://github.com/ycmcuenca/ycmcuenca-core/commit/c60aba576e498b93c7ca5e720f7f0d4079b39560))
+
 ## [0.2.0](https://github.com/ycmcuenca/ycmcuenca-core/compare/welcome-v0.1.0...welcome-v0.2.0) (2026-11-06)
 
 
