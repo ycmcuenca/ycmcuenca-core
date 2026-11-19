@@ -75,7 +75,7 @@ jobs:
     # can reach it.
     services:
       postgres:
-        image: postgres:18.6@sha256:74935e72241653ca55e0414067e6d8763aceb8a810eb51b452253ec3dcfc4336
+        image: postgres:18.7@sha256:e754b839f447639b7004895f4d8a4bfcb4e9dbe3a1bc035f27f646562a16fd61
         env:
           POSTGRES_PASSWORD: e2e-only
           POSTGRES_DB: cms
@@ -213,7 +213,7 @@ jobs:
       # SARIF upload is disabled: in SARIF mode zizmor always exits 0, which
       # would let findings pass; the action propagates the real exit code (D7).
       - name: Audit workflows (zizmor)
-        uses: zizmorcore/zizmor-action@85b2b9fb8e3325e7a23d7d0a9d7ba5ae0f999e3e # v0.7.1
+        uses: zizmorcore/zizmor-action@45d7276c9ca790aabd705e31ca99c6185c3e76dd # v0.8.1
         with:
           advanced-security: "false"
 
@@ -249,7 +249,7 @@ jobs:
       # attempt left behind (D7).
       - name: Create the CI database branch
         id: branch
-        uses: neondatabase/create-branch-action@fb620d43d4c565abaf088b848a4e28e5c4ea4d9c # v6
+        uses: neondatabase/create-branch-action@72ed4f69a12b6be9c16aebfad893f6a21e9aba8b # v6.4.0
         with:
           project_id: ${{ vars.NEON_CI_PROJECT_ID }}
           api_key: ${{ secrets.NEON_CI_API_KEY }}
@@ -281,7 +281,7 @@ jobs:
       # no branch was ever created (D7).
       - name: Delete the CI database branch
         if: always() && steps.branch.outcome == 'success'
-        uses: neondatabase/delete-branch-action@4468d825d5a88ef4012f1705a82f02ec3072f776 # v3
+        uses: neondatabase/delete-branch-action@4468d825d5a88ef4012f1705a82f02ec3072f776 # v3.2.1
         with:
           project_id: ${{ vars.NEON_CI_PROJECT_ID }}
           api_key: ${{ secrets.NEON_CI_API_KEY }}
