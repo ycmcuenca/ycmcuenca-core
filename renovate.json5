@@ -1,45 +1,18 @@
-// Renovate configuration for the Mend hosted app (design D11 in
-// openspec/changes/archive/2026-10-18-ci-release-pipeline/design.md). JSON5 is used so every
-// rule can carry a comment next to it.
 {
   $schema: "https://docs.renovatebot.com/renovate-schema.json",
-
-  // Best practices bundle: action digest pinning, dev-dependency pinning,
-  // npm minimum release age (3 days), weekly lockfile maintenance, and so on.
-  // Semantic commits are forced on because the repository requires
-  // Conventional Commits, rather than relying on auto-detection.
   extends: ["config:best-practices", ":semanticCommits"],
-
-  // A2 (owner's choice): one weekly window, Mondays 00:00-05:59 Asia/Manila.
-  // Security fixes ignore this schedule (vulnerabilityAlerts below).
   schedule: ["* 0-5 * * 1"],
   timezone: "Asia/Manila",
-
-  // The dashboard is the owner's control surface: major updates wait there
-  // for approval, and the app reports configuration errors there.
-  dependencyDashboard: true,
-
-  // Keep the repository's exact-pin convention: no update writes a range.
+  dependencyDashboard: {
+    enabled: true,
+  },
   rangeStrategy: "pin",
-
-  // No update merges itself, whatever a preset might suggest: every pull
-  // request waits for the owner and passes `ci-ok` like any other change.
   automerge: false,
-
   packageRules: [
-    // Keep engine ranges (node's `>=24`) and peer ranges (`^10.13.0`) in
-    // their original style: pinning replaces a compatibility range with one
-    // exact version, and for node it also hid the major from A3's approval
-    // rule. This is Renovate's own `:pinAllExceptPeerDependencies` recipe.
     {
       matchDepTypes: ["engines", "peerDependencies"],
       rangeStrategy: "auto",
     },
-
-    // The runtime libraries that end up in each app's deployed output. An
-    // update here changes what users run, so it is committed as `fix(deps)`
-    // and the apps it touches are proposed for a patch release
-    // (repository-governance spec: "Update commits signal release impact").
     {
       description: "SvelteKit runtime libraries: fix(deps), so touched apps get a patch release",
       groupName: "svelte-runtime",
@@ -47,10 +20,6 @@
       matchPackageNames: ["svelte", "@sveltejs/**"],
       semanticCommitType: "fix",
     },
-    // `jose` ships inside `apps/admin`'s deployed output (as a direct
-    // dependency and as an `@ycmcuenca/edge` peer), so an update is a
-    // `fix(deps)` commit that gives `admin` a patch release (design D10,
-    // assumption A10).
     {
       description: "Edge runtime libraries: fix(deps), so touched apps get a patch release",
       groupName: "edge-runtime",
@@ -58,11 +27,6 @@
       matchPackageNames: ["jose"],
       semanticCommitType: "fix",
     },
-    // `zod` and `markdown-it` ship inside the deployed output of every app
-    // that uses `@ycmcuenca/cms-core`, so an update is a `fix(deps)` commit
-    // that gives the touched apps a patch release, like the `svelte-runtime`
-    // and `edge-runtime` groups. They are ordinary runtime dependencies
-    // (design D1 in openspec/changes/content-model/design.md).
     {
       description: "CMS runtime libraries: fix(deps), so touched apps get a patch release",
       groupName: "cms-runtime",
@@ -70,11 +34,6 @@
       matchPackageNames: ["zod", "markdown-it"],
       semanticCommitType: "fix",
     },
-
-    // Tailwind and the shadcn-svelte runtime ship inside `admin`'s deployed
-    // stylesheet and JavaScript (design D1 in
-    // openspec/changes/admin-editor/design.md), so an update is a `fix(deps)`
-    // commit that gives the touched apps a patch release.
     {
       description: "UI runtime libraries: fix(deps), so touched apps get a patch release",
       groupName: "ui-runtime",
@@ -90,15 +49,6 @@
       ],
       semanticCommitType: "fix",
     },
-
-    // Each tooling group below sets `semanticCommitType: "chore"` explicitly:
-    // some tooling packages (the shared ESLint config's, for example) sit in
-    // `dependencies`, where the `:semanticPrefixFixDepsChoreOthers` preset
-    // would otherwise commit them as `fix(deps)` and propose app patch
-    // releases (repository-governance spec: "Update commits signal release
-    // impact").
-    // Cloudflare tooling builds the output but does not ship inside it, so it
-    // stays the default `chore(deps)`.
     {
       description: "Cloudflare tooling: chore(deps), one pull request",
       groupName: "cloudflare",
@@ -135,16 +85,6 @@
       matchPackageNames: ["turbo", "vite", "typescript", "@types/**"],
       semanticCommitType: "chore",
     },
-    // Drizzle and node-postgres ship inside `admin`'s deployed output, so
-    // `pg` and `drizzle-orm` are production dependencies of both
-    // `@ycmcuenca/db` and `admin` (design D1 in
-    // openspec/changes/content-store/design.md). Renovate updates both
-    // `package.json` files in one pull request, and the `fix(deps)` commit
-    // touching `apps/admin` gives `admin` a patch release. `drizzle-kit` and
-    // `@types/pg` are build-time only: an update there touches only
-    // `packages/db`, so it releases nothing. This rule comes after `build` so
-    // it wins for `@types/pg`, which the earlier `@types/**` rule would
-    // otherwise take.
     {
       description: "Database runtime: fix(deps), so the app that ships it gets a patch release",
       groupName: "db-runtime",
@@ -166,19 +106,12 @@
       matchPackageNames: ["@fission-ai/openspec"],
       semanticCommitType: "chore",
     },
-    // Every `uses:` reference in .github/workflows keeps its full-SHA pin
-    // (helpers:pinGitHubActionDigests); grouping keeps that in one PR.
     {
       description: "GitHub Actions: keep the SHA pins current, one pull request",
       groupName: "github-actions",
       matchManagers: ["github-actions"],
       semanticCommitType: "chore",
     },
-    // The toolchain pins the workflows read: Bun's `packageManager` field and
-    // `.node-version` (A8's runner image is proposed by Renovate too, majors
-    // behind dashboard approval, like any other major). Renovate 44 extracts
-    // package.json through its `bun` manager, and `.node-version` through
-    // `nodenv`.
     {
       description: "Toolchain pins: Bun's packageManager and .node-version",
       groupName: "toolchain",
@@ -186,17 +119,11 @@
       matchDepNames: ["bun", "node"],
       semanticCommitType: "chore",
     },
-
-    // A3: major updates are reviewed on the dependency dashboard first;
-    // approving there lets the update proceed as a normal pull request.
     {
       description: "Major updates wait for approval on the dependency dashboard (A3)",
       matchUpdateTypes: ["major"],
       dependencyDashboardApproval: true,
     },
-
-    // A3: known incompatibilities stay below their next major until the
-    // blockers lift; the README explains each one.
     {
       description: "Vitest stays below 5 until @cloudflare/vitest-pool-workers supports it (A3)",
       matchPackageNames: ["vitest", "@vitest/**"],
@@ -214,12 +141,6 @@
       allowedVersions: "<25",
     },
   ],
-
-  // Security advisories skip both the weekly schedule and the release-age
-  // wait, and are committed as `fix(deps)`, so affected apps get a patch
-  // release from the fix (repository-governance spec: "Vulnerability fix").
-  // Renovate appends these settings to the matching package rules with
-  // `force` (44.166.0), so they win over the tooling groups' `chore` above.
   vulnerabilityAlerts: {
     semanticCommitType: "fix",
   },
